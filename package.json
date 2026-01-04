@@ -1,0 +1,27 @@
+{
+    "name": "pivotr-mailer",
+    "version": "0.1.0",
+    "description": "Event-Driven Realtime B2B Email Automation",
+    "private": true,
+    "type": "module",
+    "workspaces": [
+        "frontend",
+        "migrations",
+        "functions/*"
+    ],
+    "scripts": {
+        "lint": "biome check .",
+        "lint:fix": "biome check --write .",
+        "format": "biome format --write .",
+        "typecheck": "tsc --noEmit",
+        "migrate": "bun run --cwd migrations run.ts"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "^2.2.4",
+        "@types/node": "^20.0.0",
+        "typescript": "^5.0.0"
+    },
+    "dependencies": {
+        "node-appwrite": "^14.0.0"
+    }
+}

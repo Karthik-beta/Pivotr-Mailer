@@ -1,0 +1,10 @@
+{
+    "name": "sqs-poller",
+    "version": "1.0.0",
+    "main": "src/main.ts",
+    "type": "module",
+    "dependencies": {
+        "node-appwrite": "^14.0.0",
+        "@aws-sdk/client-sqs": "^3.0.0"
+    }
+}

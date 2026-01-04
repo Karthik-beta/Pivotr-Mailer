@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.output/
+.vinxi/
+.vercel/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Bun
+bun.lockb
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing
+coverage/
+
+# Appwrite
+.appwrite/
+
+# Misc
+.cache/
+*.tmp
+*.temp

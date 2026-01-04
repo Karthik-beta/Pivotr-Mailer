@@ -1,0 +1,107 @@
+/**
+ * Migration 003: Create Campaigns Collection
+ * 
+ * Creates the campaigns collection with Gaussian timing configuration.
+ */
+import { Client, Databases } from 'node-appwrite';
+import { DATABASE_ID, CollectionId } from '../shared/constants/collection.constants';
+import { CampaignStatus } from '../shared/constants/status.constants';
+
+export async function createCampaignsCollection(client: Client): Promise<void> {
+    const databases = new Databases(client);
+    const collectionId = CollectionId.CAMPAIGNS;
+
+    try {
+        await databases.getCollection(DATABASE_ID, collectionId);
+        console.log(`Collection '${collectionId}' already exists. Skipping.`);
+        return;
+    } catch {
+        // Collection doesn't exist, create it
+    }
+
+    // Create collection
+    await databases.createCollection(
+        DATABASE_ID,
+        collectionId,
+        'Campaigns',
+        undefined,
+        true,
+        true
+    );
+
+    console.log(`Collection '${collectionId}' created. Adding attributes...`);
+
+    // Basic info
+    await databases.createStringAttribute(DATABASE_ID, collectionId, 'name', 255, true);
+
+    // Status enum
+    await databases.createEnumAttribute(
+        DATABASE_ID,
+        collectionId,
+        'status',
+        Object.values(CampaignStatus),
+        true,
+        CampaignStatus.DRAFT
+    );
+
+    // Templates (Spintax-enabled)
+    await databases.createStringAttribute(DATABASE_ID, collectionId, 'subjectTemplate', 998, true);
+    await databases.createStringAttribute(DATABASE_ID, collectionId, 'bodyTemplate', 100000, true); // Large text body
+
+    // Sender configuration
+    await databases.createEmailAttribute(DATABASE_ID, collectionId, 'senderEmail', true);
+    await databases.createStringAttribute(DATABASE_ID, collectionId, 'senderName', 255, true);
+
+    // Counters
+    await databases.createIntegerAttribute(DATABASE_ID, collectionId, 'totalLeads', true, 0);
+    await databases.createIntegerAttribute(DATABASE_ID, collectionId, 'processedCount', true, 0);
+    await databases.createIntegerAttribute(DATABASE_ID, collectionId, 'skippedCount', true, 0);
+    await databases.createIntegerAttribute(DATABASE_ID, collectionId, 'errorCount', true, 0);
+
+    // Pause/Resume state
+    await databases.createDatetimeAttribute(DATABASE_ID, collectionId, 'pausedAt', false);
+    await databases.createIntegerAttribute(DATABASE_ID, collectionId, 'resumePosition', false);
+
+    // Gaussian timing configuration
+    await databases.createIntegerAttribute(DATABASE_ID, collectionId, 'minDelayMs', true, 60000);
+    await databases.createIntegerAttribute(DATABASE_ID, collectionId, 'maxDelayMs', true, 180000);
+    await databases.createFloatAttribute(DATABASE_ID, collectionId, 'gaussianMean', false);
+    await databases.createFloatAttribute(DATABASE_ID, collectionId, 'gaussianStdDev', false);
+
+    // Catch-all handling
+    await databases.createBooleanAttribute(DATABASE_ID, collectionId, 'allowCatchAll', true, false);
+
+    // Timestamps
+    await databases.createDatetimeAttribute(DATABASE_ID, collectionId, 'lastActivityAt', false);
+    await databases.createDatetimeAttribute(DATABASE_ID, collectionId, 'completedAt', false);
+
+    console.log(`Collection '${collectionId}' created with all attributes.`);
+}
+
+/**
+ * Appwrite Console Instructions (Manual)
+ * 
+ * Collection ID: campaigns
+ * Collection Name: Campaigns
+ * 
+ * Attributes:
+ * - name: String (255) [Required]
+ * - status: Enum [Required, Default: DRAFT]
+ * - subjectTemplate: String (998) [Required]
+ * - bodyTemplate: String (100000) [Required]
+ * - senderEmail: Email [Required]
+ * - senderName: String (255) [Required]
+ * - totalLeads: Integer [Required, Default: 0]
+ * - processedCount: Integer [Required, Default: 0]
+ * - skippedCount: Integer [Required, Default: 0]
+ * - errorCount: Integer [Required, Default: 0]
+ * - pausedAt: Datetime
+ * - resumePosition: Integer
+ * - minDelayMs: Integer [Required, Default: 60000]
+ * - maxDelayMs: Integer [Required, Default: 180000]
+ * - gaussianMean: Float
+ * - gaussianStdDev: Float
+ * - allowCatchAll: Boolean [Required, Default: false]
+ * - lastActivityAt: Datetime
+ * - completedAt: Datetime
+ */

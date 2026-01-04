@@ -1,0 +1,16 @@
+{
+    "name": "pivotr-mailer-migrations",
+    "version": "1.0.0",
+    "description": "Database migrations for Pivotr Mailer",
+    "type": "module",
+    "scripts": {
+        "migrate": "bun run run.ts"
+    },
+    "dependencies": {
+        "node-appwrite": "^14.0.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "typescript": "^5.0.0"
+    }
+}
