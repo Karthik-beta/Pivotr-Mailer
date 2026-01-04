@@ -1,11 +1,11 @@
 /**
  * Template Variable Injector
- * 
+ *
  * Injects dynamic variables into email templates after Spintax resolution.
- * 
+ *
  * Variables use double curly braces: {{VariableName}}
  * This is distinct from Spintax which uses single braces: {option1|option2}
- * 
+ *
  * @example
  * injectVariables("Hello {{FirstName}} from {{Company}}!", {
  *   firstName: "Rajesh",
@@ -20,13 +20,13 @@ import type { Lead } from '../../../shared/types/lead.types';
  * Standard template variables available for injection
  */
 export interface TemplateVariables {
-    firstName: string;
-    fullName: string;
-    company: string;
-    email: string;
-    unsubscribeLink: string;
-    /** Index signature for extensibility and log.types.ts compatibility */
-    [key: string]: string;
+	firstName: string;
+	fullName: string;
+	company: string;
+	email: string;
+	unsubscribeLink: string;
+	/** Index signature for extensibility and log.types.ts compatibility */
+	[key: string]: string;
 }
 
 /**
@@ -42,72 +42,60 @@ export const REQUIRED_VARIABLES = ['UnsubscribeLink'];
 /**
  * All available variable names
  */
-export const AVAILABLE_VARIABLES = [
-    'FirstName',
-    'FullName',
-    'Company',
-    'Email',
-    'UnsubscribeLink',
-];
+export const AVAILABLE_VARIABLES = ['FirstName', 'FullName', 'Company', 'Email', 'UnsubscribeLink'];
 
 /**
  * Inject template variables into a resolved template.
  */
-export function injectVariables(
-    template: string,
-    variables: VariableMap
-): string {
-    if (!template) return '';
+export function injectVariables(template: string, variables: VariableMap): string {
+	if (!template) return '';
 
-    // Create case-insensitive lookup
-    const normalizedVars: VariableMap = {};
-    for (const [key, value] of Object.entries(variables)) {
-        normalizedVars[key.toLowerCase()] = value;
-    }
+	// Create case-insensitive lookup
+	const normalizedVars: VariableMap = {};
+	for (const [key, value] of Object.entries(variables)) {
+		normalizedVars[key.toLowerCase()] = value;
+	}
 
-    // Replace all {{Variable}} patterns
-    return template.replace(/\{\{(\w+)\}\}/g, (_match, varName: string) => {
-        const value = normalizedVars[varName.toLowerCase()];
-        return value !== undefined ? value : `{{${varName}}}`; // Keep original if not found
-    });
+	// Replace all {{Variable}} patterns
+	return template.replace(/\{\{(\w+)\}\}/g, (_match, varName: string) => {
+		const value = normalizedVars[varName.toLowerCase()];
+		return value !== undefined ? value : `{{${varName}}}`; // Keep original if not found
+	});
 }
 
 /**
  * Build template variables from a Lead document.
  */
-export function buildTemplateVariables(
-    lead: Lead,
-    unsubscribeLink: string
-): TemplateVariables {
-    return {
-        firstName: lead.parsedFirstName || extractFirstWord(lead.fullName),
-        fullName: lead.fullName,
-        company: lead.companyName,
-        email: lead.email,
-        unsubscribeLink,
-    };
+export function buildTemplateVariables(lead: Lead, unsubscribeLink: string): TemplateVariables {
+	return {
+		firstName: lead.parsedFirstName || extractFirstWord(lead.fullName),
+		fullName: lead.fullName,
+		company: lead.companyName,
+		email: lead.email,
+		unsubscribeLink,
+	};
 }
 
 /**
  * Convert TemplateVariables to a VariableMap for injection.
  */
 export function templateVariablesToMap(vars: TemplateVariables): VariableMap {
-    return {
-        firstname: vars.firstName,
-        fullname: vars.fullName,
-        company: vars.company,
-        email: vars.email,
-        unsubscribelink: vars.unsubscribeLink,
-    };
+	return {
+		firstname: vars.firstName,
+		fullname: vars.fullName,
+		company: vars.company,
+		email: vars.email,
+		unsubscribelink: vars.unsubscribeLink,
+	};
 }
 
 /**
  * Extract first word from a string as fallback for firstName.
  */
 function extractFirstWord(text: string): string {
-    if (!text) return '';
-    const words = text.trim().split(/\s+/);
-    return words[0] || '';
+	if (!text) return '';
+	const words = text.trim().split(/\s+/);
+	return words[0] || '';
 }
 
 /**
@@ -115,74 +103,70 @@ function extractFirstWord(text: string): string {
  * Returns an array of missing variable names.
  */
 export function validateRequiredVariables(template: string): string[] {
-    const missing: string[] = [];
+	const missing: string[] = [];
 
-    for (const varName of REQUIRED_VARIABLES) {
-        const regex = new RegExp(`\\{\\{${varName}\\}\\}`, 'i');
-        if (!regex.test(template)) {
-            missing.push(varName);
-        }
-    }
+	for (const varName of REQUIRED_VARIABLES) {
+		const regex = new RegExp(`\\{\\{${varName}\\}\\}`, 'i');
+		if (!regex.test(template)) {
+			missing.push(varName);
+		}
+	}
 
-    return missing;
+	return missing;
 }
 
 /**
  * Extract all variable names used in a template.
  */
 export function extractVariables(template: string): string[] {
-    const variables: Set<string> = new Set();
-    const regex = /\{\{(\w+)\}\}/g;
-    let match;
+	const variables: Set<string> = new Set();
+	const regex = /\{\{(\w+)\}\}/g;
+	let match;
 
-    while ((match = regex.exec(template)) !== null) {
-        variables.add(match[1]);
-    }
+	while ((match = regex.exec(template)) !== null) {
+		variables.add(match[1]);
+	}
 
-    return Array.from(variables);
+	return Array.from(variables);
 }
 
 /**
  * Generate an unsubscribe link with HMAC token.
  */
 export function generateUnsubscribeLink(
-    baseUrl: string,
-    functionId: string,
-    leadId: string,
-    secret: string
+	baseUrl: string,
+	functionId: string,
+	leadId: string,
+	secret: string
 ): string {
-    const token = generateHmacToken(leadId, secret);
-    return `${baseUrl}/v1/functions/${functionId}/executions?leadId=${encodeURIComponent(leadId)}&token=${encodeURIComponent(token)}`;
+	const token = generateHmacToken(leadId, secret);
+	return `${baseUrl}/v1/functions/${functionId}/executions?leadId=${encodeURIComponent(leadId)}&token=${encodeURIComponent(token)}`;
 }
 
 /**
  * Generate HMAC-SHA256 token for unsubscribe link.
  */
 function generateHmacToken(data: string, secret: string): string {
-    // In actual implementation, use crypto.subtle.sign or a library
-    // This is a placeholder that should be replaced with actual HMAC
-    const encoder = new TextEncoder();
-    const dataBytes = encoder.encode(data);
-    const keyBytes = encoder.encode(secret);
+	// In actual implementation, use crypto.subtle.sign or a library
+	// This is a placeholder that should be replaced with actual HMAC
+	const encoder = new TextEncoder();
+	const dataBytes = encoder.encode(data);
+	const keyBytes = encoder.encode(secret);
 
-    // Simple hash for now (replace with actual HMAC in production)
-    let hash = 0;
-    for (let i = 0; i < dataBytes.length; i++) {
-        hash = ((hash << 5) - hash + dataBytes[i] + keyBytes[i % keyBytes.length]) | 0;
-    }
+	// Simple hash for now (replace with actual HMAC in production)
+	let hash = 0;
+	for (let i = 0; i < dataBytes.length; i++) {
+		hash = ((hash << 5) - hash + dataBytes[i] + keyBytes[i % keyBytes.length]) | 0;
+	}
 
-    // Convert to hex string
-    return Math.abs(hash).toString(16).padStart(8, '0');
+	// Convert to hex string
+	return Math.abs(hash).toString(16).padStart(8, '0');
 }
 
 /**
  * Verify an unsubscribe token.
  */
-export function verifyUnsubscribeToken(
-    leadId: string,
-    token: string,
-    secret: string
-): boolean {
-    const expectedToken = generateHmacToken(leadId, secret);
-    return token === expectedToken;
+export function verifyUnsubscribeToken(leadId: string, token: string, secret: string): boolean {
+	const expectedToken = generateHmacToken(leadId, secret);
+	return token === expectedToken;
 }

@@ -1,0 +1,281 @@
+biome.json:2:13 deserialize ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  i The configuration schema version does not match the CLI version 2.3.11
+  
+    1 Γöé {
+  > 2 Γöé 	"$schema": "https://biomejs.dev/schemas/2.2.4/schema.json",
+      Γöé 	           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    3 Γöé 	"vcs": {
+    4 Γöé 		"enabled": true,
+  
+  i   Expected:                     2.3.11
+      Found:                        2.2.4
+  
+  
+  i Run the command biome migrate to migrate the configuration file.
+  
+
+frontend\src\features\dashboard\hooks\use-dashboard.ts:52:47 lint/suspicious/noExplicitAny ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ! Unexpected any. Specify a different type.
+  
+    50 Γöé 		(response) => {
+    51 Γöé 			// If the event is for the active campaign, update it
+  > 52 Γöé 			if (activeCampaign && (response.payload as any).$id === activeCampaign.$id) {
+       Γöé 			                                           ^^^
+    53 Γöé 				setActiveCampaign(response.payload as unknown as Campaign);
+    54 Γöé 			}
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+frontend\src\features\settings\hooks\use-settings.ts:24:20 lint/suspicious/noExplicitAny ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ! Unexpected any. Specify a different type.
+  
+    22 Γöé 				);
+    23 Γöé 				return response as unknown as Settings;
+  > 24 Γöé 			} catch (error: any) {
+       Γöé 			                ^^^
+    25 Γöé 				if (error.code === 404) {
+    26 Γöé 					return null; // Handle missing settings (e.g. prompt init)
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+frontend\src\features\audit-logs\components\audit-logs-table.tsx:253:39 lint/suspicious/noArrayIndexKey ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Avoid using the index of an array as key property in an element.
+  
+    251 Γöé 					<TableBody>
+    252 Γöé 						{[...Array(10)].map((_, i) => (
+  > 253 Γöé 							<TableRow key={`skeleton-row-${i}`}>
+        Γöé 							                               ^
+    254 Γöé 								<TableCell>
+    255 Γöé 									<Skeleton className="h-4 w-4" />
+  
+  i This is the source of the key value.
+  
+    250 Γöé 					</TableHeader>
+    251 Γöé 					<TableBody>
+  > 252 Γöé 						{[...Array(10)].map((_, i) => (
+        Γöé 						                        ^
+    253 Γöé 							<TableRow key={`skeleton-row-${i}`}>
+    254 Γöé 								<TableCell>
+  
+  i The order of the items may change, and this also affects performances and component state.
+  
+  i Check the React documentation. 
+  
+
+frontend\src\features\leads\components\leads-table.tsx:206:39 lint/suspicious/noArrayIndexKey ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Avoid using the index of an array as key property in an element.
+  
+    204 Γöé 					<TableBody>
+    205 Γöé 						{[...Array(5)].map((_, i) => (
+  > 206 Γöé 							<TableRow key={`skeleton-row-${i}`}>
+        Γöé 							                               ^
+    207 Γöé 								<TableCell>
+    208 Γöé 									<Skeleton className="h-4 w-32" />
+  
+  i This is the source of the key value.
+  
+    203 Γöé 					</TableHeader>
+    204 Γöé 					<TableBody>
+  > 205 Γöé 						{[...Array(5)].map((_, i) => (
+        Γöé 						                       ^
+    206 Γöé 							<TableRow key={`skeleton-row-${i}`}>
+    207 Γöé 								<TableCell>
+  
+  i The order of the items may change, and this also affects performances and component state.
+  
+  i Check the React documentation. 
+  
+
+frontend\src\features\templates\components\live-preview.tsx:86:28 lint/suspicious/noArrayIndexKey ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Avoid using the index of an array as key property in an element.
+  
+    84 Γöé 						<div className="space-y-1">
+    85 Γöé 							{preview.errors.map((err, i) => (
+  > 86 Γöé 								<div key={`error-${i}`}>{err}</div>
+       Γöé 								                   ^
+    87 Γöé 							))}
+    88 Γöé 						</div>
+  
+  i This is the source of the key value.
+  
+    83 Γöé 						<AlertCircle className="h-4 w-4 shrink-0" />
+    84 Γöé 						<div className="space-y-1">
+  > 85 Γöé 							{preview.errors.map((err, i) => (
+       Γöé 							                          ^
+    86 Γöé 								<div key={`error-${i}`}>{err}</div>
+    87 Γöé 							))}
+  
+  i The order of the items may change, and this also affects performances and component state.
+  
+  i Check the React documentation. 
+  
+
+frontend\src\routes\index.tsx:197:33 lint/suspicious/noArrayIndexKey ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Avoid using the index of an array as key property in an element.
+  
+    195 Γöé 			<div className="grid gap-4 md:grid-cols-4">
+    196 Γöé 				{[...Array(4)].map((_, i) => (
+  > 197 Γöé 					<Skeleton key={`skeleton-${i}`} className="h-32 w-full" />
+        Γöé 					                           ^
+    198 Γöé 				))}
+    199 Γöé 			</div>
+  
+  i This is the source of the key value.
+  
+    194 Γöé 			</div>
+    195 Γöé 			<div className="grid gap-4 md:grid-cols-4">
+  > 196 Γöé 				{[...Array(4)].map((_, i) => (
+        Γöé 				                       ^
+    197 Γöé 					<Skeleton key={`skeleton-${i}`} className="h-32 w-full" />
+    198 Γöé 				))}
+  
+  i The order of the items may change, and this also affects performances and component state.
+  
+  i Check the React documentation. 
+  
+
+frontend\src\styles.css:4:2 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Tailwind-specific syntax is disabled.
+  
+    2 Γöé @import "tw-animate-css";
+    3 Γöé 
+  > 4 Γöé @custom-variant dark (&:is(.dark *));
+      Γöé  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    5 Γöé 
+    6 Γöé summary::-webkit-details-marker {
+  
+  i Enable `tailwindDirectives` in the css parser options, or remove this if you are not using Tailwind CSS.
+  
+
+frontend\src\styles.css:25:2 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Tailwind-specific syntax is disabled.
+  
+    23 Γöé }
+    24 Γöé 
+  > 25 Γöé @theme inline {
+       Γöé  ^^^^^^^^^^^^^^
+  > 26 Γöé   --radius-sm: calc(var(--radius) - 4px);
+        ...
+  > 63 Γöé   --color-sidebar-ring: var(--sidebar-ring);
+  > 64 Γöé }
+       Γöé ^
+    65 Γöé 
+    66 Γöé :root {
+  
+  i Enable `tailwindDirectives` in the css parser options, or remove this if you are not using Tailwind CSS.
+  
+
+frontend\src\styles.css:137:6 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Tailwind-specific syntax is disabled.
+  
+    135 Γöé @layer base {
+    136 Γöé   * {
+  > 137 Γöé     @apply border-border outline-ring/50;
+        Γöé      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    138 Γöé   }
+    139 Γöé   body {
+  
+  i Enable `tailwindDirectives` in the css parser options, or remove this if you are not using Tailwind CSS.
+  
+
+frontend\src\styles.css:140:6 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Tailwind-specific syntax is disabled.
+  
+    138 Γöé   }
+    139 Γöé   body {
+  > 140 Γöé     @apply bg-background text-foreground;
+        Γöé      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    141 Γöé   }
+    142 Γöé }
+  
+  i Enable `tailwindDirectives` in the css parser options, or remove this if you are not using Tailwind CSS.
+  
+
+frontend\src\styles.css:4:2 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Tailwind-specific syntax is disabled.
+  
+    2 Γöé @import "tw-animate-css";
+    3 Γöé 
+  > 4 Γöé @custom-variant dark (&:is(.dark *));
+      Γöé  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    5 Γöé 
+    6 Γöé summary::-webkit-details-marker {
+  
+  i Enable `tailwindDirectives` in the css parser options, or remove this if you are not using Tailwind CSS.
+  
+
+frontend\src\styles.css:25:2 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Tailwind-specific syntax is disabled.
+  
+    23 Γöé }
+    24 Γöé 
+  > 25 Γöé @theme inline {
+       Γöé  ^^^^^^^^^^^^^^
+  > 26 Γöé   --radius-sm: calc(var(--radius) - 4px);
+        ...
+  > 63 Γöé   --color-sidebar-ring: var(--sidebar-ring);
+  > 64 Γöé }
+       Γöé ^
+    65 Γöé 
+    66 Γöé :root {
+  
+  i Enable `tailwindDirectives` in the css parser options, or remove this if you are not using Tailwind CSS.
+  
+
+frontend\src\styles.css:137:6 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Tailwind-specific syntax is disabled.
+  
+    135 Γöé @layer base {
+    136 Γöé   * {
+  > 137 Γöé     @apply border-border outline-ring/50;
+        Γöé      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    138 Γöé   }
+    139 Γöé   body {
+  
+  i Enable `tailwindDirectives` in the css parser options, or remove this if you are not using Tailwind CSS.
+  
+
+frontend\src\styles.css:140:6 parse ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Tailwind-specific syntax is disabled.
+  
+    138 Γöé   }
+    139 Γöé   body {
+  > 140 Γöé     @apply bg-background text-foreground;
+        Γöé      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    141 Γöé   }
+    142 Γöé }
+  
+  i Enable `tailwindDirectives` in the css parser options, or remove this if you are not using Tailwind CSS.
+  
+
+frontend\src\styles.css format ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Code formatting aborted due to parsing errors. To format code with errors, enable the 'formatter.formatWithErrors' option.
+  
+
+Checked 79 files in 352ms. No fixes applied.
+Found 13 errors.
+Found 2 warnings.
+Found 1 info.
+check ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
+
+  ├ù Some errors were emitted while running checks.
+  
+

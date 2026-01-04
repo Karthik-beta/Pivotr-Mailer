@@ -1,9 +1,9 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { RootLayout } from "@/features/shared/layouts/root-layout";
 
 import appCss from "../styles.css?url";
-import "@appwrite.io/pink-icons";
 
 export const Route = createRootRoute({
 	head: () => ({
@@ -48,14 +48,14 @@ export const Route = createRootRoute({
 	shellComponent: RootDocument,
 });
 
-function RootDocument({ children }: { children: React.ReactNode }) {
+function RootDocument() {
 	return (
 		<html lang="en">
 			<head>
 				<HeadContent />
 			</head>
-			<body className="bg-[#FAFAFB] font-[Inter] text-sm text-[#56565C]">
-				{children}
+			<body className="bg-background font-sans antialiased text-foreground">
+				<RootLayout />
 				<TanStackDevtools
 					config={{
 						position: "bottom-right",

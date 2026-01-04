@@ -1,93 +1,104 @@
 /**
  * Migration 002: Create Leads Collection
- * 
+ *
  * Creates the leads collection with all attributes defined in the schema.
  */
-import { Client, Databases } from 'node-appwrite';
-import { DATABASE_ID, CollectionId } from '../shared/constants/collection.constants';
-import { LeadStatus } from '../shared/constants/status.constants';
+import { type Client, Databases } from "node-appwrite";
+import { CollectionId, DATABASE_ID } from "../shared/constants/collection.constants";
+import { LeadStatus } from "../shared/constants/status.constants";
 
 export async function createLeadsCollection(client: Client): Promise<void> {
-    const databases = new Databases(client);
-    const collectionId = CollectionId.LEADS;
+	const databases = new Databases(client);
+	const collectionId = CollectionId.LEADS;
 
-    try {
-        await databases.getCollection(DATABASE_ID, collectionId);
-        console.log(`Collection '${collectionId}' already exists. Skipping.`);
-        return;
-    } catch {
-        // Collection doesn't exist, create it
-    }
+	try {
+		await databases.getCollection(DATABASE_ID, collectionId);
+		console.log(`Collection '${collectionId}' already exists. Skipping.`);
+		return;
+	} catch {
+		// Collection doesn't exist, create it
+	}
 
-    // Create collection
-    await databases.createCollection(
-        DATABASE_ID,
-        collectionId,
-        'Leads',
-        undefined, // permissions (inherit from database)
-        true,      // documentSecurity
-        true       // enabled
-    );
+	// Create collection
+	await databases.createCollection(
+		DATABASE_ID,
+		collectionId,
+		"Leads",
+		undefined, // permissions (inherit from database)
+		true, // documentSecurity
+		true // enabled
+	);
 
-    console.log(`Collection '${collectionId}' created. Adding attributes...`);
+	console.log(`Collection '${collectionId}' created. Adding attributes...`);
 
-    // String attributes
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'fullName', 255, true);
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'parsedFirstName', 100, false);
-    await databases.createEmailAttribute(DATABASE_ID, collectionId, 'email', true);
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'companyName', 255, true);
+	// String attributes
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "fullName", 255, true);
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "parsedFirstName", 100, false);
+	await databases.createEmailAttribute(DATABASE_ID, collectionId, "email", true);
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "companyName", 255, true);
 
-    // Status enum
-    await databases.createEnumAttribute(
-        DATABASE_ID,
-        collectionId,
-        'status',
-        Object.values(LeadStatus),
-        true,
-        LeadStatus.PENDING_IMPORT
-    );
+	// Status enum
+	await databases.createEnumAttribute(
+		DATABASE_ID,
+		collectionId,
+		"status",
+		Object.values(LeadStatus),
+		true,
+		LeadStatus.PENDING_IMPORT
+	);
 
-    // Verification fields
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'verificationResult', 50, false);
-    await databases.createDatetimeAttribute(DATABASE_ID, collectionId, 'verificationTimestamp', false);
+	// Verification fields
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "verificationResult", 50, false);
+	await databases.createDatetimeAttribute(
+		DATABASE_ID,
+		collectionId,
+		"verificationTimestamp",
+		false
+	);
 
-    // SES fields
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'sesMessageId', 100, false);
+	// SES fields
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "sesMessageId", 100, false);
 
-    // Bounce/Complaint fields
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'bounceType', 50, false);
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'bounceSubType', 50, false);
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'complaintFeedbackType', 50, false);
+	// Bounce/Complaint fields
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "bounceType", 50, false);
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "bounceSubType", 50, false);
+	await databases.createStringAttribute(
+		DATABASE_ID,
+		collectionId,
+		"complaintFeedbackType",
+		50,
+		false
+	);
 
-    // Campaign relationship
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'campaignId', 36, false);
-    await databases.createIntegerAttribute(DATABASE_ID, collectionId, 'queuePosition', false);
+	// Campaign relationship
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "campaignId", 36, false);
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "queuePosition", false);
 
-    // Processing timestamps
-    await databases.createDatetimeAttribute(DATABASE_ID, collectionId, 'processingStartedAt', false);
-    await databases.createDatetimeAttribute(DATABASE_ID, collectionId, 'processedAt', false);
+	// Processing timestamps
+	await databases.createDatetimeAttribute(DATABASE_ID, collectionId, "processingStartedAt", false);
+	await databases.createDatetimeAttribute(DATABASE_ID, collectionId, "processedAt", false);
 
-    // Error handling
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'errorMessage', 1000, false);
+	// Error handling
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "errorMessage", 1000, false);
 
-    // Unsubscribe (GDPR/CAN-SPAM compliance)
-    await databases.createBooleanAttribute(DATABASE_ID, collectionId, 'isUnsubscribed', true, false);
-    await databases.createDatetimeAttribute(DATABASE_ID, collectionId, 'unsubscribedAt', false);
+	// Unsubscribe (GDPR/CAN-SPAM compliance)
+	await databases.createBooleanAttribute(DATABASE_ID, collectionId, "isUnsubscribed", true, false);
+	await databases.createDatetimeAttribute(DATABASE_ID, collectionId, "unsubscribedAt", false);
 
-    // Extensible metadata
-    // Note: Appwrite doesn't have a native JSON type, using string for flexibility
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'metadata', 10000, false);
+	// Extensible metadata
+	// Note: Appwrite doesn't have a native JSON type, using string for flexibility
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "metadata", 10000, false);
 
-    console.log(`Collection '${collectionId}' created with all attributes.`);
+	console.log(`Collection '${collectionId}' created with all attributes.`);
 }
 
 /**
  * Appwrite Console Instructions (Manual)
- * 
+ *
  * Collection ID: leads
  * Collection Name: Leads
  * Document Security: Enabled
- * 
+ *
  * Attributes:
  * - fullName: String (255) [Required]
  * - parsedFirstName: String (100)

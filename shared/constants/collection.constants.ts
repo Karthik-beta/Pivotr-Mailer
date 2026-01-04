@@ -1,43 +1,48 @@
 /**
  * Appwrite Collection Constants
- * 
+ *
  * Contains database and collection IDs for Appwrite.
  * Update these values after creating collections in Appwrite Console.
  */
 
 /** Database ID for Pivotr Mailer */
-export const DATABASE_ID = 'pivotr_mailer';
+export const DATABASE_ID = "pivotr_mailer";
 
 /** Collection IDs */
 export const CollectionId = {
-    LEADS: 'leads',
-    CAMPAIGNS: 'campaigns',
-    LOGS: 'logs',
-    METRICS: 'metrics',
-    SETTINGS: 'settings',
+	LEADS: "leads",
+	CAMPAIGNS: "campaigns",
+	LOGS: "logs",
+	METRICS: "metrics",
+	SETTINGS: "settings",
 } as const;
 
-export type CollectionIdType = typeof CollectionId[keyof typeof CollectionId];
+export type CollectionIdType = (typeof CollectionId)[keyof typeof CollectionId];
+
+/** Storage Bucket IDs */
+export const BucketId = {
+	CSV_IMPORTS: "csv-imports",
+} as const;
 
 /**
  * Settings Document ID
- * 
+ *
  * The settings collection uses a singleton pattern with a fixed document ID.
  */
-export const SETTINGS_DOCUMENT_ID = 'global_settings';
+export const SETTINGS_DOCUMENT_ID = "global_settings";
 
 /**
  * Global Metrics Document ID
- * 
+ *
  * The global metrics document uses a fixed ID.
  */
-export const GLOBAL_METRICS_ID = 'global_metrics';
+export const GLOBAL_METRICS_ID = "global_metrics";
 
 /**
  * Redis Key Prefixes for Campaign Locking
  */
 export const RedisKeyPrefix = {
-    CAMPAIGN_LOCK: 'pivotr:lock:campaign:',
+	CAMPAIGN_LOCK: "pivotr:lock:campaign:",
 } as const;
 
 /**

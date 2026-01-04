@@ -17,12 +17,12 @@
  * ╚═══════════════════════════════════════════════════════════════════════════╝
  */
 
-export * from './001_create_database';
-export * from './002_create_leads';
-export * from './003_create_campaigns';
-export * from './004_create_logs';
-export * from './005_create_metrics';
-export * from './006_create_settings';
-export * from './007_create_indexes';
-export * from './008_seed_initial_data';
-export * from './009_create_locks';
+export * from "./001_create_database";
+export * from "./002_create_leads";
+export * from "./003_create_campaigns";
+export * from "./004_create_logs";
+export * from "./005_create_metrics";
+export * from "./006_create_settings";
+export * from "./007_create_indexes";
+export * from "./008_seed_initial_data";
+export * from "./009_create_locks";

@@ -1,321 +1,206 @@
+import { CampaignStatus } from "@shared/constants/status.constants";
 import { createFileRoute } from "@tanstack/react-router";
-import { AppwriteException } from "appwrite";
-import { useCallback, useEffect, useRef, useState } from "react";
-import AppwriteSvg from "../../public/appwrite.svg";
-import TanStackStartLogo from "../../public/tanstack-circle-logo.png";
-import { client } from "../lib/appwrite";
+import { format } from "date-fns";
+import { AlertTriangle, CheckCircle, Clock, Database, Mail, Zap } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CampaignControls } from "@/features/dashboard/components/campaign-controls";
+import { DashboardConsole } from "@/features/dashboard/components/dashboard-console";
+import { MetricCard } from "@/features/dashboard/components/metric-card";
+import { useDashboard } from "@/features/dashboard/hooks/use-dashboard";
 
-export const Route = createFileRoute("/")({ component: App });
+export const Route = createFileRoute("/")({ component: Dashboard });
 
-type Log = {
-	date: Date;
-	method: string;
-	path: string;
-	status: number;
-	response: string;
-};
+function Dashboard() {
+	const { activeCampaign, recentLogs, isLoading, updateCampaignStatus } = useDashboard();
 
-function App() {
-	const [detailHeight, setDetailHeight] = useState(55);
-	const [logs, setLogs] = useState<Log[]>([]);
-	const [status, setStatus] = useState("idle");
-	const [showLogs, setShowLogs] = useState(false);
-
-	const detailsRef = useRef<HTMLDetailsElement>(null);
-
-	const updateHeight = useCallback(() => {
-		if (detailsRef.current && logs !== undefined && showLogs !== undefined) {
-			setDetailHeight(detailsRef.current.clientHeight);
-		}
-	}, [logs, showLogs]);
-
-	useEffect(() => {
-		updateHeight();
-		window.addEventListener("resize", updateHeight);
-		return () => window.removeEventListener("resize", updateHeight);
-	}, [updateHeight]);
-
-	useEffect(() => {
-		if (!detailsRef.current) return;
-		detailsRef.current.addEventListener("toggle", updateHeight);
-
-		return () => {
-			if (!detailsRef.current) return;
-			detailsRef.current.removeEventListener("toggle", updateHeight);
-		};
-	}, [updateHeight]);
-
-	async function sendPing() {
-		if (status === "loading") return;
-		setStatus("loading");
-		try {
-			const result = await client.ping();
-			const log = {
-				date: new Date(),
-				method: "GET",
-				path: "/v1/ping",
-				status: 200,
-				response: JSON.stringify(result),
-			};
-			setLogs((prevLogs) => [log, ...prevLogs]);
-			setStatus("success");
-		} catch (err) {
-			const log = {
-				date: new Date(),
-				method: "GET",
-				path: "/v1/ping",
-				status: err instanceof AppwriteException ? err.code : 500,
-				response:
-					err instanceof AppwriteException
-						? err.message
-						: "Something went wrong",
-			};
-			setLogs((prevLogs) => [log, ...prevLogs]);
-			setStatus("error");
-		}
-		setShowLogs(true);
+	if (isLoading) {
+		return <DashboardSkeleton />;
 	}
 
+	// Derived Stats
+	const sentCount = activeCampaign?.processedCount || 0;
+	const errorCount = activeCampaign?.errorCount || 0;
+	const skippedCount = activeCampaign?.skippedCount || 0; // Filtered/Invalid
+	const totalLeads = activeCampaign?.totalLeads || 0;
+
+	// Example calculation for Queue: Total - (Sent + Error + Skipped)
+	// If campaign is fresh, Queue = Total.
+	const processedTotal = sentCount + errorCount + skippedCount;
+	const queueCount = Math.max(0, totalLeads - processedTotal);
+
+	// Delivery Rate (Sent / Processed)
+	const deliveryRate = processedTotal > 0 ? Math.round((sentCount / processedTotal) * 100) : 0;
+
 	return (
-		<main
-			className="checker-background flex flex-col items-center p-5"
-			style={{ marginBottom: `${detailHeight}px` }}
-		>
-			{/* Half-pixel translates solves pixel-perfect centering */}
-			<div className="mt-25 flex w-full max-w-[40em] items-center justify-center lg:mt-34 translate-x-[0.5px]">
-				<div className="rounded-[25%] border border-[#19191C0A] bg-[#F9F9FA] p-3 shadow-[0px_9.36px_9.36px_0px_hsla(0,0%,0%,0.04)]">
-					<div className="rounded-[25%] border border-[#FAFAFB] bg-white p-5 shadow-[0px_2px_12px_0px_hsla(0,0%,0%,0.03)] lg:p-9">
-						<img
-							alt={"TanStack Start logo"}
-							src={TanStackStartLogo}
-							className="h-14 w-14"
-							width={56}
-							height={56}
-						/>
-					</div>
-				</div>
-				<div
-					className={`flex w-38 items-center transition-opacity duration-2500 ${status === "success" ? "opacity-100" : "opacity-0"}`}
-				>
-					<div className="to-[rgba(253, 54, 110, 0.15)] h-px flex-1 bg-linear-to-l from-[#f02e65]"></div>
-					<div className="icon-check flex h-5 w-5 items-center justify-center rounded-full border border-[#FD366E52] bg-[#FD366E14] text-[#FD366E]"></div>
-					<div className="to-[rgba(253, 54, 110, 0.15)] h-px flex-1 bg-linear-to-r from-[#f02e65]"></div>
-				</div>
-				<div className="rounded-[25%] border border-[#19191C0A] bg-[#F9F9FA] p-3 shadow-[0px_9.36px_9.36px_0px_hsla(0,0%,0%,0.04)]">
-					<div className="rounded-[25%] border border-[#FAFAFB] bg-white p-5 shadow-[0px_2px_12px_0px_hsla(0,0%,0%,0.03)] lg:p-9">
-						<img
-							alt={"Appwrite logo"}
-							src={AppwriteSvg}
-							className="h-14 w-14"
-							width={56}
-							height={56}
-						/>
-					</div>
-				</div>
-			</div>
-
-			<section className="mt-12 flex h-52 flex-col items-center">
-				{status === "loading" ? (
-					<div className="flex flex-row gap-4">
-						<output>
-							<svg
-								aria-hidden="true"
-								className="h-5 w-5 animate-spin fill-[#FD366E] text-gray-200 dark:text-gray-600"
-								viewBox="0 0 100 101"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-							>
-								<path
-									d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
-									fill="currentColor"
-								/>
-								<path
-									d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
-									fill="currentFill"
-								/>
-							</svg>
-							<span className="sr-only">Loading...</span>
-						</output>
-						<span>Waiting for connection...</span>
-					</div>
-				) : status === "success" ? (
-					<h1 className="font-[Poppins] text-2xl font-light text-[#2D2D31]">
-						Congratulations!
-					</h1>
-				) : (
-					<h1 className="font-[Poppins] text-2xl font-light text-[#2D2D31]">
-						Check connection
-					</h1>
-				)}
-
-				<p className="mt-2 mb-8">
-					{status === "success" ? (
-						<span>You connected your app successfully.</span>
-					) : status === "error" || status === "idle" ? (
-						<span>Send a ping to verify the connection</span>
-					) : null}
-				</p>
-
-				<button
-					onClick={sendPing}
-					type="button"
-					className={`cursor-pointer rounded-md bg-[#FD366E] px-2.5 py-1.5 ${status === "loading" ? "hidden" : "visible"}`}
-				>
-					<span className="text-white">Send a ping</span>
-				</button>
-			</section>
-
-			<div className="grid grid-rows-3 gap-7 lg:grid-cols-3 lg:grid-rows-none">
-				<div className="flex h-full w-72 flex-col gap-2 rounded-md border border-[#EDEDF0] bg-white p-4">
-					<h2 className="text-xl font-light text-[#2D2D31]">Edit your app</h2>
-					<p>
-						Edit{" "}
-						<code className="rounded-sm bg-[#EDEDF0] p-1">
-							src/routes/index.tsx
-						</code>{" "}
-						to get started with building your app.
+		<div className="p-6 space-y-6 max-w-[1600px] mx-auto">
+			{/* Header Area */}
+			<div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+				<div>
+					<h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+					<p className="text-muted-foreground mt-1">
+						{activeCampaign ? (
+							<>
+								Active Campaign:{" "}
+								<span className="font-medium text-foreground">{activeCampaign.name}</span>
+							</>
+						) : (
+							"No active campaigns found."
+						)}
 					</p>
 				</div>
-				<a
-					href="https://cloud.appwrite.io"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					<div className="flex h-full w-72 flex-col gap-2 rounded-md border border-[#EDEDF0] bg-white p-4">
-						<div className="flex flex-row items-center justify-between">
-							<h2 className="text-xl font-light text-[#2D2D31]">
-								Go to console
-							</h2>
-							<span className="icon-arrow-right text-[#D8D8DB]"></span>
-						</div>
-						<p>
-							Navigate to the console to control and oversee the Appwrite
-							services.
-						</p>
-					</div>
-				</a>
 
-				<a
-					href="https://appwrite.io/docs"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					<div className="flex h-full w-72 flex-col gap-2 rounded-md border border-[#EDEDF0] bg-white p-4">
-						<div className="flex flex-row items-center justify-between">
-							<h2 className="text-xl font-light text-[#2D2D31]">
-								Explore docs
-							</h2>
-							<span className="icon-arrow-right text-[#D8D8DB]"></span>
+				{/* Campaign Controls */}
+				{activeCampaign && (
+					<div className="flex items-center gap-4 bg-card border rounded-lg p-2 shadow-sm">
+						<div className="px-2 text-sm font-medium border-r pr-4 mr-2">
+							Status: <StatusBadge status={activeCampaign.status} />
 						</div>
-						<p>
-							Discover the full power of Appwrite by diving into our
-							documentation.
-						</p>
+						<CampaignControls status={activeCampaign.status} onAction={updateCampaignStatus} />
 					</div>
-				</a>
+				)}
 			</div>
 
-			<aside className="fixed bottom-0 flex w-full cursor-pointer border-t border-[#EDEDF0] bg-white">
-				<details open={showLogs} ref={detailsRef} className={"w-full"}>
-					<summary className="flex w-full flex-row justify-between p-4 marker:content-none">
-						<div className="flex gap-2">
-							<span className="font-semibold">Logs</span>
-							{logs.length > 0 && (
-								<div className="flex items-center rounded-md bg-[#E6E6E6] px-2">
-									<span className="font-semibold">{logs.length}</span>
+			{/* KPI Grid */}
+			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+				<MetricCard
+					label="Delivered"
+					value={sentCount}
+					icon={CheckCircle}
+					subtext={`${deliveryRate}% Success Rate`}
+					trend="up"
+				/>
+				<MetricCard
+					label="Queued"
+					value={queueCount}
+					icon={Clock}
+					subtext="Remaining in pipeline"
+				/>
+				<MetricCard
+					label="Skipped / Invalid"
+					value={skippedCount}
+					icon={AlertTriangle}
+					color="text-yellow-500"
+					subtext="Filtered by verification"
+				/>
+				<MetricCard
+					label="Errors"
+					value={errorCount}
+					icon={Zap}
+					color="text-red-500"
+					subtext="Failed attempts"
+				/>
+			</div>
+
+			{/* Main Content Area */}
+			<div className="grid gap-6 lg:grid-cols-3">
+				{/* Left Column: Details (Expandable in future) */}
+				<div className="space-y-6">
+					<div className="bg-card border rounded-xl p-6 shadow-sm">
+						<h3 className="font-semibold mb-4 flex items-center gap-2">
+							<Mail className="h-4 w-4" /> Campaign Details
+						</h3>
+						{activeCampaign ? (
+							<div className="space-y-4 text-sm">
+								<div className="flex justify-between py-2 border-b">
+									<span className="text-muted-foreground">Sender</span>
+									<span className="font-mono">{activeCampaign.senderEmail}</span>
 								</div>
-							)}
-						</div>
-						<div className="icon">
-							<span className="icon-cheveron-down" aria-hidden="true"></span>
-						</div>
-					</summary>
-					<div className="flex w-full flex-col lg:flex-row">
-						<div className="flex flex-col border-r border-[#EDEDF0]">
-							<div className="border-y border-[#EDEDF0] bg-[#FAFAFB] px-4 py-2 text-[#97979B]">
-								Project
+								<div className="flex justify-between py-2 border-b">
+									<span className="text-muted-foreground">Subject Template</span>
+									<span className="truncate max-w-[200px]" title={activeCampaign.subjectTemplate}>
+										{activeCampaign.subjectTemplate}
+									</span>
+								</div>
+								<div className="flex justify-between py-2 border-b">
+									<span className="text-muted-foreground">Created</span>
+									<span>{format(new Date(activeCampaign.$createdAt), "PP p")}</span>
+								</div>
+								<div className="flex justify-between py-2 border-b">
+									<span className="text-muted-foreground">Last Activity</span>
+									<span>
+										{activeCampaign.lastActivityAt
+											? format(new Date(activeCampaign.lastActivityAt), "p")
+											: "-"}
+									</span>
+								</div>
 							</div>
-							<div className="grid grid-cols-2 gap-4 p-4">
-								<div className="flex flex-col">
-									<span className="text-[#97979B]">Endpoint</span>
-									<span className="truncate">
-										{import.meta.env.VITE_APPWRITE_ENDPOINT}
-									</span>
-								</div>
-								<div className="flex flex-col">
-									<span className="text-[#97979B]">Project-ID</span>
-									<span className="truncate">
-										{import.meta.env.VITE_APPWRITE_PROJECT_ID}
-									</span>
-								</div>
-								<div className="flex flex-col">
-									<span className="text-[#97979B]">Project name</span>
-									<span className="truncate">
-										{import.meta.env.VITE_APPWRITE_PROJECT_NAME}
-									</span>
-								</div>
+						) : (
+							<div className="text-muted-foreground text-sm italic">
+								Select or create a campaign to view details.
 							</div>
-						</div>
-						<div className="grow">
-							<table className="w-full">
-								<thead>
-									<tr className="border-y border-[#EDEDF0] bg-[#FAFAFB] text-[#97979B]">
-										{logs.length > 0 ? (
-											<>
-												<td className="w-52 py-2 pl-4">Date</td>
-												<td>Status</td>
-												<td>Method</td>
-												<td className="hidden lg:table-cell">Path</td>
-												<td className="hidden lg:table-cell">Response</td>
-											</>
-										) : (
-											<td className="py-2 pl-4">Logs</td>
-										)}
-									</tr>
-								</thead>
-								<tbody>
-									{logs.length > 0 ? (
-										logs.map((log) => (
-											<tr key={log.date.toISOString()}>
-												<td className="py-2 pl-4 font-[Fira_Code]">
-													{log.date.toLocaleString("en-US", {
-														month: "short",
-														day: "numeric",
-														hour: "2-digit",
-														minute: "2-digit",
-													})}
-												</td>
-												<td>
-													{log.status > 400 ? (
-														<div className="w-fit rounded-sm bg-[#FF453A3D] px-1 text-[#B31212]">
-															{log.status}
-														</div>
-													) : (
-														<div className="w-fit rounded-sm bg-[#10B9813D] px-1 text-[#0A714F]">
-															{log.status}
-														</div>
-													)}
-												</td>
-												<td>{log.method}</td>
-												<td className="hidden lg:table-cell">{log.path}</td>
-												<td className="hidden font-[Fira_Code] lg:table-cell">
-													{log.response}
-												</td>
-											</tr>
-										))
-									) : (
-										<tr>
-											<td className="py-2 pl-4 font-[Fira_Code]">
-												There are no logs to show
-											</td>
-										</tr>
-									)}
-								</tbody>
-							</table>
+						)}
+					</div>
+
+					{/* System Status / Database Info */}
+					<div className="bg-card border rounded-xl p-6 shadow-sm">
+						<h3 className="font-semibold mb-4 flex items-center gap-2">
+							<Database className="h-4 w-4" /> System Health
+						</h3>
+						<div className="space-y-2 text-sm text-muted-foreground">
+							<div className="flex items-center gap-2">
+								<div className="h-2 w-2 rounded-full bg-green-500" />
+								<span>Database Connected</span>
+							</div>
+							<div className="flex items-center gap-2">
+								<div className="h-2 w-2 rounded-full bg-green-500" />
+								<span>Realtime Stream Active</span>
+							</div>
 						</div>
 					</div>
-				</details>
-			</aside>
-		</main>
+				</div>
+
+				{/* Right Column: Console (Spans 2 cols) */}
+				<div className="lg:col-span-2 space-y-2">
+					<div className="flex items-center justify-between">
+						<h3 className="font-semibold text-lg">Live Operation Log</h3>
+						<span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+							Streaming via WebSocket
+						</span>
+					</div>
+					<DashboardConsole logs={recentLogs} />
+				</div>
+			</div>
+		</div>
+	);
+}
+
+function StatusBadge({ status }: { status: string }) {
+	let colorClass = "bg-slate-100 text-slate-800";
+	if (status === CampaignStatus.RUNNING)
+		colorClass = "bg-green-100 text-green-800 border-green-200 animate-pulse";
+	if (status === CampaignStatus.PAUSED)
+		colorClass = "bg-yellow-100 text-yellow-800 border-yellow-200";
+	if (status === CampaignStatus.COMPLETED) colorClass = "bg-blue-100 text-blue-800 border-blue-200";
+	if (status === CampaignStatus.ERROR) colorClass = "bg-red-100 text-red-800 border-red-200";
+
+	return (
+		<span
+			className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${colorClass}`}
+		>
+			{status}
+		</span>
+	);
+}
+
+function DashboardSkeleton() {
+	return (
+		<div className="p-6 space-y-6">
+			<div className="flex justify-between">
+				<div className="space-y-2">
+					<Skeleton className="h-8 w-48" />
+					<Skeleton className="h-4 w-32" />
+				</div>
+				<Skeleton className="h-10 w-64" />
+			</div>
+			<div className="grid gap-4 md:grid-cols-4">
+				{[...Array(4)].map((_, i) => (
+					<Skeleton key={`skeleton-${i}`} className="h-32 w-full" />
+				))}
+			</div>
+			<div className="grid gap-6 lg:grid-cols-3">
+				<Skeleton className="h-[400px]" />
+				<Skeleton className="h-[400px] lg:col-span-2" />
+			</div>
+		</div>
 	);
 }

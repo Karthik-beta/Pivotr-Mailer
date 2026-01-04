@@ -12,15 +12,14 @@
                 */
 
 import { Client } from 'node-appwrite';
-import { LeadStatus } from '../../../shared/constants/status.constants';
 import { EventType } from '../../../shared/constants/event.constants';
-
-// Shared modules
-import { pollMessages, deleteMessage, type SesNotification } from '../../_shared/sqs-client/client';
+import { LeadStatus } from '../../../shared/constants/status.constants';
 import { findLeadBySesMessageId, updateLead } from '../../_shared/database/repositories/lead.repository';
-import { logInfo, logWarn, logError } from '../../_shared/database/repositories/log.repository';
-import { incrementGlobalMetrics, incrementCampaignMetrics } from '../../_shared/database/repositories/metrics.repository';
+import { logError, logInfo, logWarn } from '../../_shared/database/repositories/log.repository';
+import { incrementCampaignMetrics, incrementGlobalMetrics } from '../../_shared/database/repositories/metrics.repository';
 import { getSqsConfig } from '../../_shared/database/repositories/settings.repository';
+// Shared modules
+import { deleteMessage, pollMessages, type SesNotification } from '../../_shared/sqs-client/client';
 
 /**
  * Appwrite Function context

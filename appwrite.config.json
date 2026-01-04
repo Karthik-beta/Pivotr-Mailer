@@ -38,5 +38,56 @@
             }
         }
     },
-    "functions": []
+    "functions": [
+        {
+            "$id": "import-leads",
+            "name": "import-leads",
+            "runtime": "bun-1.1",
+            "entrypoint": "src/main.ts",
+            "path": "functions/import-leads",
+            "execute": [
+                "users"
+            ],
+            "events": [],
+            "schedule": "",
+            "timeout": 300
+        },
+        {
+            "$id": "orchestrator",
+            "name": "orchestrator",
+            "runtime": "bun-1.1",
+            "entrypoint": "src/main.ts",
+            "path": "functions/orchestrator",
+            "execute": [
+                "users"
+            ],
+            "events": [],
+            "schedule": "",
+            "timeout": 900
+        },
+        {
+            "$id": "sqs-poller",
+            "name": "sqs-poller",
+            "runtime": "bun-1.1",
+            "entrypoint": "src/main.ts",
+            "path": "functions/sqs-poller",
+            "execute": [],
+            "events": [],
+            "schedule": "*/1 * * * *",
+            "timeout": 60
+        },
+        {
+            "$id": "unsubscribe-lead",
+            "name": "unsubscribe-lead",
+            "runtime": "bun-1.1",
+            "entrypoint": "src/main.ts",
+            "path": "functions/unsubscribe-lead",
+            "execute": [
+                "any"
+            ],
+            "events": [],
+            "schedule": "",
+            "timeout": 30
+        }
+    ]
 }

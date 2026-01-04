@@ -1,80 +1,115 @@
 /**
  * Migration 006: Create Settings Collection
- * 
+ *
  * Creates the singleton settings collection for system-wide configuration.
  */
-import { Client, Databases } from 'node-appwrite';
-import { DATABASE_ID, CollectionId } from '../shared/constants/collection.constants';
+import { type Client, Databases } from "node-appwrite";
+import { CollectionId, DATABASE_ID } from "../shared/constants/collection.constants";
 
 export async function createSettingsCollection(client: Client): Promise<void> {
-    const databases = new Databases(client);
-    const collectionId = CollectionId.SETTINGS;
+	const databases = new Databases(client);
+	const collectionId = CollectionId.SETTINGS;
 
-    try {
-        await databases.getCollection(DATABASE_ID, collectionId);
-        console.log(`Collection '${collectionId}' already exists. Skipping.`);
-        return;
-    } catch {
-        // Collection doesn't exist, create it
-    }
+	try {
+		await databases.getCollection(DATABASE_ID, collectionId);
+		console.log(`Collection '${collectionId}' already exists. Skipping.`);
+		return;
+	} catch {
+		// Collection doesn't exist, create it
+	}
 
-    // Create collection
-    await databases.createCollection(
-        DATABASE_ID,
-        collectionId,
-        'Settings',
-        undefined,
-        true,
-        true
-    );
+	// Create collection
+	await databases.createCollection(DATABASE_ID, collectionId, "Settings", undefined, true, true);
 
-    console.log(`Collection '${collectionId}' created. Adding attributes...`);
+	console.log(`Collection '${collectionId}' created. Adding attributes...`);
 
-    // AWS SES Configuration
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'awsSesRegion', 50, true);
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'awsSesAccessKeyId', 100, true);
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'awsSesSecretAccessKey', 200, true);
+	// AWS SES Configuration
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "awsSesRegion", 50, true);
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "awsSesAccessKeyId", 100, true);
+	await databases.createStringAttribute(
+		DATABASE_ID,
+		collectionId,
+		"awsSesSecretAccessKey",
+		200,
+		true
+	);
 
-    // AWS SQS Configuration
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'awsSqsQueueUrl', 500, true);
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'awsSqsRegion', 50, true);
+	// AWS SQS Configuration
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "awsSqsQueueUrl", 500, true);
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "awsSqsRegion", 50, true);
 
-    // MyEmailVerifier Configuration
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'myEmailVerifierApiKey', 200, true);
+	// MyEmailVerifier Configuration
+	await databases.createStringAttribute(
+		DATABASE_ID,
+		collectionId,
+		"myEmailVerifierApiKey",
+		200,
+		true
+	);
 
-    // Timing defaults
-    await databases.createIntegerAttribute(DATABASE_ID, collectionId, 'defaultMinDelayMs', true, 60000);
-    await databases.createIntegerAttribute(DATABASE_ID, collectionId, 'defaultMaxDelayMs', true, 180000);
+	// Timing defaults
+	await databases.createIntegerAttribute(
+		DATABASE_ID,
+		collectionId,
+		"defaultMinDelayMs",
+		true,
+		60000
+	);
+	await databases.createIntegerAttribute(
+		DATABASE_ID,
+		collectionId,
+		"defaultMaxDelayMs",
+		true,
+		180000
+	);
 
-    // Polling intervals
-    await databases.createIntegerAttribute(DATABASE_ID, collectionId, 'sqsPollingIntervalMs', true, 60000);
+	// Polling intervals
+	await databases.createIntegerAttribute(
+		DATABASE_ID,
+		collectionId,
+		"sqsPollingIntervalMs",
+		true,
+		60000
+	);
 
-    // Timeouts
-    await databases.createIntegerAttribute(DATABASE_ID, collectionId, 'verifierTimeoutMs', true, 10000);
-    await databases.createIntegerAttribute(DATABASE_ID, collectionId, 'sesTimeoutMs', true, 30000);
+	// Timeouts
+	await databases.createIntegerAttribute(
+		DATABASE_ID,
+		collectionId,
+		"verifierTimeoutMs",
+		true,
+		10000
+	);
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "sesTimeoutMs", true, 30000);
 
-    // Retry configuration
-    await databases.createIntegerAttribute(DATABASE_ID, collectionId, 'maxRetries', true, 3);
-    await databases.createIntegerAttribute(DATABASE_ID, collectionId, 'retryBackoffMs', true, 1000);
+	// Retry configuration
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "maxRetries", true, 3);
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "retryBackoffMs", true, 1000);
 
-    // Unsubscribe token secret (HMAC)
-    await databases.createStringAttribute(DATABASE_ID, collectionId, 'unsubscribeTokenSecret', 256, true);
+	// Unsubscribe token secret (HMAC)
+	await databases.createStringAttribute(
+		DATABASE_ID,
+		collectionId,
+		"unsubscribeTokenSecret",
+		256,
+		true
+	);
 
-    console.log(`Collection '${collectionId}' created with all attributes.`);
+	console.log(`Collection '${collectionId}' created with all attributes.`);
 }
 
 /**
  * Appwrite Console Instructions (Manual)
- * 
+ *
  * Collection ID: settings
  * Collection Name: Settings
- * 
+ *
  * NOTE: This is a singleton collection. Only one document should exist
  * with ID "global_settings".
- * 
+ *
  * SECURITY: Sensitive fields should be stored in Appwrite Function
  * environment variables in production, not in this collection.
- * 
+ *
  * Attributes:
  * - awsSesRegion: String (50) [Required]
  * - awsSesAccessKeyId: String (100) [Required]
