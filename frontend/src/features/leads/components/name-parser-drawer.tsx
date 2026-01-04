@@ -1,6 +1,6 @@
 import { CollectionId, DATABASE_ID } from "@shared/constants/collection.constants";
 import type { Lead } from "@shared/types/lead.types";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +26,7 @@ interface NameParserDrawerProps {
 export function NameParserDrawer({ lead, open, onOpenChange, onSaved }: NameParserDrawerProps) {
 	const [parsedName, setParsedName] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
+	const parsedId = useId();
 
 	useEffect(() => {
 		if (lead) {
@@ -71,9 +72,9 @@ export function NameParserDrawer({ lead, open, onOpenChange, onSaved }: NamePars
 						</div>
 
 						<div className="space-y-2">
-							<Label htmlFor="parsed">Parsed First Name</Label>
+							<Label htmlFor={parsedId}>Parsed First Name</Label>
 							<Input
-								id="parsed"
+								id={parsedId}
 								value={parsedName}
 								onChange={(e) => setParsedName(e.target.value)}
 								placeholder="Enter first name..."

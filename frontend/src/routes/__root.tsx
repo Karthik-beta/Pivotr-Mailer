@@ -1,11 +1,24 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
-import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { type QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+	createRootRouteWithContext,
+	HeadContent,
+	Scripts,
+	useRouter,
+} from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { ThemeProvider } from "@/components/theme-provider";
+import { GridPattern } from "@/components/ui/grid-pattern";
 import { RootLayout } from "@/features/shared/layouts/root-layout";
 
 import appCss from "../styles.css?url";
 
-export const Route = createRootRoute({
+// Define the router context type
+interface RouterContext {
+	queryClient: QueryClient;
+}
+
+export const Route = createRootRouteWithContext<RouterContext>()({
 	head: () => ({
 		meta: [
 			{
@@ -16,7 +29,7 @@ export const Route = createRootRoute({
 				content: "width=device-width, initial-scale=1",
 			},
 			{
-				title: "Appwrite + TanStack Start",
+				title: "Pivotr Mailer",
 			},
 		],
 		links: [
@@ -35,7 +48,7 @@ export const Route = createRootRoute({
 			},
 			{
 				rel: "stylesheet",
-				href: "https://fonts.googleapis.com/css2?family=Fira+Code&family=Inter:opsz,wght@14..32,100..900&family=Poppins:wght@300;400&display=swap",
+				href: "https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap",
 			},
 			{
 				rel: "icon",
@@ -49,25 +62,34 @@ export const Route = createRootRoute({
 });
 
 function RootDocument() {
+	// Get the queryClient from router context
+	const router = useRouter();
+	const queryClient = router.options.context.queryClient;
+
 	return (
-		<html lang="en">
+		<html lang="en" suppressHydrationWarning>
 			<head>
 				<HeadContent />
 			</head>
-			<body className="bg-background font-sans antialiased text-foreground">
-				<RootLayout />
-				<TanStackDevtools
-					config={{
-						position: "bottom-right",
-					}}
-					plugins={[
-						{
-							name: "Tanstack Router",
-							render: <TanStackRouterDevtoolsPanel />,
-						},
-					]}
-				/>
-				<Scripts />
+			<body className="bg-background font-sans antialiased text-foreground min-h-screen">
+				<ThemeProvider attribute="class" defaultTheme="dark" storageKey="vite-ui-theme">
+					<GridPattern className="fixed inset-0 z-[-1]" />
+					<QueryClientProvider client={queryClient}>
+						<RootLayout />
+					</QueryClientProvider>
+					<TanStackDevtools
+						config={{
+							position: "bottom-right",
+						}}
+						plugins={[
+							{
+								name: "Tanstack Router",
+								render: <TanStackRouterDevtoolsPanel />,
+							},
+						]}
+					/>
+					<Scripts />
+				</ThemeProvider>
 			</body>
 		</html>
 	);

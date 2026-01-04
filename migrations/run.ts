@@ -80,7 +80,10 @@ async function runMigrations(): Promise<void> {
 		await createIndexes(client);
 
 		console.log("─────────────────────────────────────────────────────────────────");
+		console.log("─────────────────────────────────────────────────────────────────");
 		console.log("Step 8/8: Seeding initial data...");
+		console.log("Waiting for attributes to be available...");
+		await new Promise((resolve) => setTimeout(resolve, 5000));
 		await seedInitialData(client);
 
 		console.log("");

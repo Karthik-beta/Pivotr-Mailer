@@ -27,13 +27,13 @@ export async function createCampaignsCollection(client: Client): Promise<void> {
 	// Basic info
 	await databases.createStringAttribute(DATABASE_ID, collectionId, "name", 255, true);
 
-	// Status enum
+	// Status enum (optional with default - Appwrite requires this for defaulted attrs)
 	await databases.createEnumAttribute(
 		DATABASE_ID,
 		collectionId,
 		"status",
 		Object.values(CampaignStatus),
-		true,
+		false,
 		CampaignStatus.DRAFT
 	);
 
@@ -45,24 +45,24 @@ export async function createCampaignsCollection(client: Client): Promise<void> {
 	await databases.createEmailAttribute(DATABASE_ID, collectionId, "senderEmail", true);
 	await databases.createStringAttribute(DATABASE_ID, collectionId, "senderName", 255, true);
 
-	// Counters
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalLeads", true, 0);
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "processedCount", true, 0);
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "skippedCount", true, 0);
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "errorCount", true, 0);
+	// Counters (optional with defaults - Appwrite requires this for defaulted attrs)
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalLeads", false, 0);
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "processedCount", false, 0);
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "skippedCount", false, 0);
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "errorCount", false, 0);
 
 	// Pause/Resume state
 	await databases.createDatetimeAttribute(DATABASE_ID, collectionId, "pausedAt", false);
 	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "resumePosition", false);
 
-	// Gaussian timing configuration
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "minDelayMs", true, 60000);
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "maxDelayMs", true, 180000);
+	// Gaussian timing configuration (optional with defaults)
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "minDelayMs", false, 60000);
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "maxDelayMs", false, 180000);
 	await databases.createFloatAttribute(DATABASE_ID, collectionId, "gaussianMean", false);
 	await databases.createFloatAttribute(DATABASE_ID, collectionId, "gaussianStdDev", false);
 
-	// Catch-all handling
-	await databases.createBooleanAttribute(DATABASE_ID, collectionId, "allowCatchAll", true, false);
+	// Catch-all handling (optional with default)
+	await databases.createBooleanAttribute(DATABASE_ID, collectionId, "allowCatchAll", false, false);
 
 	// Timestamps
 	await databases.createDatetimeAttribute(DATABASE_ID, collectionId, "lastActivityAt", false);

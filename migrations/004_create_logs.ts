@@ -39,13 +39,13 @@ export async function createLogsCollection(client: Client): Promise<void> {
 	await databases.createStringAttribute(DATABASE_ID, collectionId, "leadId", 36, false);
 	await databases.createStringAttribute(DATABASE_ID, collectionId, "campaignId", 36, false);
 
-	// Severity
+	// Severity (optional with default - Appwrite requires this for defaulted attrs)
 	await databases.createEnumAttribute(
 		DATABASE_ID,
 		collectionId,
 		"severity",
 		Object.values(LogSeverity),
-		true,
+		false,
 		LogSeverity.INFO
 	);
 
@@ -59,23 +59,23 @@ export async function createLogsCollection(client: Client): Promise<void> {
 		DATABASE_ID,
 		collectionId,
 		"templateVariables",
-		5000,
+		4000,
 		false
 	); // JSON string
 
 	// External API responses (JSON strings)
-	await databases.createStringAttribute(DATABASE_ID, collectionId, "verifierResponse", 5000, false);
-	await databases.createStringAttribute(DATABASE_ID, collectionId, "sesResponse", 5000, false);
-	await databases.createStringAttribute(DATABASE_ID, collectionId, "sqsMessage", 10000, false);
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "verifierResponse", 1000, false);
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "sesResponse", 1000, false);
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "sqsMessage", 100000, false);
 
 	// Performance metrics
 	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "processingTimeMs", false);
 
 	// Error details (JSON string)
-	await databases.createStringAttribute(DATABASE_ID, collectionId, "errorDetails", 5000, false);
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "errorDetails", 2000, false);
 
 	// Extensible metadata (JSON string)
-	await databases.createStringAttribute(DATABASE_ID, collectionId, "metadata", 5000, false);
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "metadata", 2000, false);
 
 	console.log(`Collection '${collectionId}' created with all attributes.`);
 }

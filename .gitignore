@@ -45,3 +45,9 @@ coverage/
 .cache/
 *.tmp
 *.temp
+
+# Credentials
+credentials/
+
+# Old Project for inspiration only
+old_project_for_inpiration_only/

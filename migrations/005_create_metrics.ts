@@ -37,30 +37,36 @@ export async function createMetricsCollection(client: Client): Promise<void> {
 	// Scope ID (campaign ID for CAMPAIGN scope, null for GLOBAL)
 	await databases.createStringAttribute(DATABASE_ID, collectionId, "scopeId", 36, false);
 
-	// Counters - all default to 0
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalLeadsImported", true, 0);
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalEmailsSent", true, 0);
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalBounces", true, 0);
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalHardBounces", true, 0);
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalSoftBounces", true, 0);
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalComplaints", true, 0);
+	// Counters - all default to 0 (optional with defaults - Appwrite requirement)
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalLeadsImported", false, 0);
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalEmailsSent", false, 0);
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalBounces", false, 0);
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalHardBounces", false, 0);
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalSoftBounces", false, 0);
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalComplaints", false, 0);
 	await databases.createIntegerAttribute(
 		DATABASE_ID,
 		collectionId,
 		"totalVerificationPassed",
-		true,
+		false,
 		0
 	);
 	await databases.createIntegerAttribute(
 		DATABASE_ID,
 		collectionId,
 		"totalVerificationFailed",
-		true,
+		false,
 		0
 	);
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalSkipped", true, 0);
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalErrors", true, 0);
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "verifierCreditsUsed", true, 0);
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalSkipped", false, 0);
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "totalErrors", false, 0);
+	await databases.createIntegerAttribute(
+		DATABASE_ID,
+		collectionId,
+		"verifierCreditsUsed",
+		false,
+		0
+	);
 
 	// Last update timestamp
 	await databases.createDatetimeAttribute(DATABASE_ID, collectionId, "lastUpdatedAt", true);

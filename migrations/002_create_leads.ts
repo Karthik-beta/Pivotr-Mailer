@@ -37,13 +37,13 @@ export async function createLeadsCollection(client: Client): Promise<void> {
 	await databases.createEmailAttribute(DATABASE_ID, collectionId, "email", true);
 	await databases.createStringAttribute(DATABASE_ID, collectionId, "companyName", 255, true);
 
-	// Status enum
+	// Status enum (optional with default value - Appwrite doesn't allow defaults on required attrs)
 	await databases.createEnumAttribute(
 		DATABASE_ID,
 		collectionId,
 		"status",
 		Object.values(LeadStatus),
-		true,
+		false, // Must be optional when using default value
 		LeadStatus.PENDING_IMPORT
 	);
 
@@ -81,8 +81,8 @@ export async function createLeadsCollection(client: Client): Promise<void> {
 	// Error handling
 	await databases.createStringAttribute(DATABASE_ID, collectionId, "errorMessage", 1000, false);
 
-	// Unsubscribe (GDPR/CAN-SPAM compliance)
-	await databases.createBooleanAttribute(DATABASE_ID, collectionId, "isUnsubscribed", true, false);
+	// Unsubscribe (GDPR/CAN-SPAM compliance) - optional with default
+	await databases.createBooleanAttribute(DATABASE_ID, collectionId, "isUnsubscribed", false, false);
 	await databases.createDatetimeAttribute(DATABASE_ID, collectionId, "unsubscribedAt", false);
 
 	// Extensible metadata

@@ -47,44 +47,44 @@ export async function createSettingsCollection(client: Client): Promise<void> {
 		true
 	);
 
-	// Timing defaults
+	// Timing defaults (optional with defaults - Appwrite requirement)
 	await databases.createIntegerAttribute(
 		DATABASE_ID,
 		collectionId,
 		"defaultMinDelayMs",
-		true,
+		false,
 		60000
 	);
 	await databases.createIntegerAttribute(
 		DATABASE_ID,
 		collectionId,
 		"defaultMaxDelayMs",
-		true,
+		false,
 		180000
 	);
 
-	// Polling intervals
+	// Polling intervals (optional with defaults)
 	await databases.createIntegerAttribute(
 		DATABASE_ID,
 		collectionId,
 		"sqsPollingIntervalMs",
-		true,
+		false,
 		60000
 	);
 
-	// Timeouts
+	// Timeouts (optional with defaults)
 	await databases.createIntegerAttribute(
 		DATABASE_ID,
 		collectionId,
 		"verifierTimeoutMs",
-		true,
+		false,
 		10000
 	);
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "sesTimeoutMs", true, 30000);
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "sesTimeoutMs", false, 30000);
 
-	// Retry configuration
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "maxRetries", true, 3);
-	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "retryBackoffMs", true, 1000);
+	// Retry configuration (optional with defaults)
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "maxRetries", false, 3);
+	await databases.createIntegerAttribute(DATABASE_ID, collectionId, "retryBackoffMs", false, 1000);
 
 	// Unsubscribe token secret (HMAC)
 	await databases.createStringAttribute(

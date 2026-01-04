@@ -98,7 +98,10 @@ export default async function main(context: AppwriteContext): Promise<unknown> {
 			client,
 			EventType.LEAD_IMPORTED,
 			`Imported ${result.imported} leads (${result.duplicates} duplicates, ${result.invalid} invalid)`,
-			{ campaignId }
+			{
+				campaignId,
+				metadata: result as unknown as Record<string, unknown>
+			}
 		);
 
 		// Update global metrics

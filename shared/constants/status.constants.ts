@@ -128,6 +128,9 @@ export const VerificationResult = {
 
 	/** Disposable/temporary email service */
 	DISPOSABLE: "disposable",
+
+	/** Domain didn't respond - retry after 5-10 hours */
+	GREYLISTED: "greylisted",
 } as const;
 
 export type VerificationResultType = (typeof VerificationResult)[keyof typeof VerificationResult];

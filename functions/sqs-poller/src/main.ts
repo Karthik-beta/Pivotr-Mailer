@@ -1,15 +1,15 @@
 /**
  * SQS Poller Function — Main Entry Point
  * 
- * This Appwrite Function runs on a schedule (CRON: */1 * * * *)
+ * This Appwrite Function runs on a schedule (every 1 minute)
  * to poll AWS SQS for bounce and complaint notifications from SES.
  * 
  * When a bounce or complaint is received:
  * 1. Find the lead by sesMessageId
-    * 2. Update lead status(BOUNCED or COMPLAINED)
-        * 3. Increment metrics
-            * 4. Delete message from SQS
-                */
+ * 2. Update lead status (BOUNCED or COMPLAINED)
+ * 3. Increment metrics
+ * 4. Delete message from SQS
+ */
 
 import { Client } from 'node-appwrite';
 import { EventType } from '../../../shared/constants/event.constants';
@@ -85,8 +85,10 @@ export default async function main(context: AppwriteContext): Promise<unknown> {
             }
         }
 
-        await logInfo(client, EventType.SYSTEM_STARTUP,
-            `SQS poll complete: ${processed} processed, ${errors} errors`, {});
+        await logInfo(client, EventType.SYSTEM_RECOVERY,
+            `SQS poll complete: ${processed} processed, ${errors} errors`, {
+            metadata: { processed, errors }
+        });
 
         return res.json({
             success: true,
@@ -112,7 +114,7 @@ async function processNotification(
     notification: SesNotification,
     sqsConfig: Awaited<ReturnType<typeof getSqsConfig>>
 ): Promise<void> {
-    const { notificationType, messageId, recipient } = notification;
+    const { notificationType, messageId } = notification;
 
     // Ignore delivery notifications (we only care about bounces/complaints)
     if (notificationType === 'Delivery') {

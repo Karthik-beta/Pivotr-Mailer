@@ -19,6 +19,7 @@ import { incrementCampaignCounter } from '../../_shared/database/repositories/ca
 // Repositories
 import { getLeadById, updateLead } from '../../_shared/database/repositories/lead.repository';
 import { logError, logInfo, logWarn } from '../../_shared/database/repositories/log.repository';
+import type { LogCreateInput } from '../../../shared/types/log.types';
 import {
 	incrementCampaignMetrics,
 	incrementGlobalMetrics,
@@ -65,6 +66,13 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 	const startTime = Date.now();
 	const { appwriteClient, campaign, settings } = config;
 
+	// Wide Event Context
+	const context: Partial<LogCreateInput> = {
+		leadId: lead.$id,
+		campaignId: campaign.$id,
+		metadata: {},
+	};
+
 	try {
 		// Step 1: Mark as VERIFYING and record start time
 		await updateLead(appwriteClient, lead.$id, {
@@ -92,12 +100,18 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 		};
 
 		const verificationResult = await verifyEmail(lead.email, verifierConfig);
+		context.verifierResponse = verificationResult.rawResponse as unknown as Record<string, unknown>;
 
-		await logInfo(appwriteClient, EventType.VERIFICATION_STARTED, `Verifying ${lead.email}`, {
-			leadId: lead.$id,
-			campaignId: campaign.$id,
-			verifierResponse: verificationResult.rawResponse as unknown as Record<string, unknown>,
-		});
+		// Update metadata with verification context
+		context.metadata = {
+			...context.metadata,
+			verification: {
+				status: verificationResult.status,
+				diagnosis: verificationResult.diagnosis,
+				isValid: verificationResult.isValid,
+				isGreylisted: verificationResult.isGreylisted,
+			}
+		};
 
 		// Increment verifier credits used
 		await incrementGlobalMetrics(appwriteClient, { verifierCreditsUsed: 1 });
@@ -105,19 +119,44 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 
 		// Handle verification result
 		if (!verificationResult.isValid) {
+			// Check for GREYLISTED (retry later)
+			if (verificationResult.isGreylisted) {
+				await updateLead(appwriteClient, lead.$id, {
+					status: LeadStatus.RISKY,
+					verificationResult: verificationResult.status,
+					verificationTimestamp: new Date().toISOString(),
+					errorMessage: `Greylisted - retry after ${verificationResult.retryAfterHours || 6} hours. ${verificationResult.diagnosis}`,
+				});
+
+				await incrementCampaignCounter(appwriteClient, campaign.$id, 'skippedCount');
+				await incrementGlobalMetrics(appwriteClient, { totalVerificationFailed: 1 });
+
+				await logWarn(
+					appwriteClient,
+					EventType.VERIFICATION_RISKY,
+					`Domain greylisted for ${lead.email}, retry after ${verificationResult.retryAfterHours || 6} hours`,
+					{
+						...context,
+						processingTimeMs: Date.now() - startTime,
+					}
+				);
+
+				return {
+					success: false,
+					leadId: lead.$id,
+					status: LeadStatus.RISKY,
+					error: `Greylisted - retry later`,
+					processingTimeMs: Date.now() - startTime,
+				};
+			}
+
 			// Check if it's a RISKY (catch-all) email
 			if (verificationResult.status === VerificationResult.CATCH_ALL) {
 				if (campaign.allowCatchAll) {
 					// Proceed with risky email
-					await logWarn(
-						appwriteClient,
-						EventType.VERIFICATION_RISKY,
-						`Catch-all domain detected for ${lead.email}, proceeding (allowCatchAll=true)`,
-						{
-							leadId: lead.$id,
-							campaignId: campaign.$id,
-						}
-					);
+					// We'll log this as part of the final wide event, but maybe keep a WARN if it's significant?
+					// The guidelines say "Emit one comprehensive event at the end of each operation".
+					// So let's just make sure it's in the metadata.
 				} else {
 					// Skip risky email
 					await updateLead(appwriteClient, lead.$id, {
@@ -128,6 +167,16 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 
 					await incrementCampaignCounter(appwriteClient, campaign.$id, 'skippedCount');
 					await incrementGlobalMetrics(appwriteClient, { totalVerificationFailed: 1 });
+
+					await logWarn(
+						appwriteClient,
+						EventType.VERIFICATION_FAILED,
+						`Catch-all domain detected for ${lead.email}, skipped`,
+						{
+							...context,
+							processingTimeMs: Date.now() - startTime,
+						}
+					);
 
 					return {
 						success: false,
@@ -143,21 +192,21 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 					status: LeadStatus.INVALID,
 					verificationResult: verificationResult.status,
 					verificationTimestamp: new Date().toISOString(),
-					errorMessage: verificationResult.errorMessage,
+					errorMessage: verificationResult.errorMessage || verificationResult.diagnosis,
 				});
+
+				await incrementCampaignCounter(appwriteClient, campaign.$id, 'skippedCount');
+				await incrementGlobalMetrics(appwriteClient, { totalVerificationFailed: 1 });
 
 				await logWarn(
 					appwriteClient,
 					EventType.VERIFICATION_FAILED,
 					`Email ${lead.email} failed verification: ${verificationResult.status}`,
 					{
-						leadId: lead.$id,
-						campaignId: campaign.$id,
+						...context,
+						processingTimeMs: Date.now() - startTime,
 					}
 				);
-
-				await incrementCampaignCounter(appwriteClient, campaign.$id, 'skippedCount');
-				await incrementGlobalMetrics(appwriteClient, { totalVerificationFailed: 1 });
 
 				return {
 					success: false,
@@ -175,16 +224,6 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 			verificationResult: verificationResult.status,
 			verificationTimestamp: new Date().toISOString(),
 		});
-
-		await logInfo(
-			appwriteClient,
-			EventType.VERIFICATION_PASSED,
-			`Email ${lead.email} verified successfully`,
-			{
-				leadId: lead.$id,
-				campaignId: campaign.$id,
-			}
-		);
 
 		await incrementGlobalMetrics(appwriteClient, { totalVerificationPassed: 1 });
 
@@ -206,17 +245,13 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 		const resolvedSubject = injectVariables(resolveSpintax(campaign.subjectTemplate), varMap);
 		const resolvedBody = injectVariables(resolveSpintax(campaign.bodyTemplate), varMap);
 
+		context.resolvedSubject = resolvedSubject;
+		context.resolvedBody = resolvedBody;
+		context.templateVariables = templateVars;
+
 		// Step 6: Mark as SENDING
 		await updateLead(appwriteClient, lead.$id, {
 			status: LeadStatus.SENDING,
-		});
-
-		await logInfo(appwriteClient, EventType.EMAIL_SENDING, `Sending email to ${lead.email}`, {
-			leadId: lead.$id,
-			campaignId: campaign.$id,
-			resolvedSubject,
-			resolvedBody,
-			templateVariables: templateVars,
 		});
 
 		// Step 7: Send via SES
@@ -243,6 +278,8 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 			sesConfig
 		);
 
+		context.sesResponse = sendResult.rawResponse as Record<string, unknown>;
+
 		if (!sendResult.success) {
 			// Send failed
 			await updateLead(appwriteClient, lead.$id, {
@@ -251,19 +288,18 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 				processedAt: new Date().toISOString(),
 			});
 
+			await incrementCampaignCounter(appwriteClient, campaign.$id, 'errorCount');
+			await incrementGlobalMetrics(appwriteClient, { totalErrors: 1 });
+
 			await logError(
 				appwriteClient,
 				EventType.EMAIL_FAILED,
 				`Failed to send email to ${lead.email}: ${sendResult.errorMessage}`,
 				{
-					leadId: lead.$id,
-					campaignId: campaign.$id,
-					sesResponse: sendResult.rawResponse,
+					...context,
+					processingTimeMs: Date.now() - startTime,
 				}
 			);
-
-			await incrementCampaignCounter(appwriteClient, campaign.$id, 'errorCount');
-			await incrementGlobalMetrics(appwriteClient, { totalErrors: 1 });
 
 			return {
 				success: false,
@@ -281,16 +317,16 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 			processedAt: new Date().toISOString(),
 		});
 
-		await logInfo(appwriteClient, EventType.EMAIL_SENT, `Email sent to ${lead.email}`, {
-			leadId: lead.$id,
-			campaignId: campaign.$id,
-			sesResponse: { messageId: sendResult.messageId },
-		});
-
 		// Step 9: Update metrics synchronously
 		await incrementCampaignCounter(appwriteClient, campaign.$id, 'processedCount');
 		await incrementGlobalMetrics(appwriteClient, { totalEmailsSent: 1 });
 		await incrementCampaignMetrics(appwriteClient, campaign.$id, { totalEmailsSent: 1 });
+
+		// Final Wide Event for Success
+		await logInfo(appwriteClient, EventType.EMAIL_SENT, `Email sent to ${lead.email}`, {
+			...context,
+			processingTimeMs: Date.now() - startTime,
+		});
 
 		return {
 			success: true,
@@ -308,22 +344,22 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 			processedAt: new Date().toISOString(),
 		});
 
+		await incrementCampaignCounter(appwriteClient, campaign.$id, 'errorCount');
+		await incrementGlobalMetrics(appwriteClient, { totalErrors: 1 });
+
 		await logError(
 			appwriteClient,
 			EventType.SYSTEM_ERROR,
 			`Error processing lead ${lead.$id}: ${errorMessage}`,
 			{
-				leadId: lead.$id,
-				campaignId: campaign.$id,
+				...context,
+				processingTimeMs: Date.now() - startTime,
 				errorDetails: {
 					message: errorMessage,
 					stack: error instanceof Error ? error.stack : undefined,
 				},
 			}
 		);
-
-		await incrementCampaignCounter(appwriteClient, campaign.$id, 'errorCount');
-		await incrementGlobalMetrics(appwriteClient, { totalErrors: 1 });
 
 		return {
 			success: false,

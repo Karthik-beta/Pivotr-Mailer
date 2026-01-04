@@ -1,6 +1,6 @@
 import { AVAILABLE_VARIABLES } from "@shared/spintax/variable-injector";
 import { Loader2, Save } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,8 @@ export function TemplateEditor() {
 	const [subject, setSubject] = useState("");
 	const [body, setBody] = useState("");
 	const [isDirty, setIsDirty] = useState(false);
+	const subjectId = useId();
+	const bodyId = useId();
 
 	// Initialize from campaign
 	useEffect(() => {
@@ -97,9 +99,9 @@ export function TemplateEditor() {
 				</div>
 
 				<div className="space-y-1">
-					<Label htmlFor="subject">Subject Line (Supports Spintax)</Label>
+					<Label htmlFor={subjectId}>Subject Line (Supports Spintax)</Label>
 					<Input
-						id="subject"
+						id={subjectId}
 						value={subject}
 						onChange={(e) => {
 							setSubject(e.target.value);
@@ -112,7 +114,7 @@ export function TemplateEditor() {
 
 				<div className="space-y-1 flex-1 flex flex-col">
 					<div className="flex justify-between items-center mb-1">
-						<Label htmlFor="body">Email Body (HTML/Text)</Label>
+						<Label htmlFor={bodyId}>Email Body (HTML/Text)</Label>
 						<div className="flex gap-1">
 							{AVAILABLE_VARIABLES.map((v) => (
 								<Badge
@@ -128,7 +130,7 @@ export function TemplateEditor() {
 						</div>
 					</div>
 					<Textarea
-						id="body"
+						id={bodyId}
 						value={body}
 						onChange={(e) => {
 							setBody(e.target.value);

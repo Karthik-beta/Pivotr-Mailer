@@ -1,5 +1,6 @@
 import { useRouterState } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
+import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppSidebar, NAV_ITEMS } from "./app-sidebar";
@@ -24,6 +25,9 @@ export function AppHeader() {
 				</SheetContent>
 			</Sheet>
 			<div className="flex-1 font-semibold">{currentTitle}</div>
+			<div className="flex items-center gap-2">
+				<ModeToggle />
+			</div>
 		</header>
 	);
 }

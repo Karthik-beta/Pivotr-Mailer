@@ -2,7 +2,7 @@
 
 A modern full-stack web application built with **TanStack Start** for the frontend and **Appwrite** as the Backend-as-a-Service (BaaS). This project is designed to be a robust foundation for building scalable mailer applications.
 
-![TanStack x Appwrite](frontend/public/tanstack-circle-logo.png)
+<img src="frontend/public/tanstack-circle-logo.png" alt="TanStack x Appwrite" width="100" />
 
 ## 🚀 Tech Stack
 
@@ -74,20 +74,26 @@ The Appwrite Console will be available at `http://localhost:5000/console`.
 
 ### 3. Configure Environment Variables
 
-Copy the example environment file and update with your Appwrite project details:
+All environment variables are managed from a single `.env` file in the project root:
 
 ```bash
-cd frontend
+# From project root
 cp .env.example .env
 ```
 
-Edit `.env` with your Appwrite configuration:
+Edit `.env` with your configuration:
 
 ```env
-VITE_APPWRITE_ENDPOINT=http://localhost:5000/v1
-VITE_APPWRITE_PROJECT_ID=your-project-id
-VITE_APPWRITE_PROJECT_NAME=Pivotr Mailer
+# Appwrite connection (used by both frontend and migrations)
+APPWRITE_ENDPOINT=http://localhost:5000/v1
+APPWRITE_PROJECT_ID=your-project-id
+APPWRITE_PROJECT_NAME=Pivotr Mailer
+
+# API Key (server-side only, never exposed to frontend)
+APPWRITE_API_KEY=your-api-key
 ```
+
+> **Note**: The Vite config automatically exposes `APPWRITE_*` variables to the frontend as `import.meta.env.VITE_APPWRITE_*`. No duplication needed!
 
 ### 4. Install Dependencies
 
@@ -103,6 +109,99 @@ bun dev
 ```
 
 The application will be available at `http://localhost:3000`.
+
+---
+
+## 🔐 Appwrite Backend Setup
+
+### Step 1: Create a Project
+
+1. Access Appwrite Console at `http://localhost:5000/console`
+2. Create a new project named **Pivotr Mailer**
+3. Note your **Project ID** for the environment variables
+
+### Step 2: Configure Google OAuth
+
+1. Go to **Auth → Settings → OAuth2 Providers**
+2. Enable **Google** and add your OAuth credentials
+3. In Google Cloud Console, add the redirect URI:
+   ```
+   http://localhost:5000/v1/account/sessions/oauth2/callback/google/YOUR_PROJECT_ID
+   ```
+
+### Step 3: Add Platform
+
+1. Go to **Overview → Platforms**
+2. Add a **Web** platform with hostname: `localhost`
+
+### Step 4: Create API Key
+
+1. Go to **Overview → API Keys → Create API Key**
+2. Name: `migrations-key`
+3. Select **ALL scopes** for full access
+4. Copy the generated key
+
+### Step 5: Run Database Migrations
+
+First, create a `.env` file in the project root:
+
+```bash
+# From project root
+cp .env.example .env
+```
+
+Edit `.env` with your Appwrite credentials:
+
+```env
+APPWRITE_ENDPOINT=http://localhost:5000/v1
+APPWRITE_PROJECT_ID=your-project-id
+APPWRITE_API_KEY=your-api-key
+```
+
+Then run the migrations:
+
+```bash
+bun run migrations/run.ts
+```
+
+This creates the database, collections, indexes, and seed data.
+
+### Step 6: Deploy Appwrite Functions
+
+```bash
+# Login to Appwrite CLI
+appwrite login
+
+# Set project context
+appwrite client --endpoint http://localhost:5000/v1 --project your-project-id
+
+# Deploy all functions
+appwrite push functions
+```
+
+### Step 7: Configure Function Environment Variables
+
+For each function in **Functions → Settings → Variables**, add:
+
+```env
+APPWRITE_FUNCTION_PROJECT_ID=your-project-id
+APPWRITE_FUNCTION_API_KEY=your-api-key
+
+# AWS SES (for orchestrator)
+AWS_SES_ACCESS_KEY_ID=your-aws-key
+AWS_SES_SECRET_ACCESS_KEY=your-aws-secret
+AWS_SES_REGION=ap-south-1
+
+# AWS SQS (for sqs-poller)
+AWS_SQS_QUEUE_URL=your-sqs-queue-url
+AWS_SQS_REGION=ap-south-1
+
+# Email Verifier (for orchestrator)
+MY_EMAIL_VERIFIER_API_KEY=your-mev-key
+```
+
+---
+
 
 ## 📜 Available Scripts
 
