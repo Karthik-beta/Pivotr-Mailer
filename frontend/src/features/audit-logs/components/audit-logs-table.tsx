@@ -53,7 +53,7 @@ export function AuditLogsTable({ page, search, severity, onPageChange }: AuditLo
 
 	return (
 		<div className="space-y-4">
-			<div className="rounded-md border">
+			<div className="rounded-md border bg-card">
 				<Table>
 					<TableHeader>
 						<TableRow>
@@ -227,7 +227,7 @@ function SeverityBadge({ severity }: { severity: string }) {
 function LogsTableSkeleton() {
 	return (
 		<div className="space-y-4">
-			<div className="rounded-md border">
+			<div className="rounded-md border bg-card">
 				<Table>
 					<TableHeader>
 						<TableRow>

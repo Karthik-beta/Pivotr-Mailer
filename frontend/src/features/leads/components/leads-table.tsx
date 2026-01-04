@@ -53,7 +53,7 @@ export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 
 	return (
 		<div className="space-y-4">
-			<div className="rounded-md border">
+			<div className="rounded-md border bg-card">
 				<Table>
 					<TableHeader>
 						<TableRow>
@@ -177,7 +177,7 @@ function LeadStatusBadge({ status }: { status: LeadStatusType }) {
 function LeadsTableSkeleton() {
 	return (
 		<div className="space-y-4">
-			<div className="rounded-md border">
+			<div className="rounded-md border bg-card">
 				<Table>
 					<TableHeader>
 						<TableRow>

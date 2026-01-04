@@ -53,7 +53,7 @@ function LogsPage() {
 					<Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
 					<Input
 						placeholder="Search logs..."
-						className="pl-8"
+						className="pl-8 bg-background"
 						value={searchValue}
 						onChange={(e) => setSearchValue(e.target.value)}
 						onKeyDown={handleKeyDown}

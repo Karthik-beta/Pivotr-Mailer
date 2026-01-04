@@ -55,7 +55,7 @@ export function CsvUploader({ onUploadSuccess }: CsvUploaderProps) {
 				variant="outline"
 				onClick={() => fileInputRef.current?.click()}
 				disabled={isUploading}
-				className="gap-2"
+				className="gap-2 bg-card"
 			>
 				{isUploading ? (
 					<Loader2 className="h-4 w-4 animate-spin" />

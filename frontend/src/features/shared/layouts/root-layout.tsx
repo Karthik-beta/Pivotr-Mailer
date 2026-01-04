@@ -29,7 +29,7 @@ export function RootLayout() {
 				<div
 					className={cn(
 						"grid h-screen w-full transition-all duration-300 ease-in-out overflow-hidden",
-						isCollapsed ? "lg:grid-cols-[80px_1fr]" : "lg:grid-cols-[280px_1fr]"
+						isCollapsed ? "lg:grid-cols-[64px_1fr]" : "lg:grid-cols-[240px_1fr]"
 					)}
 				>
 					<div className="hidden border-r bg-muted/40 lg:block transition-all duration-300 ease-in-out overflow-hidden">

@@ -60,7 +60,7 @@ export function TemplateEditor() {
 
 	if (!campaign) {
 		return (
-			<div className="p-8 text-center border rounded-lg bg-muted/20">
+			<div className="p-8 text-center border rounded-lg bg-card">
 				<h3 className="text-lg font-semibold">No Active Campaign</h3>
 				<p className="text-muted-foreground">Create a campaign to start editing templates.</p>
 			</div>
