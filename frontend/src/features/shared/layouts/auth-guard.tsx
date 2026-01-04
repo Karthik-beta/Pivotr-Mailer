@@ -21,7 +21,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
 	if (isLoading) {
 		return (
-			<div className="h-screen w-full flex items-center justify-center bg-background overflow-hidden relative">
+			<div className="h-screen w-full flex items-center justify-center bg-background overflow-hidden relative animate-in fade-in duration-200">
 				{/* Subtle grid pattern background with gradient fade */}
 				<div
 					className="absolute inset-0 opacity-[0.03]"
@@ -32,12 +32,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 						`,
 						backgroundSize: "40px 40px",
 						maskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, black 20%, transparent 70%)",
-						WebkitMaskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, black 20%, transparent 70%)",
+						WebkitMaskImage:
+							"radial-gradient(ellipse 70% 70% at 50% 50%, black 20%, transparent 70%)",
 					}}
 				/>
 
 				{/* Main loader container */}
-				<div className="relative z-10 flex flex-col items-center gap-6">
+				<div className="relative z-10 flex flex-col items-center gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
 					{/* Logo with pulse animation */}
 					<div className="relative">
 						<div className="absolute inset-0 blur-2xl opacity-30 animate-pulse bg-[#61DAFB] rounded-full scale-150" />
@@ -62,7 +63,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 					{/* Animated progress bar */}
 					<div className="w-48 h-0.5 bg-border/50 rounded-full overflow-hidden">
 						<div
-							className="h-full bg-[#61DAFB] rounded-full animate-[loading_1.5s_ease-in-out_infinite]"
+							className="h-full bg-[#61DAFB] rounded-full"
 							style={{
 								width: "30%",
 								animation: "loading 1.5s ease-in-out infinite",
@@ -91,11 +92,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 		);
 	}
 
-	// If on login page and not user, render login
-	if (isLoginPage && !user) return <>{children}</>;
+	// If on login page and not user, render login with fade transition
+	if (isLoginPage && !user) {
+		return <div className="animate-in fade-in duration-200">{children}</div>;
+	}
 
-	// If authorized, render children
-	if (user) return <>{children}</>;
+	// If authorized, render children with fade transition
+	if (user) {
+		return <div className="animate-in fade-in duration-200">{children}</div>;
+	}
 
 	return null;
 }
