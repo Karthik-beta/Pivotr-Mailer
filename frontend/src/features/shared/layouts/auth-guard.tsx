@@ -44,11 +44,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 		}
 	}, [user, isLoading, isLoggingOut, isLoginPage, navigate, routerState.location.href]);
 
-	// Show loader during initial auth check, logout, or logout transition
 	if (isLoading || isLoggingOut || isTransitioning) {
 		return (
 			<div className="h-screen w-full flex items-center justify-center bg-background overflow-hidden relative animate-in fade-in duration-200">
-				{/* Subtle grid pattern background with gradient fade */}
 				<div
 					className="absolute inset-0 opacity-[0.03]"
 					style={{
@@ -63,9 +61,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 					}}
 				/>
 
-				{/* Main loader container */}
 				<div className="relative z-10 flex flex-col items-center gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-					{/* Logo with pulse animation */}
 					<div className="relative">
 						<div className="absolute inset-0 blur-2xl opacity-30 animate-pulse bg-[#61DAFB] rounded-full scale-150" />
 						<img
@@ -76,7 +72,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 						/>
 					</div>
 
-					{/* Brand text */}
 					<div className="text-center space-y-1">
 						<h1 className="text-lg font-semibold tracking-tight text-foreground/90">
 							Pivotr Mailer
@@ -86,7 +81,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 						</p>
 					</div>
 
-					{/* Animated progress bar */}
 					<div className="w-48 h-0.5 bg-border/50 rounded-full overflow-hidden">
 						<div
 							className="h-full bg-[#61DAFB] rounded-full"
@@ -98,7 +92,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 					</div>
 				</div>
 
-				{/* CSS keyframes for loading animation */}
 				<style>
 					{`
 						@keyframes loading {
@@ -118,12 +111,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 		);
 	}
 
-	// Login page - render children directly
 	if (isLoginPage && !user) {
 		return <div className="animate-in fade-in duration-200">{children}</div>;
 	}
 
-	// Authenticated - render protected content
 	if (user) {
 		return <div className="animate-in fade-in duration-200">{children}</div>;
 	}

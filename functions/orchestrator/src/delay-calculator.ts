@@ -3,8 +3,11 @@
  *
  * Generates human-like timing delays between email sends using
  * the Box-Muller transform to produce normally distributed values.
+ * 
+ * Intent: We use a normal distribution rather than a flat range to 
+ * simulate human variability, which helps maintain sender reputation 
+ * with receiving ESPs that monitor for robotic timing patterns.
  */
-
 /**
  * Configuration for Gaussian delay calculation
  */

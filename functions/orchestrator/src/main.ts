@@ -3,6 +3,10 @@
  *
  * This is the main Appwrite Function that controls campaign execution.
  * It receives HTTP requests to start, pause, resume, or abort campaigns.
+ * 
+ * Intent: High-level campaign lifecycle actions are unified here to ensure 
+ * consistent state management and reliable lock acquisition across 
+ * all execution paths.
  *
  * API Endpoints:
  *   POST /start   - Start a campaign
@@ -59,7 +63,6 @@ interface AppwriteContext {
 export default async function main(context: AppwriteContext): Promise<unknown> {
 	const { req, res, log, error: logErr } = context;
 
-	// Initialize Appwrite client
 	const client = new Client()
 		.setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT || '')
 		.setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID || '')
@@ -72,7 +75,6 @@ export default async function main(context: AppwriteContext): Promise<unknown> {
 	};
 
 	try {
-		// Parse request
 		let request: OrchestratorRequest;
 		try {
 			request = JSON.parse(req.body || '{}');
@@ -84,7 +86,6 @@ export default async function main(context: AppwriteContext): Promise<unknown> {
 
 		log(`Received action: ${action} for campaign: ${campaignId || 'none'}`);
 
-		// Route to appropriate handler
 		switch (action) {
 			case 'start':
 				return await handleStart(client, config, campaignId, res);
@@ -120,9 +121,6 @@ export default async function main(context: AppwriteContext): Promise<unknown> {
 	}
 }
 
-/**
- * Handle START action
- */
 async function handleStart(
 	client: Client,
 	config: OrchestratorConfig,
@@ -161,9 +159,6 @@ async function handleStart(
 	});
 }
 
-/**
- * Handle PAUSE action
- */
 async function handlePause(
 	client: Client,
 	campaignId: string | undefined,
@@ -193,9 +188,6 @@ async function handlePause(
 	return res.json({ success: true, message: 'Campaign pause requested' });
 }
 
-/**
- * Handle RESUME action
- */
 async function handleResume(
 	client: Client,
 	config: OrchestratorConfig,
@@ -232,9 +224,6 @@ async function handleResume(
 	});
 }
 
-/**
- * Handle ABORT action
- */
 async function handleAbort(
 	client: Client,
 	campaignId: string | undefined,
@@ -263,9 +252,6 @@ async function handleAbort(
 	return res.json({ success: true, message: 'Campaign abort requested' });
 }
 
-/**
- * Handle RECOVER action (for system startup)
- */
 async function handleRecover(
 	client: Client,
 	_config: OrchestratorConfig,

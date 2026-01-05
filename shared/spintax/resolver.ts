@@ -34,9 +34,10 @@ export function resolveSpintax(template: string): string {
 	let resolved = template;
 	let iterations = 0;
 
-	// Keep resolving until no more Spintax found (handles nested)
+	// We use a greedy innermost-first matching strategy to resolve nested Spintax.
+	// MAX_ITERATIONS prevents infinite loops from malformed inputs (e.g., mismatched braces)
+	// while allowing for reasonable nesting depth.
 	while (SPINTAX_REGEX.test(resolved) && iterations < MAX_ITERATIONS) {
-		// Reset regex lastIndex
 		SPINTAX_REGEX.lastIndex = 0;
 
 		resolved = resolved.replace(SPINTAX_REGEX, (_match, content: string) => {
@@ -51,7 +52,6 @@ export function resolveSpintax(template: string): string {
 		iterations++;
 	}
 
-	// Unescape escaped pipes
 	resolved = resolved.replace(/\\\|/g, "|");
 
 	return resolved;
@@ -88,7 +88,6 @@ function splitSpintaxOptions(content: string): string[] {
 		}
 	}
 
-	// Don't forget the last option
 	options.push(current);
 
 	return options;
@@ -106,14 +105,12 @@ function secureRandomInt(min: number, max: number): number {
 
 	const range = max - min + 1;
 
-	// Use crypto API for secure randomness
 	if (typeof crypto !== "undefined" && crypto.getRandomValues) {
 		const randomBuffer = new Uint32Array(1);
 		crypto.getRandomValues(randomBuffer);
 		return min + (randomBuffer[0] % range);
 	}
 
-	// Fallback (less secure, but still random)
 	return min + Math.floor(Math.random() * range);
 }
 
@@ -144,7 +141,6 @@ export function validateSpintax(template: string): string[] {
 		errors.push(`Unclosed Spintax brace (${braceDepth} unclosed)`);
 	}
 
-	// Check for empty options
 	const emptyOptionRegex = /\{\||\|\}/g;
 	let match: RegExpExecArray | null;
 	match = emptyOptionRegex.exec(template);

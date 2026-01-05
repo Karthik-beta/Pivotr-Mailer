@@ -65,7 +65,6 @@ export async function executeCampaign(
 	const { appwriteClient } = config;
 
 	try {
-		// Acquire campaign lock
 		return await withCampaignLock(appwriteClient, campaignId, async () => {
 			return await runCampaignWithLock(campaignId, config);
 		});
@@ -114,7 +113,6 @@ async function runCampaignWithLock(
 ): Promise<CampaignExecutionResult> {
 	const { appwriteClient } = config;
 
-	// Get campaign
 	const campaign = await getCampaignById(appwriteClient, campaignId);
 	if (!campaign) {
 		return {
@@ -127,7 +125,6 @@ async function runCampaignWithLock(
 		};
 	}
 
-	// Get settings
 	const settings = await getSettings(appwriteClient);
 	if (!settings) {
 		return {
@@ -140,10 +137,8 @@ async function runCampaignWithLock(
 		};
 	}
 
-	// Recover any stuck SENDING leads
 	await recoverStuckLeads(appwriteClient, campaignId);
 
-	// Mark campaign as RUNNING
 	await updateCampaign(appwriteClient, campaignId, {
 		status: CampaignStatus.RUNNING,
 	});
@@ -155,13 +150,13 @@ async function runCampaignWithLock(
 	let leadsProcessed = 0;
 	let leadsSkipped = 0;
 	let leadsErrored = 0;
-
-	// Fill Buffer: Pre-verified lead ready for next iteration
 	let verifiedBuffer: Lead | null = null;
 
-	// Main processing loop
 	while (true) {
-		// Check for pause/abort
+		// This loop is the main heartbeat of the campaign. We use a "Fill Buffer"
+		// strategy to mask the latency of JIT email verification from the
+		// Gaussian delay, ensuring steady throughput without compromising
+		// verification quality.
 		const currentCampaign = await getCampaignById(appwriteClient, campaignId);
 		if (!currentCampaign) break;
 
@@ -196,7 +191,6 @@ async function runCampaignWithLock(
 			};
 		}
 
-		// Get next lead (from buffer or queue)
 		let currentLead: Lead | null = verifiedBuffer;
 		verifiedBuffer = null;
 
@@ -205,7 +199,6 @@ async function runCampaignWithLock(
 		}
 
 		if (!currentLead) {
-			// No more leads to process
 			await completeCampaign(appwriteClient, campaignId);
 			await logInfo(
 				appwriteClient,
@@ -223,7 +216,6 @@ async function runCampaignWithLock(
 			};
 		}
 
-		// Process the current lead
 		const processConfig: ProcessConfig = {
 			appwriteClient,
 			campaign: currentCampaign,
@@ -234,7 +226,6 @@ async function runCampaignWithLock(
 
 		const result = await processLead(currentLead, processConfig);
 
-		// Update counters
 		if (result.success) {
 			leadsProcessed++;
 		} else if (result.status === LeadStatus.INVALID || result.status === LeadStatus.RISKY) {
@@ -243,7 +234,6 @@ async function runCampaignWithLock(
 			leadsErrored++;
 		}
 
-		// Check if more leads remain
 		const remainingLeads = await countRemainingLeads(appwriteClient, campaignId);
 		if (remainingLeads === 0) {
 			await completeCampaign(appwriteClient, campaignId);
@@ -263,7 +253,6 @@ async function runCampaignWithLock(
 			};
 		}
 
-		// Calculate Gaussian delay
 		const delayMs = calculateGaussianDelay({
 			minDelayMs: currentCampaign.minDelayMs,
 			maxDelayMs: currentCampaign.maxDelayMs,
@@ -271,7 +260,6 @@ async function runCampaignWithLock(
 			stdDev: currentCampaign.gaussianStdDev ?? undefined,
 		});
 
-		// Fill Buffer: Pre-verify next lead during delay
 		const fillBufferPromise = fillVerifiedBuffer(
 			appwriteClient,
 			campaignId,
@@ -280,9 +268,7 @@ async function runCampaignWithLock(
 			processConfig
 		);
 
-		// Wait for delay while filling buffer
 		const [bufferResult] = await Promise.all([fillBufferPromise, sleep(delayMs)]);
-
 		verifiedBuffer = bufferResult;
 	}
 
@@ -313,7 +299,6 @@ async function fillVerifiedBuffer(
 		const nextLead = await getNextQueuedLead(client, campaignId);
 		if (!nextLead) return null;
 
-		// Try to verify (we just want to see if it's valid)
 		const verifierConfig = {
 			apiKey: settings.myEmailVerifierApiKey,
 			timeoutMs: settings.verifierTimeoutMs,
@@ -352,6 +337,10 @@ async function fillVerifiedBuffer(
 
 /**
  * Recover leads stuck in SENDING status (power failure recovery).
+ * 
+ * Invariants:
+ * - Leads with a messageId are already sent; we just mark them SENT to avoid duplicates.
+ * - Leads without a messageId are reverted to VERIFIED, ensuring at-least-once delivery.
  */
 async function recoverStuckLeads(client: Client, campaignId: string): Promise<void> {
 	const stuckLeads = await getSendingLeads(client, campaignId, SENDING_TIMEOUT_MS);

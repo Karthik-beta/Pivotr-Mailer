@@ -66,7 +66,9 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 	const startTime = Date.now();
 	const { appwriteClient, campaign, settings } = config;
 
-	// Wide Event Context
+	// We follow a "Wide Event" logging pattern: instead of noisy granular logs, 
+	// we accumulate rich context in this object and emit one comprehensive 
+	// high-cardinality event at the end of the pipeline for superior observability.
 	const context: Partial<LogCreateInput> = {
 		leadId: lead.$id,
 		campaignId: campaign.$id,
@@ -74,13 +76,11 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 	};
 
 	try {
-		// Step 1: Mark as VERIFYING and record start time
 		await updateLead(appwriteClient, lead.$id, {
 			status: LeadStatus.VERIFYING,
 			processingStartedAt: new Date().toISOString(),
 		});
 
-		// Step 2: Parse name if not already done
 		let firstName = lead.parsedFirstName;
 		if (!firstName) {
 			const parsed = parseIndianName(lead.fullName);
@@ -91,7 +91,6 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 			});
 		}
 
-		// Step 3: Verify email
 		const verifierConfig = {
 			apiKey: settings.myEmailVerifierApiKey,
 			timeoutMs: settings.verifierTimeoutMs,
@@ -218,7 +217,6 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 			}
 		}
 
-		// Step 4: Mark as VERIFIED
 		await updateLead(appwriteClient, lead.$id, {
 			status: LeadStatus.VERIFIED,
 			verificationResult: verificationResult.status,
@@ -227,7 +225,6 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 
 		await incrementGlobalMetrics(appwriteClient, { totalVerificationPassed: 1 });
 
-		// Step 5: Resolve template
 		const unsubscribeLink = generateUnsubscribeLink(
 			config.appwriteEndpoint,
 			config.unsubscribeFunctionId,
@@ -249,12 +246,10 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 		context.resolvedBody = resolvedBody;
 		context.templateVariables = templateVars;
 
-		// Step 6: Mark as SENDING
 		await updateLead(appwriteClient, lead.$id, {
 			status: LeadStatus.SENDING,
 		});
 
-		// Step 7: Send via SES
 		const sesConfig = {
 			region: settings.awsSesRegion,
 			accessKeyId: settings.awsSesAccessKeyId,
@@ -310,14 +305,12 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 			};
 		}
 
-		// Step 8: Mark as SENT
 		await updateLead(appwriteClient, lead.$id, {
 			status: LeadStatus.SENT,
 			sesMessageId: sendResult.messageId,
 			processedAt: new Date().toISOString(),
 		});
 
-		// Step 9: Update metrics synchronously
 		await incrementCampaignCounter(appwriteClient, campaign.$id, 'processedCount');
 		await incrementGlobalMetrics(appwriteClient, { totalEmailsSent: 1 });
 		await incrementCampaignMetrics(appwriteClient, campaign.$id, { totalEmailsSent: 1 });
