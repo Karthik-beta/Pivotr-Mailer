@@ -1,9 +1,10 @@
-import { LeadStatus, type LeadStatusType } from "@shared/constants/status.constants";
-import type { Lead } from "@shared/types/lead.types";
-import { FilePenLine } from "lucide-react";
+import {
+	type PaginationState,
+	flexRender,
+	getCoreRowModel,
+	useReactTable,
+} from "@tanstack/react-table";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
 	Pagination,
 	PaginationContent,
@@ -20,7 +21,9 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import type { Lead } from "@shared/types/lead.types";
 import { useLeads } from "../hooks/use-leads";
+import { columns } from "./columns";
 import { NameParserDrawer } from "./name-parser-drawer";
 
 interface LeadsTableProps {
@@ -31,7 +34,10 @@ interface LeadsTableProps {
 
 export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 	const limit = 20;
-	const { data, isLoading, refetch } = useLeads(page, limit, search);
+	// Ensure page is at least 1 for API
+	const apiPage = Math.max(1, page);
+
+	const { data, isLoading, refetch } = useLeads(apiPage, limit, search);
 
 	const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 	const [drawerOpen, setDrawerOpen] = useState(false);
@@ -45,72 +51,83 @@ export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 		refetch(); // Refresh list to show updated name
 	};
 
+	// Table Configuration
+	const tableData = data?.leads ?? [];
+	const totalLeads = data?.total ?? 0;
+	const pageCount = Math.ceil(totalLeads / limit);
+
+	// Sync pagination state with props (URL is SSOT)
+	const pagination: PaginationState = {
+		pageIndex: apiPage - 1, // TanStack Table is 0-indexed
+		pageSize: limit,
+	};
+
+	const table = useReactTable({
+		data: tableData,
+		columns: columns(handleReviewClick),
+		pageCount,
+		state: {
+			pagination,
+		},
+		manualPagination: true,
+		getCoreRowModel: getCoreRowModel(),
+		// We don't use onPaginationChange strictly because we drive state from URL
+		// But in a full implementation we might alias it to navigate.
+		// Here we'll just use manual controls below.
+	});
+
 	if (isLoading) {
 		return <LeadsTableSkeleton />;
 	}
-
-	const totalPages = data ? Math.ceil(data.total / limit) : 0;
 
 	return (
 		<div className="space-y-4">
 			<div className="rounded-md border bg-card">
 				<Table>
 					<TableHeader>
-						<TableRow>
-							<TableHead>Waitlist Email</TableHead>
-							<TableHead>Full Name</TableHead>
-							<TableHead>Company</TableHead>
-							<TableHead>Status</TableHead>
-							<TableHead>Verification</TableHead>
-							<TableHead className="text-right">Actions</TableHead>
-						</TableRow>
+						{table.getHeaderGroups().map((headerGroup) => (
+							<TableRow key={headerGroup.id}>
+								{headerGroup.headers.map((header) => {
+									return (
+										<TableHead key={header.id} className={header.column.id === "actions" ? "text-right" : ""}>
+											{header.isPlaceholder
+												? null
+												: flexRender(
+													header.column.columnDef.header,
+													header.getContext()
+												)}
+										</TableHead>
+									);
+								})}
+							</TableRow>
+						))}
 					</TableHeader>
 					<TableBody>
-						{data?.leads.length === 0 ? (
+						{table.getRowModel().rows?.length ? (
+							table.getRowModel().rows.map((row) => (
+								<TableRow
+									key={row.id}
+									data-state={row.getIsSelected() && "selected"}
+								>
+									{row.getVisibleCells().map((cell) => (
+										<TableCell key={cell.id} className={cell.column.id === "actions" ? "text-right" : ""}>
+											{flexRender(cell.column.columnDef.cell, cell.getContext())}
+										</TableCell>
+									))}
+								</TableRow>
+							))
+						) : (
 							<TableRow>
-								<TableCell colSpan={6} className="h-24 text-center">
+								<TableCell colSpan={columns.length} className="h-24 text-center">
 									No leads found.
 								</TableCell>
 							</TableRow>
-						) : (
-							data?.leads.map((lead) => (
-								<TableRow key={lead.$id}>
-									<TableCell className="font-medium">{lead.email}</TableCell>
-									<TableCell>
-										<div className="flex flex-col">
-											<span>{lead.fullName}</span>
-											{lead.parsedFirstName && (
-												<span className="text-xs text-muted-foreground">
-													Parsed: {lead.parsedFirstName}
-												</span>
-											)}
-										</div>
-									</TableCell>
-									<TableCell>{lead.companyName || "-"}</TableCell>
-									<TableCell>
-										<LeadStatusBadge status={lead.status} />
-									</TableCell>
-									<TableCell className="text-muted-foreground text-xs font-mono">
-										{lead.verificationResult || "-"}
-									</TableCell>
-									<TableCell className="text-right">
-										<Button
-											variant="ghost"
-											size="icon"
-											onClick={() => handleReviewClick(lead)}
-											title="Review Name"
-										>
-											<FilePenLine className="h-4 w-4" />
-										</Button>
-									</TableCell>
-								</TableRow>
-							))
 						)}
 					</TableBody>
 				</Table>
 			</div>
 
-			{totalPages > 1 && (
+			{pageCount > 1 && (
 				<Pagination>
 					<PaginationContent>
 						<PaginationItem>
@@ -118,14 +135,17 @@ export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 								href="#"
 								onClick={(e) => {
 									e.preventDefault();
-									if (page > 1) onPageChange(page - 1);
+									if (table.getCanPreviousPage()) {
+										// Update URL via prop
+										onPageChange(apiPage - 1);
+									}
 								}}
-								className={page <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+								className={!table.getCanPreviousPage() ? "pointer-events-none opacity-50" : "cursor-pointer"}
 							/>
 						</PaginationItem>
 						<PaginationItem>
 							<span className="px-4 text-sm text-muted-foreground">
-								Page {page} of {totalPages}
+								Page {apiPage} of {pageCount}
 							</span>
 						</PaginationItem>
 						<PaginationItem>
@@ -133,9 +153,12 @@ export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 								href="#"
 								onClick={(e) => {
 									e.preventDefault();
-									if (page < totalPages) onPageChange(page + 1);
+									if (table.getCanNextPage()) {
+										// Update URL via prop
+										onPageChange(apiPage + 1);
+									}
 								}}
-								className={page >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+								className={!table.getCanNextPage() ? "pointer-events-none opacity-50" : "cursor-pointer"}
 							/>
 						</PaginationItem>
 					</PaginationContent>
@@ -150,28 +173,6 @@ export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 			/>
 		</div>
 	);
-}
-
-function LeadStatusBadge({ status }: { status: LeadStatusType }) {
-	let variant: "default" | "secondary" | "destructive" | "outline" = "outline";
-
-	switch (status) {
-		case LeadStatus.VERIFIED:
-		case LeadStatus.SENT:
-			variant = "default"; // dark/primary
-			break;
-		case LeadStatus.INVALID:
-		case LeadStatus.BOUNCED:
-		case LeadStatus.ERROR:
-			variant = "destructive";
-			break;
-		case LeadStatus.VERIFYING:
-		case LeadStatus.SENDING:
-			variant = "secondary";
-			break;
-	}
-
-	return <Badge variant={variant}>{status}</Badge>;
 }
 
 function LeadsTableSkeleton() {
