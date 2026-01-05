@@ -239,6 +239,18 @@ Business logic must be:
 
 If business logic cannot be understood without reading surrounding infrastructure code, it is incorrectly structured.
 
+---
+### 10. Documentation Skill Adherence
+
+When writing, updating, or generating documentation, you must strictly follow the standards defined in:
+
+`.agent/skills/documentation-writing/SKILL.md`
+
+- Treat this file as mandatory guidance for tone, structure, and clarity
+- Apply these standards to READMEs, code comments, API guides, and architectural docs
+- Prioritize user-centric, professional English over generic descriptions
+
+If a documentation requirement conflicts with this skill file, pause and ask.
 
 
 <!-- End custom instructions -->
