@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { useSyncExternalStore } from "react";
 import { account } from "@/lib/appwrite";
 
 // Query Keys
@@ -7,6 +8,63 @@ export const AUTH_KEYS = {
 	session: ["auth", "session"],
 	account: ["auth", "account"],
 } as const;
+
+/**
+ * Logout State Management
+ * 
+ * Uses module-level state shared between RootLayout and AuthGuard to ensure
+ * seamless logout transitions. During logout:
+ * 1. isLoggingOut=true triggers immediately when logout starts
+ * 2. RootLayout renders loader (no Outlet to prevent content flash)
+ * 3. On reaching /login, isTransitioning=true starts the transition sequence
+ * 4. After paint cycles complete, states reset and login page appears
+ */
+let isLoggingOutState = false;
+let isTransitioningState = false;
+const listeners = new Set<() => void>();
+
+function notifyListeners() {
+	for (const listener of listeners) {
+		listener();
+	}
+}
+
+function setLoggingOut(value: boolean) {
+	isLoggingOutState = value;
+	notifyListeners();
+}
+
+export function setTransitioning(value: boolean) {
+	isTransitioningState = value;
+	notifyListeners();
+}
+
+// Export for AuthGuard to reset when login page renders
+export function resetLogoutState() {
+	setLoggingOut(false);
+}
+
+export function useLogoutState() {
+	return useSyncExternalStore(
+		(callback) => {
+			listeners.add(callback);
+			return () => listeners.delete(callback);
+		},
+		() => isLoggingOutState,
+		() => false // Server snapshot - always false on SSR
+	);
+}
+
+export function useTransitioningState() {
+	return useSyncExternalStore(
+		(callback) => {
+			listeners.add(callback);
+			return () => listeners.delete(callback);
+		},
+		() => isTransitioningState,
+		() => false // Server snapshot - always false on SSR
+	);
+}
 
 export function useUser() {
 	return useQuery({
@@ -30,12 +88,16 @@ export function useLogout() {
 
 	return useMutation({
 		mutationFn: async () => {
+			setLoggingOut(true);
 			await account.deleteSession("current");
 		},
 		onSuccess: () => {
 			queryClient.setQueryData(AUTH_KEYS.account, null);
 			queryClient.invalidateQueries({ queryKey: AUTH_KEYS.account });
 			navigate({ to: "/login" });
+		},
+		onError: () => {
+			setLoggingOut(false);
 		},
 	});
 }

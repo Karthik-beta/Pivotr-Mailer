@@ -1,5 +1,6 @@
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
+import { useLogoutState, useTransitioningState } from "@/features/auth/hooks";
 import { RecoveryBanner } from "@/features/system/components/recovery-banner";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { cn } from "@/lib/utils";
@@ -10,8 +11,22 @@ import { AuthGuard } from "./auth-guard";
 export function RootLayout() {
 	const router = useRouterState();
 	const isLoginPage = router.location.pathname === "/login";
+	const isLoggingOut = useLogoutState();
+	const isTransitioning = useTransitioningState();
 	const { isCollapsed, toggleSidebar } = useSidebar();
 
+	// During logout or transition, render only the loader without Outlet
+	// This prevents any content flash during the logout animation
+	if (isLoggingOut || isTransitioning) {
+		return (
+			<div className="min-h-screen font-sans antialiased">
+				<AuthGuard>{null}</AuthGuard>
+				<Toaster />
+			</div>
+		);
+	}
+
+	// Login page - simple wrapper without app shell
 	if (isLoginPage) {
 		return (
 			<div className="min-h-screen font-sans antialiased">
@@ -22,6 +37,8 @@ export function RootLayout() {
 			</div>
 		);
 	}
+
+	// Authenticated app - full layout with sidebar
 
 	return (
 		<div className="min-h-screen font-sans antialiased">

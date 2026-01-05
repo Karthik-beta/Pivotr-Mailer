@@ -1,25 +1,51 @@
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { useUser } from "@/features/auth/hooks";
+import { resetLogoutState, setTransitioning, useLogoutState, useTransitioningState, useUser } from "@/features/auth/hooks";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
 	const { data: user, isLoading } = useUser();
+	const isLoggingOut = useLogoutState();
 	const navigate = useNavigate();
 	const routerState = useRouterState();
 
 	const isLoginPage = routerState.location.pathname === "/login";
+	const isTransitioning = useTransitioningState();
+
+	/**
+	 * Logout Transition Handler
+	 * When reaching login page during logout, orchestrates the transition:
+	 * 1. Sets transitioning=true to keep RootLayout in loader mode
+	 * 2. Uses triple requestAnimationFrame for stable DOM paint cycles
+	 * 3. Resets logout state, then transitioning state to reveal login page
+	 */
+	useEffect(() => {
+		if (isLoginPage && isLoggingOut) {
+			setTransitioning(true);
+			const frameId = requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					resetLogoutState();
+					requestAnimationFrame(() => {
+						setTransitioning(false);
+					});
+				});
+			});
+			return () => cancelAnimationFrame(frameId);
+		}
+	}, [isLoginPage, isLoggingOut]);
 
 	useEffect(() => {
-		if (!isLoading) {
+		// Don't navigate during logout - the logout handler does this
+		if (!isLoading && !isLoggingOut) {
 			if (!user && !isLoginPage) {
 				navigate({ to: "/login", search: { redirect: routerState.location.href } });
 			} else if (user && isLoginPage) {
 				navigate({ to: "/" });
 			}
 		}
-	}, [user, isLoading, isLoginPage, navigate, routerState.location.href]);
+	}, [user, isLoading, isLoggingOut, isLoginPage, navigate, routerState.location.href]);
 
-	if (isLoading) {
+	// Show loader during initial auth check, logout, or logout transition
+	if (isLoading || isLoggingOut || isTransitioning) {
 		return (
 			<div className="h-screen w-full flex items-center justify-center bg-background overflow-hidden relative animate-in fade-in duration-200">
 				{/* Subtle grid pattern background with gradient fade */}
@@ -92,12 +118,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 		);
 	}
 
-	// If on login page and not user, render login with fade transition
+	// Login page - render children directly
 	if (isLoginPage && !user) {
 		return <div className="animate-in fade-in duration-200">{children}</div>;
 	}
 
-	// If authorized, render children with fade transition
+	// Authenticated - render protected content
 	if (user) {
 		return <div className="animate-in fade-in duration-200">{children}</div>;
 	}
