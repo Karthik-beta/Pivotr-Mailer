@@ -1,8 +1,38 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SettingsForm } from "@/features/settings/components/settings-form";
+import { SettingsForm, SettingsSkeleton } from "@/features/settings/components/settings-form";
+
+import { settingsKeys } from "@/lib/query-keys";
+import {
+	CollectionId,
+	DATABASE_ID,
+	SETTINGS_DOCUMENT_ID,
+} from "@shared/constants/collection.constants";
+import type { Settings } from "@shared/types/settings.types";
+import { databases } from "@/lib/appwrite";
 
 export const Route = createFileRoute("/settings")({
 	component: SettingsPage,
+	loader: async ({ context: { queryClient } }) => {
+		await queryClient.ensureQueryData({
+			queryKey: settingsKeys.all,
+			queryFn: async () => {
+				try {
+					const response = await databases.getDocument(
+						DATABASE_ID,
+						CollectionId.SETTINGS,
+						SETTINGS_DOCUMENT_ID
+					);
+					return response as unknown as Settings;
+				} catch (error: unknown) {
+					if (error && typeof error === "object" && "code" in error && error.code === 404) {
+						return null;
+					}
+					throw error;
+				}
+			},
+		});
+	},
+	pendingComponent: SettingsSkeleton,
 });
 
 function SettingsPage() {

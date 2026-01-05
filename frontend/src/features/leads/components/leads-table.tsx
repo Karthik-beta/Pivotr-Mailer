@@ -12,7 +12,6 @@ import {
 	PaginationNext,
 	PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -37,7 +36,8 @@ export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 	// Ensure page is at least 1 for API
 	const apiPage = Math.max(1, page);
 
-	const { data, isLoading, refetch } = useLeads(apiPage, limit, search);
+	// useSuspenseQuery will suspend if data is not ready
+	const { data, refetch } = useLeads(apiPage, limit, search);
 
 	const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 	const [drawerOpen, setDrawerOpen] = useState(false);
@@ -58,7 +58,7 @@ export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 
 	// Sync pagination state with props (URL is SSOT)
 	const pagination: PaginationState = {
-		pageIndex: apiPage - 1, // TanStack Table is 0-indexed
+		pageIndex: apiPage - 1,
 		pageSize: limit,
 	};
 
@@ -71,14 +71,7 @@ export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 		},
 		manualPagination: true,
 		getCoreRowModel: getCoreRowModel(),
-		// We don't use onPaginationChange strictly because we drive state from URL
-		// But in a full implementation we might alias it to navigate.
-		// Here we'll just use manual controls below.
 	});
-
-	if (isLoading) {
-		return <LeadsTableSkeleton />;
-	}
 
 	return (
 		<div className="space-y-4">
@@ -171,63 +164,6 @@ export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 				onOpenChange={setDrawerOpen}
 				onSaved={handleNameSaved}
 			/>
-		</div>
-	);
-}
-
-function LeadsTableSkeleton() {
-	return (
-		<div className="space-y-4">
-			<div className="rounded-md border bg-card">
-				<Table>
-					<TableHeader>
-						<TableRow>
-							<TableHead>
-								<Skeleton className="h-4 w-24" />
-							</TableHead>
-							<TableHead>
-								<Skeleton className="h-4 w-32" />
-							</TableHead>
-							<TableHead>
-								<Skeleton className="h-4 w-24" />
-							</TableHead>
-							<TableHead>
-								<Skeleton className="h-4 w-16" />
-							</TableHead>
-							<TableHead>
-								<Skeleton className="h-4 w-16" />
-							</TableHead>
-							<TableHead className="text-right">
-								<Skeleton className="h-4 w-8 ml-auto" />
-							</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{[...Array(5)].map((_, i) => (
-							<TableRow key={`skeleton-row-${i}`}>
-								<TableCell>
-									<Skeleton className="h-4 w-32" />
-								</TableCell>
-								<TableCell>
-									<Skeleton className="h-4 w-40" />
-								</TableCell>
-								<TableCell>
-									<Skeleton className="h-4 w-24" />
-								</TableCell>
-								<TableCell>
-									<Skeleton className="h-4 w-16" />
-								</TableCell>
-								<TableCell>
-									<Skeleton className="h-4 w-20" />
-								</TableCell>
-								<TableCell>
-									<Skeleton className="h-8 w-8 ml-auto" />
-								</TableCell>
-							</TableRow>
-						))}
-					</TableBody>
-				</Table>
-			</div>
 		</div>
 	);
 }

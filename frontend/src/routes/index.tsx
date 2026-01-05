@@ -8,14 +8,46 @@ import { DashboardConsole } from "@/features/dashboard/components/dashboard-cons
 import { MetricCard } from "@/features/dashboard/components/metric-card";
 import { useDashboard } from "@/features/dashboard/hooks/use-dashboard";
 
-export const Route = createFileRoute("/")({ component: Dashboard });
+import { campaignKeys, logsKeys } from "@/lib/query-keys";
+import { CollectionId, DATABASE_ID } from "@shared/constants/collection.constants";
+import { Query } from "appwrite";
+import { databases } from "@/lib/appwrite";
+import type { Campaign } from "@shared/types/campaign.types";
+import type { Log } from "@shared/types/log.types";
+
+export const Route = createFileRoute("/")({
+	component: Dashboard,
+	loader: async ({ context: { queryClient } }) => {
+		await Promise.all([
+			queryClient.ensureQueryData({
+				queryKey: campaignKeys.active(),
+				queryFn: async () => {
+					const response = await databases.listDocuments(DATABASE_ID, CollectionId.CAMPAIGNS, [
+						Query.orderDesc("$createdAt"),
+						Query.limit(1),
+					]);
+					return response.documents.length > 0 ? (response.documents[0] as unknown as Campaign) : null;
+				},
+				staleTime: 1000 * 60,
+			}),
+			queryClient.ensureQueryData({
+				queryKey: logsKeys.recent(),
+				queryFn: async () => {
+					const response = await databases.listDocuments(DATABASE_ID, CollectionId.LOGS, [
+						Query.orderDesc("$createdAt"),
+						Query.limit(50),
+					]);
+					return (response.documents as unknown as Log[]).reverse();
+				},
+				staleTime: 1000 * 60,
+			}),
+		]);
+	},
+	pendingComponent: DashboardSkeleton,
+});
 
 function Dashboard() {
-	const { activeCampaign, recentLogs, isLoading, updateCampaignStatus } = useDashboard();
-
-	if (isLoading) {
-		return <DashboardSkeleton />;
-	}
+	const { activeCampaign, recentLogs, updateCampaignStatus } = useDashboard();
 
 	// Derived Stats
 	const sentCount = activeCampaign?.processedCount || 0;
