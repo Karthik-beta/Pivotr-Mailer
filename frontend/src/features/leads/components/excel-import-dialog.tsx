@@ -37,6 +37,7 @@ interface ExcelImportDialogProps {
 export function ExcelImportDialog({ onImportSuccess }: ExcelImportDialogProps) {
 	const [open, setOpen] = useState(false);
 	const [step, setStep] = useState<"upload" | "review">("upload");
+	const [isDownloading, setIsDownloading] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const navigate = useNavigate();
 
@@ -79,6 +80,7 @@ export function ExcelImportDialog({ onImportSuccess }: ExcelImportDialogProps) {
 	};
 
 	const handleDownloadTemplate = async () => {
+		setIsDownloading(true);
 		try {
 			const execution = await functions.createExecution({
 				functionId: "export-leads",
@@ -113,6 +115,8 @@ export function ExcelImportDialog({ onImportSuccess }: ExcelImportDialogProps) {
 		} catch (err) {
 			console.error("Download error:", err);
 			toast.error(err instanceof Error ? err.message : "Failed to download template");
+		} finally {
+			setIsDownloading(false);
 		}
 	};
 
@@ -180,9 +184,19 @@ export function ExcelImportDialog({ onImportSuccess }: ExcelImportDialogProps) {
 						/>
 
 						{/* Template Download */}
-						<Button variant="ghost" size="sm" className="gap-2" onClick={handleDownloadTemplate}>
-							<Download className="h-4 w-4" />
-							Download Template
+						<Button
+							variant="ghost"
+							size="sm"
+							className="gap-2"
+							onClick={handleDownloadTemplate}
+							disabled={isDownloading}
+						>
+							{isDownloading ? (
+								<Loader2 className="h-4 w-4 animate-spin" />
+							) : (
+								<Download className="h-4 w-4" />
+							)}
+							{isDownloading ? "Downloading..." : "Download Template"}
 						</Button>
 
 						{isLoading && (
@@ -291,17 +305,32 @@ export function ExcelImportDialog({ onImportSuccess }: ExcelImportDialogProps) {
 }
 
 function parseExecutionResponse(execution: Models.Execution) {
+	// Handle function execution failure (crashed before returning a response)
+	if (execution.status === "failed") {
+		console.error("Function execution failed", execution);
+		throw new Error("Server function failed to execute. Please try again later.");
+	}
+
 	if (execution.responseStatusCode >= 400) {
 		console.error("Template download failed", execution);
+		// Guard against empty response body
+		if (!execution.responseBody || execution.responseBody.trim() === "") {
+			throw new Error("Server returned an error with no details");
+		}
 		try {
 			const errorData = JSON.parse(execution.responseBody);
 			throw new Error(errorData.message || "Server returned error");
 		} catch (e) {
-			if (e instanceof Error && !e.message.includes("Unexpected token")) {
+			if (e instanceof Error && !e.message.includes("JSON")) {
 				throw e;
 			}
 			throw new Error(`Server error: ${execution.responseBody.substring(0, 100)}`);
 		}
+	}
+
+	// Guard against empty response body for success responses
+	if (!execution.responseBody || execution.responseBody.trim() === "") {
+		throw new Error("Server returned an empty response");
 	}
 
 	try {

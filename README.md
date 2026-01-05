@@ -168,16 +168,40 @@ This creates the database, collections, indexes, and seed data.
 
 ### Step 6: Deploy Appwrite Functions
 
-```bash
-# Login to Appwrite CLI
-appwrite login
+**Important**: Each function must have its dependencies installed locally before deployment, as Appwrite does not install dependencies during build.
 
-# Set project context
-appwrite client --endpoint http://localhost:5000/v1 --project your-project-id
+### Step 6: Deploy Appwrite Functions
 
-# Deploy all functions
-appwrite push functions
-```
+**Recommended Method: Bundled Deployment**
+
+We use `bun build` to bundle dependencies into a single file, avoiding runtime resolution issues and significantly reducing upload size.
+
+1. **Run the Build Script**:
+   ```bash
+   cd functions/export-leads
+   bun run build.ts
+   ```
+
+2. **Deploy the `dist` folder**:
+   ```bash
+   cd ../..
+   npx appwrite functions create-deployment \
+     --function-id export-leads \
+     --activate true \
+     --entrypoint main.js \
+     --code ./functions/export-leads/dist
+   ```
+
+> **Why Bundling?** Packages like `exceljs` have deep dependency trees (`readdir-glob` → `minimatch` → ...) that are hard to manage in serverless runtimes. Bundling compilation bakes them all into one file.
+
+#### Troubleshooting: Manual Dependencies (Legacy)
+
+If you prefer not to bundle, install missing packages explicitly:
+1. Identify missing package from logs.
+2. `bun add <package>` in function dir.
+3. Redeploy.
+
+**Known tricky chains:** `exceljs` → `jszip`, `fast-csv`, `archiver`, `saxes`. All solved by bundling.
 
 ### Step 7: Configure Function Environment Variables
 
