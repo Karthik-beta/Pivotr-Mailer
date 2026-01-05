@@ -1,0 +1,11 @@
+{
+    "name": "export-leads",
+    "version": "1.0.0",
+    "main": "src/main.ts",
+    "type": "module",
+    "dependencies": {
+        "node-appwrite": "^14.0.0",
+        "xlsx": "^0.18.5",
+        "node-fetch-native-with-agent": "^1.0.0"
+    }
+}

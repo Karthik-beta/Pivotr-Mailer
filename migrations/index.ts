@@ -26,3 +26,4 @@ export * from "./006_create_settings";
 export * from "./007_create_indexes";
 export * from "./008_seed_initial_data";
 export * from "./009_create_locks";
+export * from "./010_create_staged_leads";

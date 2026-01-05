@@ -1,9 +1,11 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { Input } from "@/components/ui/input";
-import { CsvUploader } from "@/features/leads/components/csv-uploader";
+import { ExcelImportDialog } from "@/features/leads/components/excel-import-dialog";
+import { ExportLeadsButton } from "@/features/leads/components/export-leads-button";
 import { LeadsTable } from "@/features/leads/components/leads-table";
 
 const searchSchema = z.object({
@@ -47,6 +49,7 @@ export const Route = createFileRoute("/leads")({
 
 function LeadsPage() {
 	const navigate = useNavigate({ from: Route.fullPath });
+	const queryClient = useQueryClient();
 	const searchParams = Route.useSearch();
 	const [searchValue, setSearchValue] = useState(searchParams.search || "");
 
@@ -70,6 +73,10 @@ function LeadsPage() {
 		}
 	};
 
+	const handleImportSuccess = () => {
+		queryClient.invalidateQueries({ queryKey: ["leads"] });
+	};
+
 	return (
 		<div className="p-8 space-y-6 max-w-[1600px] mx-auto">
 			<div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -77,11 +84,10 @@ function LeadsPage() {
 					<h1 className="text-3xl font-bold tracking-tight mb-2">Lead Management</h1>
 					<p className="text-muted-foreground">Manage waitlist, verify emails, and track status.</p>
 				</div>
-				<CsvUploader onUploadSuccess={() => window.location.reload()} />
-				{/* Simple reload or query invalidation. Query invalidation is better but reload is easiest "Refetch" handled by React Query internally if I invalidate? 
-            CsvUploader handles upload but process is async. List updates via polling or manual refresh. 
-            React Query will fetch on mount/focus. 
-        */}
+				<div className="flex gap-2">
+					<ExcelImportDialog onImportSuccess={handleImportSuccess} />
+					<ExportLeadsButton />
+				</div>
 			</div>
 
 			<div className="flex items-center space-x-2 max-w-sm">

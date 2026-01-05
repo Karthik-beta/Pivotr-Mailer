@@ -11,6 +11,7 @@ export const DATABASE_ID = "pivotr_mailer";
 /** Collection IDs */
 export const CollectionId = {
 	LEADS: "leads",
+	STAGED_LEADS: "staged_leads",
 	CAMPAIGNS: "campaigns",
 	LOGS: "logs",
 	METRICS: "metrics",
@@ -21,7 +22,7 @@ export type CollectionIdType = (typeof CollectionId)[keyof typeof CollectionId];
 
 /** Storage Bucket IDs */
 export const BucketId = {
-	CSV_IMPORTS: "csv-imports",
+	LEAD_IMPORTS: "lead-imports",
 } as const;
 
 /**
