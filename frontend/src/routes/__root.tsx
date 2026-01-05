@@ -1,5 +1,6 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { type QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
 	createRootRouteWithContext,
 	HeadContent,
@@ -76,6 +77,7 @@ function RootDocument() {
 					<GridPattern className="fixed inset-0 z-[-1]" />
 					<QueryClientProvider client={queryClient}>
 						<RootLayout />
+						<ReactQueryDevtools initialIsOpen={false} />
 					</QueryClientProvider>
 					<TanStackDevtools
 						config={{

@@ -1,69 +1,95 @@
 import { CollectionId, DATABASE_ID } from "@shared/constants/collection.constants";
 import type { Campaign } from "@shared/types/campaign.types";
 import type { Log } from "@shared/types/log.types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Query } from "appwrite";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useRealtimeSubscription } from "@/features/shared/hooks/use-realtime";
 import { databases } from "@/lib/appwrite";
+import { campaignKeys, logsKeys } from "@/lib/query-keys";
 
 export function useDashboard() {
-	const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null);
-	const [recentLogs, setRecentLogs] = useState<Log[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
+	const queryClient = useQueryClient();
 
-	// Initial Fetch
-	useEffect(() => {
-		async function init() {
-			try {
-				// Fetch latest campaign
-				const campaignRes = await databases.listDocuments(DATABASE_ID, CollectionId.CAMPAIGNS, [
-					Query.orderDesc("$createdAt"),
-					Query.limit(1),
-				]);
+	// 1. Queries
+	const { data: activeCampaign, isPending: isLoadingCampaign } = useQuery({
+		queryKey: campaignKeys.active(),
+		queryFn: async () => {
+			const response = await databases.listDocuments(DATABASE_ID, CollectionId.CAMPAIGNS, [
+				Query.orderDesc("$createdAt"),
+				Query.limit(1),
+			]);
+			return response.documents.length > 0 ? (response.documents[0] as unknown as Campaign) : null;
+		},
+		staleTime: 1000 * 60, // 1 minute
+	});
 
-				if (campaignRes.documents.length > 0) {
-					setActiveCampaign(campaignRes.documents[0] as unknown as Campaign);
-				}
+	const { data: recentLogs = [], isPending: isLoadingLogs } = useQuery({
+		queryKey: logsKeys.recent(),
+		queryFn: async () => {
+			const response = await databases.listDocuments(DATABASE_ID, CollectionId.LOGS, [
+				Query.orderDesc("$createdAt"),
+				Query.limit(50),
+			]);
+			// Reverse to show oldest at top in console (console auto-scrolls)
+			return (response.documents as unknown as Log[]).reverse();
+		},
+		staleTime: 1000 * 60,
+	});
 
-				// Fetch recent logs
-				const logsRes = await databases.listDocuments(DATABASE_ID, CollectionId.LOGS, [
-					Query.orderDesc("$createdAt"),
-					Query.limit(50),
-				]);
-				// Reverse to show oldest at top in console (console auto-scrolls)
-				setRecentLogs((logsRes.documents as unknown as Log[]).reverse());
-			} catch (error) {
-				console.error("Failed to load dashboard data", error);
-				toast.error("Failed to load dashboard data");
-			} finally {
-				setIsLoading(false);
-			}
-		}
+	// 2. Mutations
+	const { mutate: updateCampaignStatus } = useMutation({
+		mutationFn: async (status: string) => {
+			if (!activeCampaign) return;
+			await databases.updateDocument(DATABASE_ID, CollectionId.CAMPAIGNS, activeCampaign.$id, {
+				status,
+			});
+		},
+		onSuccess: (_, status) => {
+			// Invalidate active campaign to ensure UI reflects status change immediately if optimistic update isn't used
+			queryClient.invalidateQueries({ queryKey: campaignKeys.active() });
+			toast.success(`Campaign ${status}`);
+		},
+		onError: (error, status) => {
+			console.error(error);
+			toast.error(`Failed to update status to ${status}`);
+		},
+	});
 
-		init();
-	}, []);
-
-	// Realtime Subscriptions
+	// 3. Realtime Subscriptions
+	// Campaign Updates
 	useRealtimeSubscription(
 		`databases.${DATABASE_ID}.collections.${CollectionId.CAMPAIGNS}.documents`,
 		(response) => {
-			// If the event is for the active campaign, update it
-			if (activeCampaign && (response.payload as { $id: string }).$id === activeCampaign.$id) {
-				setActiveCampaign(response.payload as unknown as Campaign);
+			// Check if the update matches our active campaign
+			if (activeCampaign && (response.payload as Campaign).$id === activeCampaign.$id) {
+				const updatedCampaign = response.payload as unknown as Campaign;
+
+				// Optimistically update the cache
+				queryClient.setQueryData(campaignKeys.active(), updatedCampaign);
+			} else if (
+				!activeCampaign &&
+				response.events.includes("databases.*.collections.*.documents.*.create")
+			) {
+				// If we have no active campaign and a new one is created, it might become the active one.
+				// Simplest approach is to invalidate.
+				queryClient.invalidateQueries({ queryKey: campaignKeys.active() });
 			}
-			// Or if it's a new campaign and we don't have one, or it's newer?
-			// For simplicity, just update if it matches active.
 		}
 	);
 
+	// Log Updates
 	useRealtimeSubscription(
 		`databases.${DATABASE_ID}.collections.${CollectionId.LOGS}.documents`,
 		(response) => {
 			if (response.events.includes("databases.*.collections.*.documents.*.create")) {
 				const newLog = response.payload as unknown as Log;
-				setRecentLogs((prev) => {
-					const updated = [...prev, newLog];
+
+				// Update cache by appending new log
+				queryClient.setQueryData(logsKeys.recent(), (oldLogs: Log[] | undefined) => {
+					const currentLogs = oldLogs || [];
+					const updated = [...currentLogs, newLog];
+					// Keep only last 100 items to avoid memory issues
 					if (updated.length > 100) return updated.slice(updated.length - 100);
 					return updated;
 				});
@@ -71,24 +97,10 @@ export function useDashboard() {
 		}
 	);
 
-	// Actions
-	const updateCampaignStatus = async (status: string) => {
-		if (!activeCampaign) return;
-		try {
-			await databases.updateDocument(DATABASE_ID, CollectionId.CAMPAIGNS, activeCampaign.$id, {
-				status,
-			});
-			toast.success(`Campaign ${status}`);
-		} catch (e) {
-			console.error(e);
-			toast.error(`Failed to update status to ${status}`);
-		}
-	};
-
 	return {
 		activeCampaign,
 		recentLogs,
-		isLoading,
+		isLoading: isLoadingCampaign || isLoadingLogs,
 		updateCampaignStatus,
 	};
 }

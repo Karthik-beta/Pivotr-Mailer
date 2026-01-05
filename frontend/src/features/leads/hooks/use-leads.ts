@@ -4,9 +4,11 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Query } from "appwrite";
 import { databases } from "@/lib/appwrite";
 
+import { leadsKeys } from "@/lib/query-keys";
+
 export function useLeads(page: number = 1, limit: number = 50, search?: string) {
 	return useQuery({
-		queryKey: ["leads", page, limit, search],
+		queryKey: leadsKeys.list(page, limit, search),
 		queryFn: async () => {
 			const offset = (page - 1) * limit;
 			const queries = [Query.limit(limit), Query.offset(offset), Query.orderDesc("$createdAt")];

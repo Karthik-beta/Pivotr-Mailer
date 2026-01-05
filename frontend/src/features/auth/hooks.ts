@@ -3,11 +3,9 @@ import { useNavigate } from "@tanstack/react-router";
 import { useSyncExternalStore } from "react";
 import { account } from "@/lib/appwrite";
 
-// Query Keys
-export const AUTH_KEYS = {
-	session: ["auth", "session"],
-	account: ["auth", "account"],
-} as const;
+import { authKeys } from "@/lib/query-keys";
+
+// Query Keys removed in favor of factory
 
 /**
  * Logout State Management
@@ -68,7 +66,7 @@ export function useTransitioningState() {
 
 export function useUser() {
 	return useQuery({
-		queryKey: AUTH_KEYS.account,
+		queryKey: authKeys.account(),
 		queryFn: async () => {
 			try {
 				return await account.get();
@@ -92,8 +90,8 @@ export function useLogout() {
 			await account.deleteSession("current");
 		},
 		onSuccess: () => {
-			queryClient.setQueryData(AUTH_KEYS.account, null);
-			queryClient.invalidateQueries({ queryKey: AUTH_KEYS.account });
+			queryClient.setQueryData(authKeys.account(), null);
+			queryClient.invalidateQueries({ queryKey: authKeys.account() });
 			navigate({ to: "/login" });
 		},
 		onError: () => {
@@ -107,7 +105,7 @@ export function useSyncGoogleAvatar() {
 	const queryClient = useQueryClient();
 
 	return useQuery({
-		queryKey: ["auth", "sync-avatar", user?.$id],
+		queryKey: authKeys.syncAvatar(user?.$id),
 		queryFn: async () => {
 			if (!user) return null;
 			if (user.prefs.avatar) return null; // Avatar already exists
@@ -135,7 +133,7 @@ export function useSyncGoogleAvatar() {
 							avatar: picture,
 						},
 					});
-					await queryClient.invalidateQueries({ queryKey: AUTH_KEYS.account });
+					await queryClient.invalidateQueries({ queryKey: authKeys.account() });
 					return picture;
 				}
 			} catch (error) {
