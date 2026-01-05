@@ -1,7 +1,7 @@
 import { CollectionId, DATABASE_ID } from "@shared/constants/collection.constants";
 import type { Campaign } from "@shared/types/campaign.types";
 import type { Log } from "@shared/types/log.types";
-import { useMutation, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Query } from "appwrite";
 import { toast } from "sonner";
 import { useRealtimeSubscription } from "@/features/shared/hooks/use-realtime";

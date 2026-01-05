@@ -11,11 +11,11 @@ const searchSchema = z.object({
 	search: z.string().optional(),
 });
 
-import { leadsKeys } from "@/lib/query-keys";
 import { CollectionId, DATABASE_ID } from "@shared/constants/collection.constants";
+import type { Lead } from "@shared/types/lead.types";
 import { Query } from "appwrite";
 import { databases } from "@/lib/appwrite";
-import type { Lead } from "@shared/types/lead.types";
+import { leadsKeys } from "@/lib/query-keys";
 
 export const Route = createFileRoute("/leads")({
 	component: LeadsPage,

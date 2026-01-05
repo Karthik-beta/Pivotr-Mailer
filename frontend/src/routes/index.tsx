@@ -1,5 +1,9 @@
+import { CollectionId, DATABASE_ID } from "@shared/constants/collection.constants";
 import { CampaignStatus } from "@shared/constants/status.constants";
+import type { Campaign } from "@shared/types/campaign.types";
+import type { Log } from "@shared/types/log.types";
 import { createFileRoute } from "@tanstack/react-router";
+import { Query } from "appwrite";
 import { format } from "date-fns";
 import { AlertTriangle, CheckCircle, Clock, Database, Mail, Zap } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7,13 +11,8 @@ import { CampaignControls } from "@/features/dashboard/components/campaign-contr
 import { DashboardConsole } from "@/features/dashboard/components/dashboard-console";
 import { MetricCard } from "@/features/dashboard/components/metric-card";
 import { useDashboard } from "@/features/dashboard/hooks/use-dashboard";
-
-import { campaignKeys, logsKeys } from "@/lib/query-keys";
-import { CollectionId, DATABASE_ID } from "@shared/constants/collection.constants";
-import { Query } from "appwrite";
 import { databases } from "@/lib/appwrite";
-import type { Campaign } from "@shared/types/campaign.types";
-import type { Log } from "@shared/types/log.types";
+import { campaignKeys, logsKeys } from "@/lib/query-keys";
 
 export const Route = createFileRoute("/")({
 	component: Dashboard,
@@ -26,7 +25,9 @@ export const Route = createFileRoute("/")({
 						Query.orderDesc("$createdAt"),
 						Query.limit(1),
 					]);
-					return response.documents.length > 0 ? (response.documents[0] as unknown as Campaign) : null;
+					return response.documents.length > 0
+						? (response.documents[0] as unknown as Campaign)
+						: null;
 				},
 				staleTime: 1000 * 60,
 			}),

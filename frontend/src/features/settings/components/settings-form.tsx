@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { type Resolver, useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,8 +37,7 @@ export function SettingsForm() {
 	const { settings, updateSettings, isSaving } = useSettings();
 
 	const form = useForm<SettingsFormValues>({
-		// Cast resolver to any to avoid strict type mismatch between zod/react-hook-form versions
-		resolver: zodResolver(settingsSchema) as any,
+		resolver: zodResolver(settingsSchema) as Resolver<SettingsFormValues>,
 		defaultValues: {
 			awsSesRegion: settings?.awsSesRegion || "ap-south-1",
 			awsSesAccessKeyId: settings?.awsSesAccessKeyId || "",
@@ -51,7 +50,7 @@ export function SettingsForm() {
 			sqsPollingIntervalMs: (settings?.sqsPollingIntervalMs as number) || 60000,
 			maxRetries: (settings?.maxRetries as number) || 3,
 			unsubscribeTokenSecret: settings?.unsubscribeTokenSecret || "",
-		},
+		} as SettingsFormValues,
 	});
 
 	function onSubmit(data: SettingsFormValues) {

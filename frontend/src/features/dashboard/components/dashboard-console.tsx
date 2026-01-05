@@ -1,8 +1,8 @@
+import { LogSeverity } from "@shared/constants/status.constants";
+import type { Log } from "@shared/types/log.types";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
-import type { Log } from "@shared/types/log.types";
-import { LogSeverity } from "@shared/constants/status.constants";
 
 interface DashboardConsoleProps {
 	logs: Log[];
@@ -48,7 +48,7 @@ export function DashboardConsole({ logs, className }: DashboardConsoleProps) {
 		<div
 			className={cn(
 				"flex flex-col border border-border rounded-md bg-zinc-950 text-zinc-50 font-mono text-xs shadow-inner h-[350px]", // Fixed height for container
-				className,
+				className
 			)}
 		>
 			{/* Header */}

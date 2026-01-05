@@ -4,7 +4,7 @@ import {
 	SETTINGS_DOCUMENT_ID,
 } from "@shared/constants/collection.constants";
 import type { Settings, SettingsUpdateInput } from "@shared/types/settings.types";
-import { useMutation, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { databases } from "@/lib/appwrite";
 import { settingsKeys } from "@/lib/query-keys";

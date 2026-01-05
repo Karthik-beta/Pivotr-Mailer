@@ -9,7 +9,7 @@ import { authKeys } from "@/lib/query-keys";
 
 /**
  * Logout State Management
- * 
+ *
  * Uses module-level state shared between RootLayout and AuthGuard to ensure
  * seamless logout transitions. During logout:
  * 1. isLoggingOut=true triggers immediately when logout starts

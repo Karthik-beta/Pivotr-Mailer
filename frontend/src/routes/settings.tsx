@@ -1,14 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { SettingsForm, SettingsSkeleton } from "@/features/settings/components/settings-form";
-
-import { settingsKeys } from "@/lib/query-keys";
 import {
 	CollectionId,
 	DATABASE_ID,
 	SETTINGS_DOCUMENT_ID,
 } from "@shared/constants/collection.constants";
 import type { Settings } from "@shared/types/settings.types";
+import { createFileRoute } from "@tanstack/react-router";
+import { SettingsForm, SettingsSkeleton } from "@/features/settings/components/settings-form";
 import { databases } from "@/lib/appwrite";
+import { settingsKeys } from "@/lib/query-keys";
 
 export const Route = createFileRoute("/settings")({
 	component: SettingsPage,

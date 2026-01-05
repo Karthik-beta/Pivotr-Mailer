@@ -1,7 +1,8 @@
+import type { Lead } from "@shared/types/lead.types";
 import {
-	type PaginationState,
 	flexRender,
 	getCoreRowModel,
+	type PaginationState,
 	useReactTable,
 } from "@tanstack/react-table";
 import { useState } from "react";
@@ -20,7 +21,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import type { Lead } from "@shared/types/lead.types";
 import { useLeads } from "../hooks/use-leads";
 import { columns } from "./columns";
 import { NameParserDrawer } from "./name-parser-drawer";
@@ -82,13 +82,13 @@ export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 							<TableRow key={headerGroup.id}>
 								{headerGroup.headers.map((header) => {
 									return (
-										<TableHead key={header.id} className={header.column.id === "actions" ? "text-right" : ""}>
+										<TableHead
+											key={header.id}
+											className={header.column.id === "actions" ? "text-right" : ""}
+										>
 											{header.isPlaceholder
 												? null
-												: flexRender(
-													header.column.columnDef.header,
-													header.getContext()
-												)}
+												: flexRender(header.column.columnDef.header, header.getContext())}
 										</TableHead>
 									);
 								})}
@@ -98,12 +98,12 @@ export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 					<TableBody>
 						{table.getRowModel().rows?.length ? (
 							table.getRowModel().rows.map((row) => (
-								<TableRow
-									key={row.id}
-									data-state={row.getIsSelected() && "selected"}
-								>
+								<TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
 									{row.getVisibleCells().map((cell) => (
-										<TableCell key={cell.id} className={cell.column.id === "actions" ? "text-right" : ""}>
+										<TableCell
+											key={cell.id}
+											className={cell.column.id === "actions" ? "text-right" : ""}
+										>
 											{flexRender(cell.column.columnDef.cell, cell.getContext())}
 										</TableCell>
 									))}
@@ -133,7 +133,9 @@ export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 										onPageChange(apiPage - 1);
 									}
 								}}
-								className={!table.getCanPreviousPage() ? "pointer-events-none opacity-50" : "cursor-pointer"}
+								className={
+									!table.getCanPreviousPage() ? "pointer-events-none opacity-50" : "cursor-pointer"
+								}
 							/>
 						</PaginationItem>
 						<PaginationItem>
@@ -151,7 +153,9 @@ export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 										onPageChange(apiPage + 1);
 									}
 								}}
-								className={!table.getCanNextPage() ? "pointer-events-none opacity-50" : "cursor-pointer"}
+								className={
+									!table.getCanNextPage() ? "pointer-events-none opacity-50" : "cursor-pointer"
+								}
 							/>
 						</PaginationItem>
 					</PaginationContent>

@@ -1,6 +1,12 @@
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { resetLogoutState, setTransitioning, useLogoutState, useTransitioningState, useUser } from "@/features/auth/hooks";
+import {
+	resetLogoutState,
+	setTransitioning,
+	useLogoutState,
+	useTransitioningState,
+	useUser,
+} from "@/features/auth/hooks";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
 	const { data: user, isLoading } = useUser();
