@@ -7,11 +7,43 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { useEffect, useState } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { GridPattern } from "@/components/ui/grid-pattern";
 import { RootLayout } from "@/features/shared/layouts/root-layout";
 
 import appCss from "../styles.css?url";
+
+/**
+ * Render devtools only after client hydration completes.
+ *
+ * TanStackDevtools auto-detects @tanstack/react-query and calls useQueryClient()
+ * during render. This hook throws "No QueryClient set" during SSR because
+ * QueryClientProvider context isn't available until hydration.
+ */
+function ClientOnlyDevtools() {
+	const [mounted, setMounted] = useState(false);
+
+	useEffect(() => {
+		setMounted(true);
+	}, []);
+
+	if (!mounted) return null;
+
+	return (
+		<TanStackDevtools
+			config={{
+				position: "bottom-right",
+			}}
+			plugins={[
+				{
+					name: "Tanstack Router",
+					render: <TanStackRouterDevtoolsPanel />,
+				},
+			]}
+		/>
+	);
+}
 
 // Define the router context type
 interface RouterContext {
@@ -76,18 +108,8 @@ function RootDocument() {
 					<GridPattern className="fixed inset-0 z-[-1]" />
 					<QueryClientProvider client={queryClient}>
 						<RootLayout />
+						<ClientOnlyDevtools />
 					</QueryClientProvider>
-					<TanStackDevtools
-						config={{
-							position: "bottom-right",
-						}}
-						plugins={[
-							{
-								name: "Tanstack Router",
-								render: <TanStackRouterDevtoolsPanel />,
-							},
-						]}
-					/>
 					<Scripts />
 				</ThemeProvider>
 			</body>

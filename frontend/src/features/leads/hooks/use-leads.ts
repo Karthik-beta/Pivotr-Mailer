@@ -1,12 +1,13 @@
 import { CollectionId, DATABASE_ID } from "@shared/constants/collection.constants";
 import type { Lead } from "@shared/types/lead.types";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Query } from "appwrite";
 import { databases } from "@/lib/appwrite";
+import { leadsKeys } from "@/lib/query-keys";
 
 export function useLeads(page: number = 1, limit: number = 50, search?: string) {
-	return useQuery({
-		queryKey: ["leads", page, limit, search],
+	return useSuspenseQuery({
+		queryKey: leadsKeys.list(page, limit, search),
 		queryFn: async () => {
 			const offset = (page - 1) * limit;
 			const queries = [Query.limit(limit), Query.offset(offset), Query.orderDesc("$createdAt")];
@@ -22,6 +23,5 @@ export function useLeads(page: number = 1, limit: number = 50, search?: string) 
 				total: response.total,
 			};
 		},
-		placeholderData: keepPreviousData,
 	});
 }

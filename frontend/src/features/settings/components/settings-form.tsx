@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { type Resolver, useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +19,7 @@ import { useSettings } from "../hooks/use-settings";
 
 const settingsSchema = z.object({
 	awsSesRegion: z.string().min(1, "Required"),
-	awsSesAccessKeyId: z.string().optional(), // Optional if env vars used, but here we allow editing
+	awsSesAccessKeyId: z.string().optional(),
 	awsSesSecretAccessKey: z.string().optional(),
 	awsSqsQueueUrl: z.string().optional(),
 	awsSqsRegion: z.string().min(1, "Required"),
@@ -35,49 +34,27 @@ const settingsSchema = z.object({
 type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 export function SettingsForm() {
-	const { settings, isLoading, updateSettings, isSaving } = useSettings();
+	const { settings, updateSettings, isSaving } = useSettings();
 
 	const form = useForm<SettingsFormValues>({
-		resolver: zodResolver(settingsSchema),
+		resolver: zodResolver(settingsSchema) as Resolver<SettingsFormValues>,
 		defaultValues: {
-			awsSesRegion: "ap-south-1",
-			awsSesAccessKeyId: "",
-			awsSesSecretAccessKey: "",
-			awsSqsQueueUrl: "",
-			awsSqsRegion: "ap-south-1",
-			myEmailVerifierApiKey: "",
-			defaultMinDelayMs: 60000,
-			defaultMaxDelayMs: 180000,
-			sqsPollingIntervalMs: 60000,
-			maxRetries: 3,
-			unsubscribeTokenSecret: "",
-		},
+			awsSesRegion: settings?.awsSesRegion || "ap-south-1",
+			awsSesAccessKeyId: settings?.awsSesAccessKeyId || "",
+			awsSesSecretAccessKey: settings?.awsSesSecretAccessKey || "",
+			awsSqsQueueUrl: settings?.awsSqsQueueUrl || "",
+			awsSqsRegion: settings?.awsSqsRegion || "ap-south-1",
+			myEmailVerifierApiKey: settings?.myEmailVerifierApiKey || "",
+			defaultMinDelayMs: (settings?.defaultMinDelayMs as number) || 60000,
+			defaultMaxDelayMs: (settings?.defaultMaxDelayMs as number) || 180000,
+			sqsPollingIntervalMs: (settings?.sqsPollingIntervalMs as number) || 60000,
+			maxRetries: (settings?.maxRetries as number) || 3,
+			unsubscribeTokenSecret: settings?.unsubscribeTokenSecret || "",
+		} as SettingsFormValues,
 	});
 
-	useEffect(() => {
-		if (settings) {
-			form.reset({
-				awsSesRegion: settings.awsSesRegion,
-				awsSesAccessKeyId: settings.awsSesAccessKeyId,
-				awsSesSecretAccessKey: settings.awsSesSecretAccessKey,
-				awsSqsQueueUrl: settings.awsSqsQueueUrl,
-				awsSqsRegion: settings.awsSqsRegion,
-				myEmailVerifierApiKey: settings.myEmailVerifierApiKey,
-				defaultMinDelayMs: settings.defaultMinDelayMs,
-				defaultMaxDelayMs: settings.defaultMaxDelayMs,
-				sqsPollingIntervalMs: settings.sqsPollingIntervalMs,
-				maxRetries: settings.maxRetries,
-				unsubscribeTokenSecret: settings.unsubscribeTokenSecret,
-			});
-		}
-	}, [settings, form]);
-
-	const onSubmit = (data: SettingsFormValues) => {
+	function onSubmit(data: SettingsFormValues) {
 		updateSettings(data);
-	};
-
-	if (isLoading) {
-		return <SettingsSkeleton />;
 	}
 
 	return (
@@ -284,7 +261,7 @@ export function SettingsForm() {
 	);
 }
 
-function SettingsSkeleton() {
+export function SettingsSkeleton() {
 	return (
 		<div className="space-y-6">
 			<Skeleton className="h-[300px] w-full" />
