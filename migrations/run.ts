@@ -21,6 +21,8 @@ import { createMetricsCollection } from "./005_create_metrics";
 import { createSettingsCollection } from "./006_create_settings";
 import { createIndexes } from "./007_create_indexes";
 import { seedInitialData } from "./008_seed_initial_data";
+import { createLocksCollection } from "./009_create_locks";
+import { createStagedLeadsCollection } from "./010_create_staged_leads";
 
 async function runMigrations(): Promise<void> {
 	console.log("╔═══════════════════════════════════════════════════════════════╗");
@@ -76,12 +78,20 @@ async function runMigrations(): Promise<void> {
 		await createSettingsCollection(client);
 
 		console.log("─────────────────────────────────────────────────────────────────");
-		console.log("Step 7/8: Creating indexes...");
+		console.log("Step 7/10: Creating indexes...");
 		await createIndexes(client);
 
 		console.log("─────────────────────────────────────────────────────────────────");
+		console.log("Step 8/10: Creating locks collection...");
+		await createLocksCollection(client);
+
 		console.log("─────────────────────────────────────────────────────────────────");
-		console.log("Step 8/8: Seeding initial data...");
+		console.log("Step 9/10: Creating staged leads collection...");
+		await createStagedLeadsCollection(client);
+
+		console.log("─────────────────────────────────────────────────────────────────");
+		console.log("─────────────────────────────────────────────────────────────────");
+		console.log("Step 10/10: Seeding initial data...");
 		console.log("Waiting for attributes to be available...");
 		await new Promise((resolve) => setTimeout(resolve, 5000));
 		await seedInitialData(client);

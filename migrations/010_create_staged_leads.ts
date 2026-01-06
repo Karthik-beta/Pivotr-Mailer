@@ -4,7 +4,7 @@
  * Creates the staged_leads collection for Excel import staging workflow.
  * Staged leads are reviewed and approved before moving to the main leads collection.
  */
-import { type Client, Databases } from "node-appwrite";
+import { type Client, Databases, IndexType } from "node-appwrite";
 import { CollectionId, DATABASE_ID } from "../shared/constants/collection.constants";
 
 export async function createStagedLeadsCollection(client: Client): Promise<void> {
@@ -61,9 +61,24 @@ export async function createStagedLeadsCollection(client: Client): Promise<void>
 	await databases.createStringAttribute(DATABASE_ID, collectionId, "importedBy", 36, false);
 
 	// Extensible metadata
-	await databases.createStringAttribute(DATABASE_ID, collectionId, "metadata", 10000, false);
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "metadata", 4000, false);
 
-	console.log(`Collection '${collectionId}' created with all attributes.`);
+	// Create Indexes
+	try {
+		await databases.createIndex(DATABASE_ID, collectionId, "batch_id_idx", IndexType.Key, ["batchId"]);
+		console.log("Created index: staged_leads.batch_id_idx");
+	} catch (e) {
+		console.log("Index staged_leads.batch_id_idx already exists or failed:", (e as Error).message);
+	}
+
+	try {
+		await databases.createIndex(DATABASE_ID, collectionId, "is_valid_idx", IndexType.Key, ["isValid"]);
+		console.log("Created index: staged_leads.is_valid_idx");
+	} catch (e) {
+		console.log("Index staged_leads.is_valid_idx already exists or failed:", (e as Error).message);
+	}
+
+	console.log(`Collection '${collectionId}' created with all attributes and indexes.`);
 }
 
 /**

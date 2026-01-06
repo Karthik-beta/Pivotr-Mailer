@@ -1,9 +1,8 @@
 import { Outlet, useRouterState } from "@tanstack/react-router";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { useLogoutState, useTransitioningState } from "@/features/auth/hooks";
 import { RecoveryBanner } from "@/features/system/components/recovery-banner";
-import { useSidebar } from "@/hooks/use-sidebar";
-import { cn } from "@/lib/utils";
 import { AppHeader } from "./app-header";
 import { AppSidebar } from "./app-sidebar";
 import { AuthGuard } from "./auth-guard";
@@ -13,7 +12,6 @@ export function RootLayout() {
 	const isLoginPage = router.location.pathname === "/login";
 	const isLoggingOut = useLogoutState();
 	const isTransitioning = useTransitioningState();
-	const { isCollapsed, toggleSidebar } = useSidebar();
 
 	// During logout or transition, render only the loader without Outlet
 	// This prevents any content flash during the logout animation
@@ -38,28 +36,20 @@ export function RootLayout() {
 		);
 	}
 
-	// Authenticated app - full layout with sidebar
-
+	// Authenticated app - full layout with shadcn sidebar
 	return (
 		<div className="min-h-screen font-sans antialiased">
 			<AuthGuard>
-				<div
-					className={cn(
-						"grid h-screen w-full transition-all duration-300 ease-in-out overflow-hidden",
-						isCollapsed ? "lg:grid-cols-[64px_1fr]" : "lg:grid-cols-[240px_1fr]"
-					)}
-				>
-					<div className="hidden border-r bg-muted/40 lg:block transition-all duration-300 ease-in-out overflow-hidden">
-						<AppSidebar isCollapsed={isCollapsed} toggleSidebar={toggleSidebar} />
-					</div>
-					<div className="flex flex-col h-full overflow-hidden">
+				<SidebarProvider>
+					<AppSidebar />
+					<SidebarInset className="bg-transparent">
 						<RecoveryBanner />
 						<AppHeader />
-						<div className="flex-1 overflow-y-auto p-0">
+						<div className="flex-1 overflow-y-auto p-0 bg-transparent">
 							<Outlet />
 						</div>
-					</div>
-				</div>
+					</SidebarInset>
+				</SidebarProvider>
 			</AuthGuard>
 			<Toaster />
 		</div>

@@ -8,7 +8,7 @@ A modern full-stack web application built with **TanStack Start** for the fronte
 
 | Layer      | Technology                                                        |
 | ---------- | ----------------------------------------------------------------- |
-| Frontend   | [TanStack Start](https://tanstack.com/start/latest)               |
+| Frontend   | [TanStack Start](https://tanstack.com/start/latest) (Router, Query, Table, Virtual) |
 | UI Library | [React 19](https://react.dev/)                                    |
 | Styling    | [Tailwind CSS v4](https://tailwindcss.com/)                       |
 | Backend    | [Appwrite](https://appwrite.io/) (Self-hosted via Docker Compose) |
@@ -38,6 +38,7 @@ Pivotr Mailer/
 │   ├── docker-compose.yml     # Appwrite self-hosted configuration
 │   └── .env                   # Infrastructure environment variables
 ├── migrations/                # Database migrations
+├── scripts/                   # Automation & utility scripts
 ├── shared/                    # Shared utilities & types
 ├── appwrite.config.json       # Appwrite CLI configuration
 ├── ABOUT.md                   # Project overview

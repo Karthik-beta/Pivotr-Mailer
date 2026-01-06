@@ -1,8 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Search } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ClipboardList, Search } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ExcelImportDialog } from "@/features/leads/components/excel-import-dialog";
 import { ExportLeadsButton } from "@/features/leads/components/export-leads-button";
@@ -19,7 +20,7 @@ import { Query } from "appwrite";
 import { databases } from "@/lib/appwrite";
 import { leadsKeys } from "@/lib/query-keys";
 
-export const Route = createFileRoute("/leads")({
+export const Route = createFileRoute("/leads/")({
 	component: LeadsPage,
 	validateSearch: searchSchema,
 	loaderDeps: ({ search: { page, search } }) => ({ page, search }),
@@ -41,9 +42,9 @@ export const Route = createFileRoute("/leads")({
 				return {
 					leads: response.documents as unknown as Lead[],
 					total: response.total,
-				};
+				}
 			},
-		});
+		})
 	},
 });
 
@@ -56,26 +57,26 @@ function LeadsPage() {
 	const handleSearch = () => {
 		navigate({
 			search: (prev) => ({ ...prev, search: searchValue || undefined, page: 1 }),
-		});
-	};
+		})
+	}
 
 	const handlePageChange = (newPage: number) => {
 		navigate({
 			search: (prev) => ({ ...prev, page: newPage }),
-		});
+		})
 		// Scroll to top
 		window.scrollTo({ top: 0, behavior: "smooth" });
-	};
+	}
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === "Enter") {
 			handleSearch();
 		}
-	};
+	}
 
 	const handleImportSuccess = () => {
 		queryClient.invalidateQueries({ queryKey: ["leads"] });
-	};
+	}
 
 	return (
 		<div className="p-8 space-y-6 max-w-[1600px] mx-auto">
@@ -85,6 +86,12 @@ function LeadsPage() {
 					<p className="text-muted-foreground">Manage waitlist, verify emails, and track status.</p>
 				</div>
 				<div className="flex gap-2">
+					<Link to="/leads/staging">
+						<Button variant="outline" className="gap-2">
+							<ClipboardList className="h-4 w-4" />
+							View Staging
+						</Button>
+					</Link>
 					<ExcelImportDialog onImportSuccess={handleImportSuccess} />
 					<ExportLeadsButton />
 				</div>
@@ -109,5 +116,5 @@ function LeadsPage() {
 				onPageChange={handlePageChange}
 			/>
 		</div>
-	);
+	)
 }
