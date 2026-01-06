@@ -12,14 +12,14 @@
  */
 
 import { Client } from 'node-appwrite';
-import { EventType } from '../../../shared/constants/event.constants';
-import { LeadStatus } from '../../../shared/constants/status.constants';
+import { EventType } from './lib/shared/constants/event.constants';
+import { LeadStatus } from './lib/shared/constants/status.constants';
 
 // Shared modules
-import { getLeadById, updateLead } from '../../_shared/database/repositories/lead.repository';
-import { logInfo, logWarn } from '../../_shared/database/repositories/log.repository';
-import { getSettings } from '../../_shared/database/repositories/settings.repository';
-import { verifyUnsubscribeToken } from '../../_shared/spintax/variable-injector';
+import { getLeadById, updateLead } from './lib/shared/database/repositories/lead.repository';
+import { logInfo, logWarn } from './lib/shared/database/repositories/log.repository';
+import { getSettings } from './lib/shared/database/repositories/settings.repository';
+import { verifyUnsubscribeToken } from './lib/shared/spintax/variable-injector';
 
 /**
  * Appwrite Function context
@@ -44,11 +44,18 @@ interface AppwriteContext {
 export default async function main(context: AppwriteContext): Promise<unknown> {
 	const { req, res, log, error: logErr } = context;
 
+	// Get endpoint - fix localhost for Docker internal networking
+	let endpoint = process.env.APPWRITE_FUNCTION_API_ENDPOINT || '';
+	if (endpoint.includes('localhost') || endpoint.includes('127.0.0.1')) {
+		endpoint = endpoint.replace('localhost', 'appwrite').replace('127.0.0.1', 'appwrite');
+	}
+
 	// Initialize Appwrite client
 	const client = new Client()
-		.setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT || '')
+		.setEndpoint(endpoint)
 		.setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID || '')
-		.setKey(process.env.APPWRITE_API_KEY || '');
+		.setKey(process.env.APPWRITE_API_KEY || '')
+		.setSelfSigned(true);
 
 	try {
 		// Extract query parameters

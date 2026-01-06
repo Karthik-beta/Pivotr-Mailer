@@ -10,31 +10,31 @@
  */
 
 import type { Client } from 'node-appwrite';
-import { EventType } from '../../../shared/constants/event.constants';
-import { LeadStatus, VerificationResult } from '../../../shared/constants/status.constants';
-import type { Campaign } from '../../../shared/types/campaign.types';
-import type { Lead } from '../../../shared/types/lead.types';
-import type { Settings } from '../../../shared/types/settings.types';
-import { incrementCampaignCounter } from '../../_shared/database/repositories/campaign.repository';
+import { EventType } from './lib/shared/constants/event.constants';
+import { LeadStatus, VerificationResult } from './lib/shared/constants/status.constants';
+import type { Campaign } from './lib/shared/types/campaign.types';
+import type { Lead } from './lib/shared/types/lead.types';
+import type { Settings } from './lib/shared/types/settings.types';
+import { incrementCampaignCounter } from './lib/shared/database/repositories/campaign.repository';
 // Repositories
-import { getLeadById, updateLead } from '../../_shared/database/repositories/lead.repository';
-import { logError, logInfo, logWarn } from '../../_shared/database/repositories/log.repository';
-import type { LogCreateInput } from '../../../shared/types/log.types';
+import { getLeadById, updateLead } from './lib/shared/database/repositories/lead.repository';
+import { logError, logInfo, logWarn } from './lib/shared/database/repositories/log.repository';
+import type { LogCreateInput } from './lib/shared/types/log.types';
 import {
 	incrementCampaignMetrics,
 	incrementGlobalMetrics,
-} from '../../_shared/database/repositories/metrics.repository';
-import { verifyEmail } from '../../_shared/email-verifier/client';
+} from './lib/shared/database/repositories/metrics.repository';
+import { verifyEmail } from './lib/shared/email-verifier/client';
 // Shared modules
-import { parseIndianName } from '../../_shared/name-parser/parser';
-import { sendEmail } from '../../_shared/ses-client/client';
-import { resolveSpintax } from '../../_shared/spintax/resolver';
+import { parseIndianName } from './lib/shared/name-parser/parser';
+import { sendEmail } from './lib/shared/ses-client/client';
+import { resolveSpintax } from './lib/shared/spintax/resolver';
 import {
 	buildTemplateVariables,
 	generateUnsubscribeLink,
 	injectVariables,
 	templateVariablesToMap,
-} from '../../_shared/spintax/variable-injector';
+} from './lib/shared/spintax/variable-injector';
 
 /**
  * Result of processing a lead
@@ -273,7 +273,7 @@ export async function processLead(lead: Lead, config: ProcessConfig): Promise<Pr
 			sesConfig
 		);
 
-		context.sesResponse = sendResult.rawResponse as Record<string, unknown>;
+		context.sesResponse = sendResult.rawResponse as unknown as Record<string, unknown>;
 
 		if (!sendResult.success) {
 			// Send failed

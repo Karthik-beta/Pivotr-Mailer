@@ -9,13 +9,13 @@
  *   Body: { batchId: string, leads: StagedLeadInput[] }
  */
 
-import { Client, Databases, ID } from "node-appwrite";
-import { CollectionId, DATABASE_ID } from "../../../shared/constants/collection.constants";
+import { Client, Databases, ID, Permission, Role } from "node-appwrite";
+import { CollectionId, DATABASE_ID } from "./lib/shared/constants/collection.constants";
 import type {
     StagedLeadCreateInput,
     SaveStagedLeadsResponse,
     ImportBatchSummary,
-} from "../../../shared/types/staged-lead.types";
+} from "./lib/shared/types/staged-lead.types";
 
 interface SaveStagedLeadsRequest {
     batchId: string;
@@ -38,11 +38,18 @@ interface AppwriteContext {
 export default async function main(context: AppwriteContext): Promise<unknown> {
     const { req, res, log, error: logErr } = context;
 
+    // Get endpoint - fix localhost for Docker internal networking
+    let endpoint = process.env.APPWRITE_FUNCTION_API_ENDPOINT || "";
+    if (endpoint.includes("localhost") || endpoint.includes("127.0.0.1")) {
+        endpoint = endpoint.replace("localhost", "appwrite").replace("127.0.0.1", "appwrite");
+    }
+
     // Initialize Appwrite client
     const client = new Client()
-        .setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT || "")
+        .setEndpoint(endpoint)
         .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID || "")
-        .setKey(process.env.APPWRITE_API_KEY || "");
+        .setKey(process.env.APPWRITE_API_KEY || "")
+        .setSelfSigned(true);
 
     const databases = new Databases(client);
 
@@ -74,20 +81,29 @@ export default async function main(context: AppwriteContext): Promise<unknown> {
 
         // Save each lead to staged_leads collection
         for (const lead of leads) {
-            await databases.createDocument(DATABASE_ID, CollectionId.STAGED_LEADS, ID.unique(), {
-                batchId: lead.batchId,
-                rowNumber: lead.rowNumber,
-                fullName: lead.fullName,
-                email: lead.email,
-                companyName: lead.companyName,
-                phoneNumber: lead.phoneNumber || null,
-                leadType: lead.leadType || null,
-                validationErrors: JSON.stringify(lead.validationErrors || []),
-                isValid: lead.isValid,
-                importedAt: now,
-                importedBy: lead.importedBy || null,
-                metadata: lead.metadata ? JSON.stringify(lead.metadata) : null,
-            });
+            await databases.createDocument(
+                DATABASE_ID,
+                CollectionId.STAGED_LEADS,
+                ID.unique(),
+                {
+                    batchId: lead.batchId,
+                    rowNumber: lead.rowNumber,
+                    fullName: lead.fullName,
+                    email: lead.email,
+                    companyName: lead.companyName,
+                    phoneNumber: lead.phoneNumber || null,
+                    leadType: lead.leadType || null,
+                    validationErrors: JSON.stringify(lead.validationErrors || []),
+                    isValid: lead.isValid,
+                    importedAt: now,
+                    importedBy: lead.importedBy || null,
+                },
+                [
+                    Permission.read(Role.users()),
+                    Permission.update(Role.users()),
+                    Permission.delete(Role.users()),
+                ]
+            );
 
             if (lead.isValid) {
                 const hasWarnings = lead.validationErrors?.some((e) => e.severity === "warning");

@@ -1,7 +1,7 @@
 import { CollectionId, DATABASE_ID } from "@shared/constants/collection.constants";
 import type { FieldValidationIssue, StagedLead } from "@shared/types/staged-lead.types";
 import { validateStagedLead } from "@shared/validation/lead-validator";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Query } from "appwrite";
 import { toast } from "sonner";
 import { databases, functions } from "@/lib/appwrite";
@@ -11,12 +11,16 @@ import { stagedLeadsKeys } from "@/lib/query-keys";
  * Fetches staged leads from database, optionally filtered by batch
  */
 export function useStagedLeads(batchId?: string) {
-	return useQuery({
+	return useInfiniteQuery({
 		queryKey: stagedLeadsKeys.list(batchId),
-		queryFn: async () => {
-			const queries = [Query.orderDesc("$createdAt"), Query.limit(500)];
+		initialPageParam: undefined as string | undefined,
+		queryFn: async ({ pageParam }) => {
+			const queries = [Query.orderDesc("$createdAt"), Query.limit(50)];
 			if (batchId) {
 				queries.push(Query.equal("batchId", batchId));
+			}
+			if (pageParam) {
+				queries.push(Query.cursorAfter(pageParam));
 			}
 
 			const response = await databases.listDocuments(
@@ -33,6 +37,10 @@ export function useStagedLeads(batchId?: string) {
 						? (JSON.parse(doc.validationErrors) as FieldValidationIssue[])
 						: (doc.validationErrors as FieldValidationIssue[]) || [],
 			})) as unknown as StagedLead[];
+		},
+		getNextPageParam: (lastPage) => {
+			if (lastPage.length < 50) return undefined;
+			return lastPage[lastPage.length - 1].$id;
 		},
 	});
 }
@@ -145,11 +153,11 @@ export function useApproveStagedLeads() {
 
 	return useMutation({
 		mutationFn: async ({ batchId, leadIds }: { batchId: string; leadIds?: string[] }) => {
-			const execution = await functions.createExecution(
-				"approve-staged-leads",
-				JSON.stringify({ batchId, leadIds }),
-				false
-			);
+			const execution = await functions.createExecution({
+				functionId: "approve-staged-leads",
+				body: JSON.stringify({ batchId, leadIds }),
+				async: false,
+			});
 
 			if (execution.responseStatusCode >= 400) {
 				const errorData = JSON.parse(execution.responseBody || "{}");
@@ -181,24 +189,24 @@ export function useDeleteStagedBatch() {
 
 	return useMutation({
 		mutationFn: async (batchId: string) => {
-			// Fetch all leads in batch
-			const response = await databases.listDocuments(DATABASE_ID, CollectionId.STAGED_LEADS, [
-				Query.equal("batchId", batchId),
-				Query.limit(1000),
-			]);
+			const execution = await functions.createExecution({
+				functionId: "approve-staged-leads",
+				body: JSON.stringify({ batchId, action: "discard" }),
+				async: false,
+			});
 
-			// Delete each document
-			await Promise.all(
-				response.documents.map((doc) =>
-					databases.deleteDocument(DATABASE_ID, CollectionId.STAGED_LEADS, doc.$id)
-				)
-			);
+			if (execution.responseStatusCode >= 400) {
+				const errorData = JSON.parse(execution.responseBody || "{}");
+				throw new Error(errorData.message || "Failed to delete batch");
+			}
 
-			return { deleted: response.documents.length };
+			const response = JSON.parse(execution.responseBody);
+			console.log("[DeleteBatch] Response:", response);
+			return response;
 		},
-		onSuccess: (data) => {
+		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: stagedLeadsKeys.all });
-			toast.success(`Deleted ${data.deleted} staged leads`);
+			toast.success("Batch discarded");
 		},
 		onError: (error) => {
 			toast.error("Failed to delete batch", {

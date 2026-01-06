@@ -9,27 +9,27 @@
  */
 
 import type { Client } from 'node-appwrite';
-import { SENDING_TIMEOUT_MS } from '../../../shared/constants/collection.constants';
-import { EventType } from '../../../shared/constants/event.constants';
-import { CampaignStatus, LeadStatus } from '../../../shared/constants/status.constants';
-import type { Campaign } from '../../../shared/types/campaign.types';
-import type { Lead } from '../../../shared/types/lead.types';
-import type { Settings } from '../../../shared/types/settings.types';
+import { SENDING_TIMEOUT_MS } from './lib/shared/constants/collection.constants';
+import { EventType } from './lib/shared/constants/event.constants';
+import { CampaignStatus, LeadStatus } from './lib/shared/constants/status.constants';
+import type { Campaign } from './lib/shared/types/campaign.types';
+import type { Lead } from './lib/shared/types/lead.types';
+import type { Settings } from './lib/shared/types/settings.types';
 import {
 	completeCampaign,
 	getCampaignById,
 	updateCampaign,
-} from '../../_shared/database/repositories/campaign.repository';
+} from './lib/shared/database/repositories/campaign.repository';
 import {
 	countRemainingLeads,
 	getNextQueuedLead,
 	getSendingLeads,
 	updateLead,
-} from '../../_shared/database/repositories/lead.repository';
-import { logError, logInfo, logWarn } from '../../_shared/database/repositories/log.repository';
-import { getSettings } from '../../_shared/database/repositories/settings.repository';
+} from './lib/shared/database/repositories/lead.repository';
+import { logError, logInfo, logWarn } from './lib/shared/database/repositories/log.repository';
+import { getSettings } from './lib/shared/database/repositories/settings.repository';
 // Shared modules
-import { withCampaignLock } from '../../_shared/locking/campaign-lock';
+import { withCampaignLock } from './lib/shared/locking/campaign-lock';
 // Local modules
 import { calculateGaussianDelay, sleep } from './delay-calculator';
 import { type ProcessConfig, processLead } from './lead-processor';
@@ -307,7 +307,7 @@ async function fillVerifiedBuffer(
 		};
 
 		try {
-			const { verifyEmail } = await import('../../_shared/email-verifier/client');
+			const { verifyEmail } = await import('./lib/shared/email-verifier/client');
 			const result = await verifyEmail(nextLead.email, verifierConfig);
 
 			if (result.isValid || (result.status === 'catch_all' && campaign.allowCatchAll)) {

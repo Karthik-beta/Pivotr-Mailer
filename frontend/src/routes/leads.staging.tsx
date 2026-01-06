@@ -1,21 +1,13 @@
-import { CollectionId, DATABASE_ID } from "@shared/constants/collection.constants";
-import type { FieldValidationIssue, StagedLead } from "@shared/types/staged-lead.types";
+import { FieldValidationIssue, StagedLead } from "@shared/types/staged-lead.types";
+import { validateCompanyName, validateEmail, validateName } from "@shared/validation/lead-validator";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Query } from "appwrite";
+
 import { AlertCircle, AlertTriangle, ArrowLeft, CheckCircle2, Loader2, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
 	useApproveStagedLeads,
@@ -24,49 +16,81 @@ import {
 	useStagedLeads,
 	useUpdateStagedLead,
 } from "@/features/leads/hooks/use-staged-leads";
-import { databases } from "@/lib/appwrite";
-import { stagedLeadsKeys } from "@/lib/query-keys";
 
 export const Route = createFileRoute("/leads/staging")({
 	component: StagedLeadsPage,
-	loader: async ({ context: { queryClient } }) => {
-		await queryClient.ensureQueryData({
-			queryKey: stagedLeadsKeys.list(undefined),
-			queryFn: async () => {
-				const response = await databases.listDocuments(DATABASE_ID, CollectionId.STAGED_LEADS, [
-					Query.orderDesc("$createdAt"),
-					Query.limit(500),
-				]);
-				return response.documents.map((doc) => ({
-					...doc,
-					validationErrors:
-						typeof doc.validationErrors === "string"
-							? JSON.parse(doc.validationErrors)
-							: doc.validationErrors || [],
-				})) as unknown as StagedLead[];
-			},
-		});
-	},
+	// Loader commented out as prefetching for infinite query requires different handling
+	// and to avoid type mismatches during transition
 });
 
 function StagedLeadsPage() {
-	const { data: stagedLeads = [], isLoading, error } = useStagedLeads();
+	const {
+		data,
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
+		isLoading,
+		error,
+	} = useStagedLeads();
+
 	const updateLead = useUpdateStagedLead();
 	const deleteLead = useDeleteStagedLead();
 	const approveLeads = useApproveStagedLeads();
 	const deleteBatch = useDeleteStagedBatch();
 
-	// Calculate summary
-	const summary = {
-		total: stagedLeads.length,
-		valid: stagedLeads.filter((l) => l.isValid).length,
-		invalid: stagedLeads.filter((l) => !l.isValid).length,
-		warnings: stagedLeads.filter(
-			(l) => l.isValid && l.validationErrors.some((e) => e.severity === "warning")
-		).length,
-	};
+	// Flatten data from pages
+	const stagedLeads = useMemo(
+		() => data?.pages.flatMap((page) => page) ?? [],
+		[data]
+	);
 
-	// Get unique batch ID (assuming single batch for now)
+	// Virtualization setup
+	const parentRef = useRef<HTMLDivElement>(null);
+
+	const rowVirtualizer = useVirtualizer({
+		count: stagedLeads.length,
+		getScrollElement: () => parentRef.current,
+		estimateSize: () => 65, // Approximate row height
+		overscan: 10,
+	});
+
+	// Infinite scroll trigger
+	useEffect(() => {
+		const [lastItem] = [...rowVirtualizer.getVirtualItems()].reverse();
+
+		if (!lastItem) {
+			return;
+		}
+
+		if (
+			lastItem.index >= stagedLeads.length - 1 &&
+			hasNextPage &&
+			!isFetchingNextPage
+		) {
+			console.log("Fetching next page...");
+			fetchNextPage();
+		}
+	}, [
+		hasNextPage,
+		fetchNextPage,
+		stagedLeads.length,
+		isFetchingNextPage,
+		rowVirtualizer.getVirtualItems(),
+	]);
+
+	// Calculate summary
+	const summary = useMemo(() => {
+		return {
+			total: stagedLeads.length,
+			valid: stagedLeads.filter((l) => l.isValid).length,
+			invalid: stagedLeads.filter((l) => !l.isValid).length,
+			warnings: stagedLeads.filter(
+				(l) => l.isValid && l.validationErrors.some((e) => e.severity === "warning")
+			).length,
+		};
+	}, [stagedLeads]);
+
+	// Get unique batch ID
 	const batchId = stagedLeads[0]?.batchId;
 
 	const handleApproveAll = () => {
@@ -81,7 +105,7 @@ function StagedLeadsPage() {
 
 	if (isLoading) {
 		return (
-			<div className="p-8 flex items-center justify-center min-h-[400px]">
+			<div className="h-full flex items-center justify-center min-h-[400px]">
 				<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
 			</div>
 		);
@@ -98,10 +122,13 @@ function StagedLeadsPage() {
 		);
 	}
 
+	// Grid layout definition
+	const gridTemplate = "grid grid-cols-[3rem_3rem_1fr_1fr_1fr_3rem] gap-4 items-center px-4";
+
 	return (
-		<div className="p-8 space-y-6 max-w-[1600px] mx-auto">
+		<div className="h-[calc(100vh-4rem)] flex flex-col p-6 space-y-4 max-w-[1800px] mx-auto overflow-hidden">
 			{/* Header */}
-			<div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+			<div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
 				<div className="flex items-center gap-4">
 					<Link to="/leads">
 						<Button variant="ghost" size="icon" className="h-8 w-8">
@@ -111,7 +138,7 @@ function StagedLeadsPage() {
 					<div>
 						<h1 className="text-3xl font-bold tracking-tight mb-1">Staged Leads</h1>
 						<p className="text-muted-foreground">
-							Review and approve imported leads before adding to your database.
+							Review and approve imported leads.
 						</p>
 					</div>
 				</div>
@@ -134,7 +161,7 @@ function StagedLeadsPage() {
 						>
 							{approveLeads.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
 							<CheckCircle2 className="h-4 w-4" />
-							Approve Valid ({summary.valid})
+							Approve Valid
 						</Button>
 					</div>
 				)}
@@ -142,9 +169,9 @@ function StagedLeadsPage() {
 
 			{/* Summary Bar */}
 			{stagedLeads.length > 0 && (
-				<div className="flex items-center gap-4 px-4 py-3 bg-muted/50 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
+				<div className="flex items-center gap-4 px-4 py-3 bg-muted/50 rounded-lg shrink-0">
 					<Badge variant="outline" className="gap-1.5">
-						Total: {summary.total}
+						Loaded: {summary.total}
 					</Badge>
 					<Badge variant="outline" className="gap-1.5 border-emerald-500/50 text-emerald-600">
 						<CheckCircle2 className="h-3 w-3" />
@@ -167,7 +194,7 @@ function StagedLeadsPage() {
 
 			{/* Empty State */}
 			{stagedLeads.length === 0 && (
-				<div className="flex flex-col items-center justify-center py-16 text-center animate-in fade-in duration-500">
+				<div className="flex flex-col items-center justify-center flex-1 text-center animate-in fade-in duration-500">
 					<CheckCircle2 className="h-16 w-16 text-muted-foreground/30 mb-4" />
 					<h2 className="text-xl font-semibold mb-2">No Staged Leads</h2>
 					<p className="text-muted-foreground mb-6">
@@ -179,40 +206,67 @@ function StagedLeadsPage() {
 				</div>
 			)}
 
-			{/* Table */}
+			{/* Virtualized Table Container */}
 			{stagedLeads.length > 0 && (
-				<ScrollArea className="border rounded-lg animate-in fade-in slide-in-from-bottom-2 duration-500">
-					<Table>
-						<TableHeader>
-							<TableRow className="bg-muted/30">
-								<TableHead className="w-12">Row</TableHead>
-								<TableHead className="w-12">Status</TableHead>
-								<TableHead>Full Name</TableHead>
-								<TableHead>Email</TableHead>
-								<TableHead>Company Name</TableHead>
-								<TableHead className="w-12" />
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{stagedLeads.map((lead, index) => (
-								<StagedLeadTableRow
-									key={lead.$id}
-									lead={lead}
-									index={index}
-									onUpdate={(field, value) =>
-										updateLead.mutate({
-											documentId: lead.$id as string,
-											field,
-											value,
-										})
-									}
-									onDelete={() => deleteLead.mutate(lead.$id as string)}
-									isUpdating={updateLead.isPending}
-								/>
-							))}
-						</TableBody>
-					</Table>
-				</ScrollArea>
+				<div className="flex-1 border rounded-lg overflow-hidden flex flex-col relative bg-background">
+					{/* Fixed Header */}
+					<div className={`bg-muted/30 border-b z-10 shrink-0 h-10 ${gridTemplate} text-sm font-medium text-muted-foreground`}>
+						<div>Row</div>
+						<div>Status</div>
+						<div>Full Name</div>
+						<div>Email</div>
+						<div>Company Name</div>
+						<div />
+					</div>
+
+					{/* Virtualized List */}
+					<div ref={parentRef} className="flex-1 overflow-auto">
+						<div
+							style={{
+								height: `${rowVirtualizer.getTotalSize()}px`,
+								width: '100%',
+								position: 'relative',
+							}}
+						>
+							{rowVirtualizer.getVirtualItems().map((virtualRow) => {
+								const lead = stagedLeads[virtualRow.index];
+								if (!lead) return null;
+
+								return (
+									<div
+										key={lead.$id}
+										data-index={virtualRow.index}
+										ref={rowVirtualizer.measureElement}
+										className={`absolute top-0 left-0 w-full border-b transition-colors hover:bg-muted/50 ${!lead.isValid ? "bg-destructive/5" : ""}`}
+										style={{
+											transform: `translateY(${virtualRow.start}px)`,
+										}}
+									>
+										<StagedLeadTableRow
+											lead={lead}
+											onUpdate={(field, value) =>
+												updateLead.mutate({
+													documentId: lead.$id as string,
+													field,
+													value,
+												})
+											}
+											onDelete={() => deleteLead.mutate(lead.$id as string)}
+											isUpdating={updateLead.isPending}
+											gridClass={gridTemplate}
+										/>
+									</div>
+								);
+							})}
+						</div>
+
+						{isFetchingNextPage && (
+							<div className="py-2 flex justify-center w-full">
+								<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+							</div>
+						)}
+					</div>
+				</div>
 			)}
 		</div>
 	);
@@ -220,13 +274,13 @@ function StagedLeadsPage() {
 
 interface StagedLeadTableRowProps {
 	lead: StagedLead;
-	index: number;
 	onUpdate: (field: "fullName" | "email" | "companyName", value: string) => void;
 	onDelete: () => void;
 	isUpdating: boolean;
+	gridClass: string;
 }
 
-function StagedLeadTableRow({ lead, index, onUpdate, onDelete }: StagedLeadTableRowProps) {
+function StagedLeadTableRow({ lead, onUpdate, onDelete, gridClass }: StagedLeadTableRowProps) {
 	const hasWarnings = lead.validationErrors.some((e) => e.severity === "warning");
 	const nameErrors = lead.validationErrors.filter((e) => e.field === "fullName");
 	const emailErrors = lead.validationErrors.filter((e) => e.field === "email");
@@ -245,24 +299,15 @@ function StagedLeadTableRow({ lead, index, onUpdate, onDelete }: StagedLeadTable
 		return "";
 	};
 
-	// Staggered animation delay
-	const animationDelay = `${Math.min(index * 30, 300)}ms`;
-
 	return (
-		<TableRow
-			className={`
-				${!lead.isValid ? "bg-destructive/5" : ""}
-				animate-in fade-in slide-in-from-left-2 duration-300
-			`}
-			style={{ animationDelay }}
-		>
-			<TableCell className="text-muted-foreground text-xs">{lead.rowNumber}</TableCell>
-			<TableCell>
+		<div className={`${gridClass} py-2`}>
+			<div className="text-muted-foreground text-xs">{lead.rowNumber}</div>
+			<div className="flex items-center">
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<div className="cursor-help">{getValidationIcon()}</div>
 					</TooltipTrigger>
-					<TooltipContent side="right" className="max-w-xs">
+					<TooltipContent side="right" className="max-w-xs z-50">
 						{lead.validationErrors.length === 0 ? (
 							"All validations passed"
 						) : (
@@ -283,32 +328,35 @@ function StagedLeadTableRow({ lead, index, onUpdate, onDelete }: StagedLeadTable
 						)}
 					</TooltipContent>
 				</Tooltip>
-			</TableCell>
-			<TableCell>
+			</div>
+			<div>
 				<EditableField
 					value={lead.fullName}
 					errors={nameErrors}
 					onSave={(value) => onUpdate("fullName", value)}
 					className={getFieldClassName(nameErrors)}
+					validator={validateName}
 				/>
-			</TableCell>
-			<TableCell>
+			</div>
+			<div>
 				<EditableField
 					value={lead.email}
 					errors={emailErrors}
 					onSave={(value) => onUpdate("email", value)}
 					className={getFieldClassName(emailErrors)}
+					validator={validateEmail}
 				/>
-			</TableCell>
-			<TableCell>
+			</div>
+			<div>
 				<EditableField
 					value={lead.companyName}
 					errors={companyErrors}
 					onSave={(value) => onUpdate("companyName", value)}
 					className={getFieldClassName(companyErrors)}
+					validator={validateCompanyName}
 				/>
-			</TableCell>
-			<TableCell>
+			</div>
+			<div className="flex justify-end">
 				<Button
 					variant="ghost"
 					size="icon"
@@ -317,8 +365,8 @@ function StagedLeadTableRow({ lead, index, onUpdate, onDelete }: StagedLeadTable
 				>
 					<Trash2 className="h-4 w-4" />
 				</Button>
-			</TableCell>
-		</TableRow>
+			</div>
+		</div>
 	);
 }
 
@@ -327,48 +375,58 @@ interface EditableFieldProps {
 	errors: FieldValidationIssue[];
 	onSave: (value: string) => void;
 	className?: string;
+	validator?: (value: string) => FieldValidationIssue[];
 }
 
-function EditableField({ value, errors, onSave, className = "" }: EditableFieldProps) {
+function EditableField({ value, errors, onSave, className = "", validator }: EditableFieldProps) {
 	const [isEditing, setIsEditing] = useState(false);
-	const [editValue, setEditValue] = useState(value);
+	const [localValue, setLocalValue] = useState(value);
+
+	// Sync local value when prop value changes (e.g. server update)
+	useEffect(() => {
+		setLocalValue(value);
+	}, [value]);
 
 	const handleBlur = () => {
 		setIsEditing(false);
-		if (editValue !== value) {
-			onSave(editValue);
+		if (localValue !== value) {
+			onSave(localValue);
 		}
 	};
 
-	const handleKeyDown = (e: React.KeyboardEvent) => {
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === "Enter") {
 			handleBlur();
+			e.currentTarget.blur();
 		} else if (e.key === "Escape") {
-			setEditValue(value);
+			setLocalValue(value);
 			setIsEditing(false);
+			e.currentTarget.blur();
 		}
 	};
 
-	// Show the field error inline when not editing
-	const hasError = errors.some((e) => e.severity === "error");
-	const errorMessage = errors.find((e) => e.severity === "error")?.message;
+	// Determine if the value is dirty (user changed it but server update hasn't reflected yet)
+	const isDirty = localValue !== value;
+
+	// Use client-side validation if dirty (real-time feedback), otherwise fallback to server validation
+	const clientErrors = isDirty && validator ? validator(localValue) : [];
+	const visibleErrors = isDirty ? clientErrors : errors;
+
+	const hasError = visibleErrors.some((e) => e.severity === "error");
+	const errorMessage = visibleErrors.find((e) => e.severity === "error")?.message;
 
 	return (
 		<div className="space-y-1">
 			<Input
-				value={isEditing ? editValue : value}
-				onChange={(e) => setEditValue(e.target.value)}
-				onFocus={() => {
-					setIsEditing(true);
-					setEditValue(value);
-				}}
+				value={localValue}
+				onChange={(e) => setLocalValue(e.target.value)}
+				onFocus={() => setIsEditing(true)}
 				onBlur={handleBlur}
 				onKeyDown={handleKeyDown}
-				className={`h-8 transition-all ${className} ${
-					hasError && !isEditing ? "animate-in shake duration-300" : ""
-				}`}
+				className={`h-8 transition-all ${className} ${hasError && !isEditing ? "animate-in shake duration-300" : ""
+					}`}
 			/>
-			{hasError && !isEditing && (
+			{hasError && (
 				<p className="text-xs text-destructive animate-in fade-in slide-in-from-top-1 duration-200">
 					{errorMessage}
 				</p>

@@ -98,11 +98,11 @@ Pivotr Mailer/
 
 ### 5. Business Logic Structure
 <rule>
-**Monorepo Bundling Strategy**:
-- **Context**: Appwrite docs require functions to be "self-contained" (zero external file references).
-- **Requirement**: You **MUST** assume a build step (using Bun's bundler) exists.
-- **Implication**: You are free to `import { x } from "../../shared"` in your source code, but you must acknowledge that the *deployed artifact* will be a single bundled file.
-- **Prohibition**: Do not assume raw `../../shared` imports work in the deployed function without bundling.
+**Self-Contained Functions (Official Docs Compliance)**:
+- **Context**: Appwrite Cloud/Self-hosted builds functions from a single folder. It does not support monorepo linking at runtime.
+- **Requirement**: Each function directory (`functions/x/`) must be fully self-contained. It generally should NOT have a custom `build.ts`.
+- **Shared Code**: If shared logic (`shared/`) is needed, it must be **copied** into the function's `src/lib/` or `src/shared/` folder, or installed as a proper package.
+- **Imports**: Imports must use relative paths (e.g., `./lib/shared/...`) and never step outside the function root (e.g., `../../shared`).
 - **Purity**: Business logic must be pure TypeScript. It must **not** contain HTTP handling or Appwrite SDK calls directly mixed with logic.
 </rule>
 
@@ -138,7 +138,7 @@ If a task involves multiple files or steps, use the following structured approac
 | **Add Package** | `bun add <pkg>` |
 | **Lint/Format** | `bun check` / `bun format` |
 | **Backend URL** | `http://localhost:5000/v1` |
-| **Deploy Function**| `bun run build && appwrite deploy function` (Example flow) |
+| **Deploy Function**| `cd functions/<name> && appwrite functions deploy <name>` |
 
 ---
 

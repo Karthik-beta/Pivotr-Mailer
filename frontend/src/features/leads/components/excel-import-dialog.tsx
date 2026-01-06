@@ -1,4 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { ExecutionMethod, type Models } from "appwrite";
 
 import { AlertCircle, Download, FileSpreadsheet, Loader2, Upload } from "lucide-react";
@@ -14,6 +15,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { functions } from "@/lib/appwrite";
+import { stagedLeadsKeys } from "@/lib/query-keys";
 import { useExcelImport } from "../hooks/use-excel-import";
 
 interface ExcelImportDialogProps {
@@ -29,6 +31,7 @@ export function ExcelImportDialog({ onImportSuccess }: ExcelImportDialogProps) {
 	const [isDragging, setIsDragging] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 
 	const { isLoading, isUploading, error, parseFile, saveToStaging, reset } = useExcelImport();
 
@@ -48,10 +51,17 @@ export function ExcelImportDialog({ onImportSuccess }: ExcelImportDialogProps) {
 		}
 
 		// Parse and immediately save to staging
-		await parseFile(file);
-		const success = await saveToStaging();
+		// parseFile returns the parsed data so we can pass it directly to saveToStaging
+		// This avoids React state timing issues where state isn't updated yet
+		const parsedData = await parseFile(file);
+		if (!parsedData) return;
+
+		const success = await saveToStaging(parsedData.batchId, parsedData.leads);
 
 		if (success) {
+			// Invalidate cache to ensure fresh data is fetched
+			await queryClient.invalidateQueries({ queryKey: stagedLeadsKeys.all });
+
 			toast.success("Leads imported to staging", {
 				description: "Review and approve your leads on the staging page.",
 			});
@@ -59,6 +69,11 @@ export function ExcelImportDialog({ onImportSuccess }: ExcelImportDialogProps) {
 			reset();
 			onImportSuccess?.();
 			navigate({ to: "/leads/staging" });
+		} else {
+			// Show toast error - the error state is already set by saveToStaging
+			toast.error("Failed to save leads to staging", {
+				description: "Check the dialog for details.",
+			});
 		}
 	};
 
@@ -167,11 +182,10 @@ export function ExcelImportDialog({ onImportSuccess }: ExcelImportDialogProps) {
 						onDrop={handleDrop}
 						variant="outline"
 						disabled={isProcessing}
-						className={`w-full h-auto flex-col border-2 border-dashed rounded-xl p-12 text-center transition-colors group ${
-							isDragging
-								? "border-primary bg-primary/10"
-								: "border-muted-foreground/25 hover:border-primary/50 hover:bg-transparent"
-						}`}
+						className={`w-full h-auto flex-col border-2 border-dashed rounded-xl p-12 text-center transition-colors group ${isDragging
+							? "border-primary bg-primary/10"
+							: "border-muted-foreground/25 hover:border-primary/50 hover:bg-transparent"
+							}`}
 						onClick={() => fileInputRef.current?.click()}
 					>
 						{isProcessing ? (
