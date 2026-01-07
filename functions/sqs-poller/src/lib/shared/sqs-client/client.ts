@@ -21,9 +21,19 @@ export interface SqsConfig {
 }
 
 /**
- * SNS notification types from SES
+ * SNS notification types from SES (all 10 event types)
  */
-export type NotificationType = 'Bounce' | 'Complaint' | 'Delivery';
+export type NotificationType =
+    | 'Send'
+    | 'Delivery'
+    | 'Bounce'
+    | 'Complaint'
+    | 'Reject'
+    | 'Rendering Failure'
+    | 'DeliveryDelay'
+    | 'Subscription'
+    | 'Open'
+    | 'Click';
 
 /**
  * Parsed SNS notification from SES
@@ -35,13 +45,41 @@ export interface SesNotification {
     leadId?: string;
     campaignId?: string;
     recipient: string;
+
     // Bounce-specific fields
     bounceType?: 'Permanent' | 'Transient' | 'Undetermined';
     bounceSubType?: string;
+
     // Complaint-specific fields
     complaintFeedbackType?: string;
-    // Raw message
+
+    // Delivery-specific fields
+    smtpResponse?: string;
+    processingTimeMs?: number;
+
+    // Reject-specific fields
+    rejectReason?: string;
+
+    // Delay-specific fields
+    delayType?: string;
+    expirationTime?: string;
+
+    // Rendering failure fields
+    templateName?: string;
+    errorMessage?: string;
+
+    // Open/Click tracking fields
+    ipAddress?: string;
+    userAgent?: string;
+    link?: string;  // For Click events
+
+    // Subscription fields
+    subscriptionSource?: string;
+    newTopicPreferences?: Record<string, unknown>;
+
+    // Raw message for audit
     rawMessage: Record<string, unknown>;
+
     // SQS receipt handle for deletion
     receiptHandle: string;
 }
@@ -130,7 +168,8 @@ function parseMessage(message: Message): SesNotification | null {
             ? JSON.parse(snsWrapper.Message)
             : snsWrapper.Message || snsWrapper;
 
-    const notificationType = sesNotification.notificationType as NotificationType;
+    // Handle eventType or notificationType (AWS uses both)
+    const notificationType = (sesNotification.eventType || sesNotification.notificationType) as NotificationType;
 
     // Extract common fields
     const mail = sesNotification.mail || {};
@@ -142,14 +181,11 @@ function parseMessage(message: Message): SesNotification | null {
     const leadId = tags.lead_id?.[0] || undefined;
     const campaignId = tags.campaign_id?.[0] || undefined;
 
-    // Extract recipient
+    // Extract recipient based on event type
     let recipient = '';
     if (notificationType === 'Bounce' && sesNotification.bounce?.bouncedRecipients?.[0]) {
         recipient = sesNotification.bounce.bouncedRecipients[0].emailAddress;
-    } else if (
-        notificationType === 'Complaint' &&
-        sesNotification.complaint?.complainedRecipients?.[0]
-    ) {
+    } else if (notificationType === 'Complaint' && sesNotification.complaint?.complainedRecipients?.[0]) {
         recipient = sesNotification.complaint.complainedRecipients[0].emailAddress;
     } else if (mail.destination?.[0]) {
         recipient = mail.destination[0];
@@ -166,15 +202,69 @@ function parseMessage(message: Message): SesNotification | null {
         receiptHandle: message.ReceiptHandle,
     };
 
-    // Add bounce-specific fields
-    if (notificationType === 'Bounce' && sesNotification.bounce) {
-        notification.bounceType = sesNotification.bounce.bounceType;
-        notification.bounceSubType = sesNotification.bounce.bounceSubType;
-    }
+    // Add event-type-specific fields
+    switch (notificationType) {
+        case 'Bounce':
+            if (sesNotification.bounce) {
+                notification.bounceType = sesNotification.bounce.bounceType;
+                notification.bounceSubType = sesNotification.bounce.bounceSubType;
+            }
+            break;
 
-    // Add complaint-specific fields
-    if (notificationType === 'Complaint' && sesNotification.complaint) {
-        notification.complaintFeedbackType = sesNotification.complaint.complaintFeedbackType;
+        case 'Complaint':
+            if (sesNotification.complaint) {
+                notification.complaintFeedbackType = sesNotification.complaint.complaintFeedbackType;
+            }
+            break;
+
+        case 'Delivery':
+            if (sesNotification.delivery) {
+                notification.smtpResponse = sesNotification.delivery.smtpResponse;
+                notification.processingTimeMs = sesNotification.delivery.processingTimeMillis;
+            }
+            break;
+
+        case 'Reject':
+            if (sesNotification.reject) {
+                notification.rejectReason = sesNotification.reject.reason;
+            }
+            break;
+
+        case 'DeliveryDelay':
+            if (sesNotification.deliveryDelay) {
+                notification.delayType = sesNotification.deliveryDelay.delayType;
+                notification.expirationTime = sesNotification.deliveryDelay.expirationTime;
+            }
+            break;
+
+        case 'Rendering Failure':
+            if (sesNotification.failure) {
+                notification.templateName = sesNotification.failure.templateName;
+                notification.errorMessage = sesNotification.failure.errorMessage;
+            }
+            break;
+
+        case 'Open':
+            if (sesNotification.open) {
+                notification.ipAddress = sesNotification.open.ipAddress;
+                notification.userAgent = sesNotification.open.userAgent;
+            }
+            break;
+
+        case 'Click':
+            if (sesNotification.click) {
+                notification.ipAddress = sesNotification.click.ipAddress;
+                notification.userAgent = sesNotification.click.userAgent;
+                notification.link = sesNotification.click.link;
+            }
+            break;
+
+        case 'Subscription':
+            if (sesNotification.subscription) {
+                notification.subscriptionSource = sesNotification.subscription.source;
+                notification.newTopicPreferences = sesNotification.subscription.newTopicPreferences;
+            }
+            break;
     }
 
     return notification;

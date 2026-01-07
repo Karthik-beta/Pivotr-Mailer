@@ -27,3 +27,6 @@ export * from "./007_create_indexes";
 export * from "./008_seed_initial_data";
 export * from "./009_create_locks";
 export * from "./010_create_staged_leads";
+export * from "./011_add_phone_number_to_leads";
+export * from "./012_add_lead_type_to_leads";
+export * from "./013_add_email_events_metrics";

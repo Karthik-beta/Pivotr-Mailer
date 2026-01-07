@@ -29,6 +29,15 @@ export const EventType = {
     EMAIL_SENT: 'email.sent',
     EMAIL_FAILED: 'email.failed',
 
+    // SES Delivery/Tracking Events
+    EMAIL_DELIVERED: 'email.delivered',
+    EMAIL_REJECTED: 'email.rejected',
+    EMAIL_DELAYED: 'email.delayed',
+    EMAIL_OPENED: 'email.opened',
+    EMAIL_CLICKED: 'email.clicked',
+    RENDERING_FAILURE: 'email.rendering_failure',
+    SUBSCRIPTION_CHANGED: 'email.subscription_changed',
+
     // Post-Send Events
     BOUNCE_RECEIVED: 'email.bounce',
     COMPLAINT_RECEIVED: 'email.complaint',

@@ -93,6 +93,22 @@ export async function incrementMetrics(
     if (increments.totalComplaints) {
         updates.totalComplaints = current.totalComplaints + increments.totalComplaints;
     }
+    // New SES event metrics
+    if (increments.totalDelivered) {
+        updates.totalDelivered = (current.totalDelivered || 0) + increments.totalDelivered;
+    }
+    if (increments.totalOpens) {
+        updates.totalOpens = (current.totalOpens || 0) + increments.totalOpens;
+    }
+    if (increments.totalClicks) {
+        updates.totalClicks = (current.totalClicks || 0) + increments.totalClicks;
+    }
+    if (increments.totalRejected) {
+        updates.totalRejected = (current.totalRejected || 0) + increments.totalRejected;
+    }
+    if (increments.totalDelayed) {
+        updates.totalDelayed = (current.totalDelayed || 0) + increments.totalDelayed;
+    }
     if (increments.totalVerificationPassed) {
         updates.totalVerificationPassed =
             current.totalVerificationPassed + increments.totalVerificationPassed;
@@ -159,6 +175,13 @@ export async function incrementCampaignMetrics(
                 totalHardBounces: 0,
                 totalSoftBounces: 0,
                 totalComplaints: 0,
+                // New SES event metrics
+                totalDelivered: 0,
+                totalOpens: 0,
+                totalClicks: 0,
+                totalRejected: 0,
+                totalDelayed: 0,
+                // Verification metrics
                 totalVerificationPassed: 0,
                 totalVerificationFailed: 0,
                 totalSkipped: 0,

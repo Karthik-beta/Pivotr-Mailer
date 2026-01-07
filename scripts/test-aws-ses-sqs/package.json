@@ -1,0 +1,20 @@
+{
+    "name": "test-aws-ses-sqs",
+    "module": "index.ts",
+    "type": "module",
+    "scripts": {
+        "test:ses": "bun run test-ses.ts",
+        "test:sqs": "bun run test-sqs.ts",
+        "test:e2e": "bun run test-e2e-pipeline.ts",
+        "test:all": "bun run test-all.ts"
+    },
+    "dependencies": {
+        "@aws-sdk/client-ses": "latest",
+        "@aws-sdk/client-sesv2": "latest",
+        "@aws-sdk/client-sqs": "latest",
+        "dotenv": "latest"
+    },
+    "devDependencies": {
+        "@types/bun": "latest"
+    }
+}

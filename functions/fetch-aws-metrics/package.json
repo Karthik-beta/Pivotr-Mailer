@@ -1,0 +1,10 @@
+{
+    "name": "fetch-aws-metrics",
+    "version": "1.0.0",
+    "main": "./src/main.ts",
+    "type": "module",
+    "dependencies": {
+        "@aws-sdk/client-sesv2": "^3.0.0",
+        "node-appwrite": "^14.0.0"
+    }
+}

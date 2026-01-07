@@ -21,6 +21,13 @@ export interface Metrics extends Models.Document {
     totalSoftBounces: number;
     totalComplaints: number;
 
+    // Delivery/Tracking Metrics (from SES events)
+    totalDelivered: number;
+    totalOpens: number;
+    totalClicks: number;
+    totalRejected: number;
+    totalDelayed: number;
+
     // Verification Metrics
     totalVerificationPassed: number;
     totalVerificationFailed: number;
@@ -43,6 +50,13 @@ export interface MetricsIncrementInput {
     totalHardBounces?: number;
     totalSoftBounces?: number;
     totalComplaints?: number;
+    // New SES event metrics
+    totalDelivered?: number;
+    totalOpens?: number;
+    totalClicks?: number;
+    totalRejected?: number;
+    totalDelayed?: number;
+    // Verification metrics
     totalVerificationPassed?: number;
     totalVerificationFailed?: number;
     totalSkipped?: number;

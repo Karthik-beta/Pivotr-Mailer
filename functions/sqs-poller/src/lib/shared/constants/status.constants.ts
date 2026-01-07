@@ -51,10 +51,14 @@ export const LeadStatus = {
     SENDING: 'sending',
     /** Email successfully sent to ESP */
     SENT: 'sent',
+    /** Email successfully delivered to recipient's mail server */
+    DELIVERED: 'delivered',
     /** Email verification passed */
     VERIFIED: 'verified',
     /** Email verification failed */
     INVALID: 'invalid',
+    /** Email sending or delivery failed */
+    FAILED: 'failed',
     /** Email verification uncertain/catch-all */
     RISKY: 'risky',
     /** Email bounced after sending */
