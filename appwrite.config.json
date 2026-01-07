@@ -88,6 +88,45 @@
             "events": [],
             "schedule": "",
             "timeout": 30
+        },
+        {
+            "$id": "save-staged-leads",
+            "name": "save-staged-leads",
+            "runtime": "bun-1.1",
+            "entrypoint": "src/main.ts",
+            "path": "functions/save-staged-leads",
+            "execute": [
+                "users"
+            ],
+            "events": [],
+            "schedule": "",
+            "timeout": 300
+        },
+        {
+            "$id": "approve-staged-leads",
+            "name": "approve-staged-leads",
+            "runtime": "bun-1.1",
+            "entrypoint": "src/main.ts",
+            "path": "functions/approve-staged-leads",
+            "execute": [
+                "users"
+            ],
+            "events": [],
+            "schedule": "",
+            "timeout": 300
+        },
+        {
+            "$id": "export-leads",
+            "name": "export-leads",
+            "runtime": "bun-1.1",
+            "entrypoint": "src/main.ts",
+            "path": "functions/export-leads",
+            "execute": [
+                "users"
+            ],
+            "events": [],
+            "schedule": "",
+            "timeout": 120
         }
     ]
 }

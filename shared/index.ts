@@ -22,3 +22,6 @@ export * from "./types/lead.types";
 export * from "./types/log.types";
 export * from "./types/metrics.types";
 export * from "./types/settings.types";
+export * from "./types/staged-lead.types";
+// Validation
+export * from "./validation/lead-validator";

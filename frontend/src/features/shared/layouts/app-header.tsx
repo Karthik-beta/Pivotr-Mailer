@@ -1,10 +1,10 @@
 import { useRouterState } from "@tanstack/react-router";
-import { Menu } from "lucide-react";
-import { ModeToggle } from "@/components/mode-toggle";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { AppSidebar, NAV_ITEMS } from "./app-sidebar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { NAV_ITEMS } from "./app-sidebar";
 
+/**
+ * Mobile header with sidebar trigger - visible only on small screens
+ */
 export function AppHeader() {
 	const router = useRouterState();
 	const currentPath = router.location.pathname;
@@ -13,21 +13,8 @@ export function AppHeader() {
 
 	return (
 		<header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 lg:hidden">
-			<Sheet>
-				<SheetTrigger asChild>
-					<Button variant="ghost" size="icon" className="lg:hidden">
-						<Menu className="h-5 w-5" />
-						<span className="sr-only">Toggle navigation menu</span>
-					</Button>
-				</SheetTrigger>
-				<SheetContent side="left" className="p-0 w-64">
-					<AppSidebar className="border-none" />
-				</SheetContent>
-			</Sheet>
+			<SidebarTrigger />
 			<div className="flex-1 font-semibold">{currentTitle}</div>
-			<div className="flex items-center gap-2">
-				<ModeToggle />
-			</div>
 		</header>
 	);
 }

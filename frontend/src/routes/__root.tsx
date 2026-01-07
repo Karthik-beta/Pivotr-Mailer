@@ -1,4 +1,5 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
+// force-regen
 import { type QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
 	createRootRouteWithContext,
@@ -10,6 +11,7 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { useEffect, useState } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { GridPattern } from "@/components/ui/grid-pattern";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { RootLayout } from "@/features/shared/layouts/root-layout";
 
 import appCss from "../styles.css?url";
@@ -107,7 +109,9 @@ function RootDocument() {
 				<ThemeProvider attribute="class" defaultTheme="dark" storageKey="vite-ui-theme">
 					<GridPattern className="fixed inset-0 z-[-1]" />
 					<QueryClientProvider client={queryClient}>
-						<RootLayout />
+						<TooltipProvider>
+							<RootLayout />
+						</TooltipProvider>
 						<ClientOnlyDevtools />
 					</QueryClientProvider>
 					<Scripts />

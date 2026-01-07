@@ -134,3 +134,21 @@ export const VerificationResult = {
 } as const;
 
 export type VerificationResultType = (typeof VerificationResult)[keyof typeof VerificationResult];
+
+/**
+ * Lead Type Constants
+ *
+ * Classification for campaign targeting (Hardware vs Software sales).
+ */
+export const LeadType = {
+	/** Hardware distribution campaign target */
+	HARDWARE: "HARDWARE",
+
+	/** SaaS software sales campaign target */
+	SOFTWARE: "SOFTWARE",
+
+	/** Can be targeted for both campaign types */
+	BOTH: "BOTH",
+} as const;
+
+export type LeadTypeValue = (typeof LeadType)[keyof typeof LeadType];

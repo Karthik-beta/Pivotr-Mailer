@@ -1,9 +1,12 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Search } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ClipboardList, Search } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CsvUploader } from "@/features/leads/components/csv-uploader";
+import { ExcelImportDialog } from "@/features/leads/components/excel-import-dialog";
+import { ExportLeadsButton } from "@/features/leads/components/export-leads-button";
 import { LeadsTable } from "@/features/leads/components/leads-table";
 
 const searchSchema = z.object({
@@ -17,7 +20,7 @@ import { Query } from "appwrite";
 import { databases } from "@/lib/appwrite";
 import { leadsKeys } from "@/lib/query-keys";
 
-export const Route = createFileRoute("/leads")({
+export const Route = createFileRoute("/leads/")({
 	component: LeadsPage,
 	validateSearch: searchSchema,
 	loaderDeps: ({ search: { page, search } }) => ({ page, search }),
@@ -39,36 +42,41 @@ export const Route = createFileRoute("/leads")({
 				return {
 					leads: response.documents as unknown as Lead[],
 					total: response.total,
-				};
+				}
 			},
-		});
+		})
 	},
 });
 
 function LeadsPage() {
 	const navigate = useNavigate({ from: Route.fullPath });
+	const queryClient = useQueryClient();
 	const searchParams = Route.useSearch();
 	const [searchValue, setSearchValue] = useState(searchParams.search || "");
 
 	const handleSearch = () => {
 		navigate({
 			search: (prev) => ({ ...prev, search: searchValue || undefined, page: 1 }),
-		});
-	};
+		})
+	}
 
 	const handlePageChange = (newPage: number) => {
 		navigate({
 			search: (prev) => ({ ...prev, page: newPage }),
-		});
+		})
 		// Scroll to top
 		window.scrollTo({ top: 0, behavior: "smooth" });
-	};
+	}
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === "Enter") {
 			handleSearch();
 		}
-	};
+	}
+
+	const handleImportSuccess = () => {
+		queryClient.invalidateQueries({ queryKey: ["leads"] });
+	}
 
 	return (
 		<div className="p-8 space-y-6 max-w-[1600px] mx-auto">
@@ -77,11 +85,16 @@ function LeadsPage() {
 					<h1 className="text-3xl font-bold tracking-tight mb-2">Lead Management</h1>
 					<p className="text-muted-foreground">Manage waitlist, verify emails, and track status.</p>
 				</div>
-				<CsvUploader onUploadSuccess={() => window.location.reload()} />
-				{/* Simple reload or query invalidation. Query invalidation is better but reload is easiest "Refetch" handled by React Query internally if I invalidate? 
-            CsvUploader handles upload but process is async. List updates via polling or manual refresh. 
-            React Query will fetch on mount/focus. 
-        */}
+				<div className="flex gap-2">
+					<Link to="/leads/staging">
+						<Button variant="outline" className="gap-2">
+							<ClipboardList className="h-4 w-4" />
+							View Staging
+						</Button>
+					</Link>
+					<ExcelImportDialog onImportSuccess={handleImportSuccess} />
+					<ExportLeadsButton />
+				</div>
 			</div>
 
 			<div className="flex items-center space-x-2 max-w-sm">
@@ -103,5 +116,5 @@ function LeadsPage() {
 				onPageChange={handlePageChange}
 			/>
 		</div>
-	);
+	)
 }

@@ -1,4 +1,8 @@
-import type { LeadStatusType, VerificationResultType } from "../constants/status.constants";
+import type {
+	LeadStatusType,
+	LeadTypeValue,
+	VerificationResultType,
+} from "../constants/status.constants";
 
 /**
  * Lead Document Interface
@@ -27,6 +31,12 @@ export interface Lead {
 
 	/** Lead's organization */
 	companyName: string;
+
+	/** Optional phone number */
+	phoneNumber: string | null;
+
+	/** Lead classification for campaign targeting */
+	leadType: LeadTypeValue | null;
 
 	/** Lead lifecycle state */
 	status: LeadStatusType;
@@ -83,6 +93,8 @@ export interface LeadCreateInput {
 	fullName: string;
 	email: string;
 	companyName: string;
+	phoneNumber?: string | null;
+	leadType?: LeadTypeValue | null;
 	status?: LeadStatusType;
 	campaignId?: string;
 	queuePosition?: number;
@@ -96,6 +108,8 @@ export interface LeadCreateInput {
  */
 export interface LeadUpdateInput {
 	parsedFirstName?: string | null;
+	phoneNumber?: string | null;
+	leadType?: LeadTypeValue | null;
 	status?: LeadStatusType;
 	verificationResult?: VerificationResultType | null;
 	verificationTimestamp?: string | null;

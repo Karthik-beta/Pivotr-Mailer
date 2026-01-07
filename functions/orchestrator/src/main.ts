@@ -16,16 +16,16 @@
  */
 
 import { Client } from 'node-appwrite';
-import { EventType } from '../../../shared/constants/event.constants';
-import { CampaignStatus } from '../../../shared/constants/status.constants';
+import { EventType } from './lib/shared/constants/event.constants';
+import { CampaignStatus } from './lib/shared/constants/status.constants';
 // Shared modules
 import {
 	getCampaignById,
 	getRunningCampaigns,
 	updateCampaign,
-} from '../../_shared/database/repositories/campaign.repository';
-import { logError, logInfo } from '../../_shared/database/repositories/log.repository';
-import { cleanupStaleLocks } from '../../_shared/locking/campaign-lock';
+} from './lib/shared/database/repositories/campaign.repository';
+import { logError, logInfo } from './lib/shared/database/repositories/log.repository';
+import { cleanupStaleLocks } from './lib/shared/locking/campaign-lock';
 // Local modules
 import { executeCampaign, type OrchestratorConfig } from './campaign-handler';
 
@@ -63,10 +63,17 @@ interface AppwriteContext {
 export default async function main(context: AppwriteContext): Promise<unknown> {
 	const { req, res, log, error: logErr } = context;
 
+	// Get endpoint - fix localhost for Docker internal networking
+	let endpoint = process.env.APPWRITE_FUNCTION_API_ENDPOINT || '';
+	if (endpoint.includes('localhost') || endpoint.includes('127.0.0.1')) {
+		endpoint = endpoint.replace('localhost', 'appwrite').replace('127.0.0.1', 'appwrite');
+	}
+
 	const client = new Client()
-		.setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT || '')
+		.setEndpoint(endpoint)
 		.setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID || '')
-		.setKey(process.env.APPWRITE_API_KEY || '');
+		.setKey(process.env.APPWRITE_API_KEY || '')
+		.setSelfSigned(true);
 
 	const config: OrchestratorConfig = {
 		appwriteClient: client,

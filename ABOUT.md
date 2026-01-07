@@ -20,6 +20,9 @@ This application serves as the email communication component for Pivotr, enablin
 The frontend is built using **TanStack Start**, a modern full-stack React framework that provides:
 
 - **File-based routing** via TanStack Router
+- **Data Fetching** via TanStack Query
+- **Data Grids** via TanStack Table
+- **Virtualization** via TanStack Virtual
 - **Server-side rendering (SSR)** capabilities
 - **React 19** with the latest features
 - **Tailwind CSS v4** for utility-first styling
@@ -53,6 +56,7 @@ The codebase follows a modular structure:
 - **`functions/`** - Appwrite serverless functions
 - **`infra/`** - Infrastructure as Code (Docker Compose, environment configs)
 - **`migrations/`** - Database migration scripts
+- **`scripts/`** - Automation & utility scripts
 - **`shared/`** - Shared utilities and TypeScript types
 - **`.agent/`** - AI agent configuration and skill definitions
 - **`appwrite.config.json`** - Appwrite CLI configuration (project root)

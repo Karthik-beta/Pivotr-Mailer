@@ -1,0 +1,34 @@
+$id : 695b92857b9e835d03af
+$createdAt : 2026-01-05T10:29:25.530+00:00
+$updatedAt : 2026-01-05T10:29:25.530+00:00
+$permissions
+[
+  "read(\"user:695a7a9269997a45be8f\")"
+]
+functionId : export-leads
+deploymentId : 695b914cc7f3ca474d5a
+trigger : http
+status : failed
+requestMethod : POST
+requestPath : /
+requestHeaders
+[90m                       [39m[90m              [39m
+[90m [39m[31m name                 [39m[90mΓöé[39m[31m value      [39m[90m [39m
+[90m ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ[39m[90mΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ [39m
+[90m [39m x-appwrite-client-ip [90mΓöé[39m 172.22.0.1 [90m [39m
+[90m                       [39m[90m              [39m
+responseStatusCode : 500
+responseBody : 
+responseHeaders
+[90m                 [39m[90m                             [39m
+[90m [39m[31m name           [39m[90mΓöé[39m[31m value                     [39m[90m [39m
+[90m ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ[39m[90mΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ [39m
+[90m [39m content-type   [90mΓöé[39m text/plain; charset=utf-8 [90m [39m
+[90m ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ[39m[90mΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ [39m
+[90m [39m content-length [90mΓöé[39m 0                         [90m [39m
+[90m                 [39m[90m                             [39m
+logs : 
+errors : {"name":"ResolveMessage","position":null,"message":"Cannot find package 'node-fetch-native-with-agent' from '/usr/local/server/src/function/node_modules/node-appwrite/dist/client.mjs'","level":"error","specifier":"node-fetch-native-with-agent","importKind":"import-statement","referrer":"/usr/local/server/src/function/node_modules/node-appwrite/dist/client.mjs"}
+
+duration : 0.021092891693115
+scheduledAt : null

@@ -13,8 +13,9 @@ import { Route as TemplatesRouteImport } from './routes/templates'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as LeadsRouteImport } from './routes/leads'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LeadsIndexRouteImport } from './routes/leads.index'
+import { Route as LeadsStagingRouteImport } from './routes/leads.staging'
 
 const TemplatesRoute = TemplatesRouteImport.update({
   id: '/templates',
@@ -36,64 +37,88 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LeadsRoute = LeadsRouteImport.update({
-  id: '/leads',
-  path: '/leads',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LeadsIndexRoute = LeadsIndexRouteImport.update({
+  id: '/leads/',
+  path: '/leads/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeadsStagingRoute = LeadsStagingRouteImport.update({
+  id: '/leads/staging',
+  path: '/leads/staging',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/leads': typeof LeadsRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/settings': typeof SettingsRoute
   '/templates': typeof TemplatesRoute
+  '/leads/staging': typeof LeadsStagingRoute
+  '/leads': typeof LeadsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/leads': typeof LeadsRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/settings': typeof SettingsRoute
   '/templates': typeof TemplatesRoute
+  '/leads/staging': typeof LeadsStagingRoute
+  '/leads': typeof LeadsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/leads': typeof LeadsRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/settings': typeof SettingsRoute
   '/templates': typeof TemplatesRoute
+  '/leads/staging': typeof LeadsStagingRoute
+  '/leads/': typeof LeadsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/leads' | '/login' | '/logs' | '/settings' | '/templates'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/leads' | '/login' | '/logs' | '/settings' | '/templates'
-  id:
-    | '__root__'
+  fullPaths:
     | '/'
-    | '/leads'
     | '/login'
     | '/logs'
     | '/settings'
     | '/templates'
+    | '/leads/staging'
+    | '/leads'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/login'
+    | '/logs'
+    | '/settings'
+    | '/templates'
+    | '/leads/staging'
+    | '/leads'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/logs'
+    | '/settings'
+    | '/templates'
+    | '/leads/staging'
+    | '/leads/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  LeadsRoute: typeof LeadsRoute
   LoginRoute: typeof LoginRoute
   LogsRoute: typeof LogsRoute
   SettingsRoute: typeof SettingsRoute
   TemplatesRoute: typeof TemplatesRoute
+  LeadsStagingRoute: typeof LeadsStagingRoute
+  LeadsIndexRoute: typeof LeadsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -126,13 +151,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/leads': {
-      id: '/leads'
-      path: '/leads'
-      fullPath: '/leads'
-      preLoaderRoute: typeof LeadsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -140,16 +158,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/leads/': {
+      id: '/leads/'
+      path: '/leads'
+      fullPath: '/leads'
+      preLoaderRoute: typeof LeadsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leads/staging': {
+      id: '/leads/staging'
+      path: '/leads/staging'
+      fullPath: '/leads/staging'
+      preLoaderRoute: typeof LeadsStagingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  LeadsRoute: LeadsRoute,
   LoginRoute: LoginRoute,
   LogsRoute: LogsRoute,
   SettingsRoute: SettingsRoute,
   TemplatesRoute: TemplatesRoute,
+  LeadsStagingRoute: LeadsStagingRoute,
+  LeadsIndexRoute: LeadsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

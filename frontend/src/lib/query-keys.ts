@@ -20,6 +20,12 @@ export const leadsKeys = {
 	detail: (id: string) => [...leadsKeys.all, "detail", id] as const,
 };
 
+export const stagedLeadsKeys = {
+	all: ["stagedLeads"] as const,
+	list: (batchId?: string) => [...stagedLeadsKeys.all, "list", batchId] as const,
+	batches: () => [...stagedLeadsKeys.all, "batches"] as const,
+};
+
 export const campaignKeys = {
 	all: ["campaign"] as const,
 	active: () => [...campaignKeys.all, "active"] as const,

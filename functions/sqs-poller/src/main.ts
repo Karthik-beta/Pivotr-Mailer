@@ -12,14 +12,14 @@
  */
 
 import { Client } from 'node-appwrite';
-import { EventType } from '../../../shared/constants/event.constants';
-import { LeadStatus } from '../../../shared/constants/status.constants';
-import { findLeadBySesMessageId, updateLead } from '../../_shared/database/repositories/lead.repository';
-import { logError, logInfo, logWarn } from '../../_shared/database/repositories/log.repository';
-import { incrementCampaignMetrics, incrementGlobalMetrics } from '../../_shared/database/repositories/metrics.repository';
-import { getSqsConfig } from '../../_shared/database/repositories/settings.repository';
+import { EventType } from './lib/shared/constants/event.constants';
+import { LeadStatus } from './lib/shared/constants/status.constants';
+import { findLeadBySesMessageId, updateLead } from './lib/shared/database/repositories/lead.repository';
+import { logError, logInfo, logWarn } from './lib/shared/database/repositories/log.repository';
+import { incrementCampaignMetrics, incrementGlobalMetrics } from './lib/shared/database/repositories/metrics.repository';
+import { getSqsConfig } from './lib/shared/database/repositories/settings.repository';
 // Shared modules
-import { deleteMessage, pollMessages, type SesNotification } from '../../_shared/sqs-client/client';
+import { deleteMessage, pollMessages, type SesNotification } from './lib/shared/sqs-client/client';
 
 /**
  * Appwrite Function context
@@ -44,11 +44,18 @@ interface AppwriteContext {
 export default async function main(context: AppwriteContext): Promise<unknown> {
     const { res, log, error: logErr } = context;
 
+    // Get endpoint - fix localhost for Docker internal networking
+    let endpoint = process.env.APPWRITE_FUNCTION_API_ENDPOINT || '';
+    if (endpoint.includes('localhost') || endpoint.includes('127.0.0.1')) {
+        endpoint = endpoint.replace('localhost', 'appwrite').replace('127.0.0.1', 'appwrite');
+    }
+
     // Initialize Appwrite client
     const client = new Client()
-        .setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT || '')
+        .setEndpoint(endpoint)
         .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID || '')
-        .setKey(process.env.APPWRITE_API_KEY || '');
+        .setKey(process.env.APPWRITE_API_KEY || '')
+        .setSelfSigned(true);
 
     try {
         // Get SQS configuration
@@ -138,9 +145,9 @@ async function processNotification(
 
     // Process based on notification type
     if (notificationType === 'Bounce') {
-        await handleBounce(client, lead.$id, lead.campaignId, notification);
+        await handleBounce(client, lead.$id, lead.campaignId || null, notification);
     } else if (notificationType === 'Complaint') {
-        await handleComplaint(client, lead.$id, lead.campaignId, notification);
+        await handleComplaint(client, lead.$id, lead.campaignId || null, notification);
     }
 
     // Delete message from SQS
