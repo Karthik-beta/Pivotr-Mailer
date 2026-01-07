@@ -15,7 +15,7 @@ export function useStagedLeads(batchId?: string) {
 		queryKey: stagedLeadsKeys.list(batchId),
 		initialPageParam: undefined as string | undefined,
 		queryFn: async ({ pageParam }) => {
-			const queries = [Query.orderDesc("$createdAt"), Query.limit(50)];
+			const queries = [Query.orderAsc("rowNumber"), Query.limit(50)];
 			if (batchId) {
 				queries.push(Query.equal("batchId", batchId));
 			}

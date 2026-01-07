@@ -152,7 +152,7 @@ export function useExcelImport(): UseExcelImportResult {
 
 				return {
 					batchId: newBatchId,
-					rowNumber: index + 2, // Excel rows are 1-indexed, row 1 is header
+					rowNumber: index + 1, // Sequential row number starting from 1
 					fullName: fullName.trim(),
 					email: email.trim(),
 					companyName: companyName.trim(),
