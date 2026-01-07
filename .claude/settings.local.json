@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix staged leads display order and row numbering\n\n- Order staged leads by rowNumber to preserve Excel import order\n- Start row numbers from 1 instead of 2 for sequential display\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(git merge feature/excel-import-export --no-ff -m \"$\\(cat <<''EOF''\nMerge feature/excel-import-export: Excel import/export with staging workflow\n\nFeatures:\n- Excel import with dynamic header detection\n- Lead staging workflow with validation\n- Staged leads display in original Excel order\n- Sequential row numbering from 1\n- Approve valid leads / discard batch functionality\nEOF\n\\)\")",
+      "Bash(git stash push:*)",
+      "Bash(git stash:*)",
+      "Bash(git push:*)",
+      "Skill(frontend-design)",
+      "Bash(cat:*)",
+      "Bash(bunx shadcn@latest add:*)",
+      "Bash(npm run build)",
+      "Bash(bun install)",
+      "Bash(appwrite deploy function)",
+      "Bash(appwrite push functions)",
+      "Bash(appwrite push functions:*)",
+      "Bash(appwrite functions --help:*)",
+      "Bash(appwrite functions list-variables:*)",
+      "Bash(appwrite functions create-variable:*)"
+    ]
+  }
+}

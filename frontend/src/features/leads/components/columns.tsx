@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 
 const columnHelper = createColumnHelper<Lead>();
 
-export const columns = (onReview: (lead: Lead) => void) => [
+import { Trash2 } from "lucide-react";
+
+export const columns = (onReview: (lead: Lead) => void, onDelete: (lead: Lead) => void) => [
 	columnHelper.accessor("email", {
 		header: "Waitlist Email",
 		cell: (info) => <span className="font-medium">{info.getValue()}</span>,
@@ -44,7 +46,7 @@ export const columns = (onReview: (lead: Lead) => void) => [
 		id: "actions",
 		header: () => <div className="text-right">Actions</div>,
 		cell: (info) => (
-			<div className="text-right">
+			<div className="text-right flex justify-end gap-1">
 				<Button
 					variant="ghost"
 					size="icon"
@@ -52,6 +54,15 @@ export const columns = (onReview: (lead: Lead) => void) => [
 					title="Review Name"
 				>
 					<FilePenLine className="h-4 w-4" />
+				</Button>
+				<Button
+					variant="ghost"
+					size="icon"
+					className="text-destructive hover:text-destructive/90"
+					onClick={() => onDelete(info.row.original)}
+					title="Delete Lead"
+				>
+					<Trash2 className="h-4 w-4" />
 				</Button>
 			</div>
 		),

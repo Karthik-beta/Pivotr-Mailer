@@ -23,6 +23,8 @@ import { createIndexes } from "./007_create_indexes";
 import { seedInitialData } from "./008_seed_initial_data";
 import { createLocksCollection } from "./009_create_locks";
 import { createStagedLeadsCollection } from "./010_create_staged_leads";
+import { addPhoneNumberToLeads } from "./011_add_phone_number_to_leads";
+import { addLeadTypeToLeads } from "./012_add_lead_type_to_leads";
 
 async function runMigrations(): Promise<void> {
 	console.log("╔═══════════════════════════════════════════════════════════════╗");
@@ -86,8 +88,16 @@ async function runMigrations(): Promise<void> {
 		await createLocksCollection(client);
 
 		console.log("─────────────────────────────────────────────────────────────────");
-		console.log("Step 9/10: Creating staged leads collection...");
+		console.log("Step 9/11: Creating staged leads collection...");
 		await createStagedLeadsCollection(client);
+
+		console.log("─────────────────────────────────────────────────────────────────");
+		console.log("Step 10/12: Adding phoneNumber to leads collection...");
+		await addPhoneNumberToLeads(client);
+
+		console.log("─────────────────────────────────────────────────────────────────");
+		console.log("Step 11/12: Adding leadType to leads collection...");
+		await addLeadTypeToLeads(client);
 
 		console.log("─────────────────────────────────────────────────────────────────");
 		console.log("─────────────────────────────────────────────────────────────────");

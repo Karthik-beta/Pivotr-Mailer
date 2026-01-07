@@ -36,6 +36,16 @@ export async function createLeadsCollection(client: Client): Promise<void> {
 	await databases.createStringAttribute(DATABASE_ID, collectionId, "parsedFirstName", 100, false);
 	await databases.createEmailAttribute(DATABASE_ID, collectionId, "email", true);
 	await databases.createStringAttribute(DATABASE_ID, collectionId, "companyName", 255, true);
+	await databases.createStringAttribute(DATABASE_ID, collectionId, "phoneNumber", 20, false);
+
+	// Lead Type
+	await databases.createEnumAttribute(
+		DATABASE_ID,
+		collectionId,
+		"leadType",
+		["HARDWARE", "SOFTWARE", "BOTH"],
+		false
+	);
 
 	// Status enum (optional with default value - Appwrite doesn't allow defaults on required attrs)
 	await databases.createEnumAttribute(

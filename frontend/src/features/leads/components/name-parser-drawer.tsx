@@ -1,7 +1,5 @@
-import { CollectionId, DATABASE_ID } from "@shared/constants/collection.constants";
 import type { Lead } from "@shared/types/lead.types";
 import { useEffect, useId, useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Drawer,
@@ -14,7 +12,7 @@ import {
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { databases } from "@/lib/appwrite";
+import { useUpdateLead } from "../hooks/use-leads";
 
 interface NameParserDrawerProps {
 	lead: Lead | null;
@@ -25,8 +23,8 @@ interface NameParserDrawerProps {
 
 export function NameParserDrawer({ lead, open, onOpenChange, onSaved }: NameParserDrawerProps) {
 	const [parsedName, setParsedName] = useState("");
-	const [isSaving, setIsSaving] = useState(false);
 	const parsedId = useId();
+	const updateLead = useUpdateLead();
 
 	useEffect(() => {
 		if (lead) {
@@ -34,22 +32,17 @@ export function NameParserDrawer({ lead, open, onOpenChange, onSaved }: NamePars
 		}
 	}, [lead]);
 
-	const handleSave = async () => {
+	const handleSave = () => {
 		if (!lead) return;
-		setIsSaving(true);
-		try {
-			await databases.updateDocument(DATABASE_ID, CollectionId.LEADS, lead.$id, {
-				parsedFirstName: parsedName,
-			});
-			toast.success("Name updated successfully");
-			onSaved();
-			onOpenChange(false);
-		} catch (error) {
-			console.error(error);
-			toast.error("Failed to update name");
-		} finally {
-			setIsSaving(false);
-		}
+		updateLead.mutate(
+			{ leadId: lead.$id, data: { parsedFirstName: parsedName } },
+			{
+				onSuccess: () => {
+					onSaved();
+					onOpenChange(false);
+				},
+			}
+		);
 	};
 
 	return (
@@ -83,8 +76,8 @@ export function NameParserDrawer({ lead, open, onOpenChange, onSaved }: NamePars
 					</div>
 
 					<DrawerFooter>
-						<Button onClick={handleSave} disabled={isSaving}>
-							{isSaving ? "Saving..." : "Save Changes"}
+						<Button onClick={handleSave} disabled={updateLead.isPending}>
+							{updateLead.isPending ? "Saving..." : "Save Changes"}
 						</Button>
 						<DrawerClose asChild>
 							<Button variant="outline">Cancel</Button>

@@ -5,7 +5,19 @@ import {
 	type PaginationState,
 	useReactTable,
 } from "@tanstack/react-table";
+import { Loader2, Plus, Users } from "lucide-react";
 import { useState } from "react";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import {
 	Pagination,
 	PaginationContent,
@@ -21,7 +33,8 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { useLeads } from "../hooks/use-leads";
+import { useDeleteLead, useLeads } from "../hooks/use-leads";
+import { AddLeadDialog } from "./add-lead-dialog";
 import { columns } from "./columns";
 import { NameParserDrawer } from "./name-parser-drawer";
 
@@ -38,13 +51,30 @@ export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 
 	// useSuspenseQuery will suspend if data is not ready
 	const { data, refetch } = useLeads(apiPage, limit, search);
+	const { mutate: deleteLead, isPending: isDeleting } = useDeleteLead();
 
 	const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 	const [drawerOpen, setDrawerOpen] = useState(false);
 
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
+
 	const handleReviewClick = (lead: Lead) => {
 		setSelectedLead(lead);
 		setDrawerOpen(true);
+	};
+
+	const handleDeleteClick = (lead: Lead) => {
+		setLeadToDelete(lead);
+		setDeleteDialogOpen(true);
+	};
+
+	const confirmDelete = () => {
+		if (leadToDelete) {
+			deleteLead(leadToDelete.$id);
+			setDeleteDialogOpen(false);
+			setLeadToDelete(null);
+		}
 	};
 
 	const handleNameSaved = () => {
@@ -64,7 +94,7 @@ export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 
 	const table = useReactTable({
 		data: tableData,
-		columns: columns(handleReviewClick),
+		columns: columns(handleReviewClick, handleDeleteClick),
 		pageCount,
 		state: {
 			pagination,
@@ -111,8 +141,24 @@ export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 							))
 						) : (
 							<TableRow>
-								<TableCell colSpan={columns.length} className="h-24 text-center">
-									No leads found.
+								<TableCell colSpan={table.getAllColumns().length} className="h-48">
+									<div className="flex flex-col items-center justify-center text-center py-8">
+										<div className="bg-muted/50 rounded-full p-4 mb-4">
+											<Users className="h-8 w-8 text-muted-foreground" />
+										</div>
+										<h3 className="text-lg font-medium mb-1">No leads found</h3>
+										<p className="text-muted-foreground text-sm mb-4">
+											Get started by adding your first lead.
+										</p>
+										<AddLeadDialog
+											trigger={
+												<Button className="gap-2">
+													<Plus className="h-4 w-4" />
+													Add Lead
+												</Button>
+											}
+										/>
+									</div>
 								</TableCell>
 							</TableRow>
 						)}
@@ -168,6 +214,32 @@ export function LeadsTable({ page, search, onPageChange }: LeadsTableProps) {
 				onOpenChange={setDrawerOpen}
 				onSaved={handleNameSaved}
 			/>
+
+			<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Are you sure?</AlertDialogTitle>
+						<AlertDialogDescription>
+							This will permanently delete the lead for <span className="font-medium text-foreground">{leadToDelete?.email}</span>.
+							This action cannot be undone.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={(e) => {
+								e.preventDefault();
+								confirmDelete();
+							}}
+							disabled={isDeleting}
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+						>
+							{isDeleting && <Loader2 className="h-4 w-4 animate-spin" />}
+							{isDeleting ? "Deleting..." : "Delete"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 }

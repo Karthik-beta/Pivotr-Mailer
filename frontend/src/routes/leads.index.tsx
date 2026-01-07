@@ -5,6 +5,7 @@ import { useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AddLeadDialog } from "@/features/leads/components/add-lead-dialog";
 import { ExcelImportDialog } from "@/features/leads/components/excel-import-dialog";
 import { ExportLeadsButton } from "@/features/leads/components/export-leads-button";
 import { LeadsTable } from "@/features/leads/components/leads-table";
@@ -92,6 +93,7 @@ function LeadsPage() {
 							View Staging
 						</Button>
 					</Link>
+					<AddLeadDialog />
 					<ExcelImportDialog onImportSuccess={handleImportSuccess} />
 					<ExportLeadsButton />
 				</div>

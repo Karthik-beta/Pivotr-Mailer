@@ -1,4 +1,4 @@
-import { Moon, Sun } from "lucide-react";
+import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
 import { Button } from "@/components/ui/button";
@@ -10,21 +10,31 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function ModeToggle() {
-	const { setTheme } = useTheme();
+	const { theme, setTheme } = useTheme();
 
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
 				<Button variant="outline" size="icon">
-					<Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-					<Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+					<Sun className={`h-[1.2rem] w-[1.2rem] transition-all ${theme === "light" ? "rotate-0 scale-100" : "rotate-90 scale-0 absolute"}`} />
+					<Moon className={`h-[1.2rem] w-[1.2rem] transition-all ${theme === "dark" ? "rotate-0 scale-100" : "rotate-90 scale-0 absolute"}`} />
+					<Monitor className={`h-[1.2rem] w-[1.2rem] transition-all ${theme === "system" ? "rotate-0 scale-100" : "rotate-90 scale-0 absolute"}`} />
 					<span className="sr-only">Toggle theme</span>
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">
-				<DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
-				<DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem>
-				<DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
+				<DropdownMenuItem onClick={() => setTheme("light")} className="gap-2">
+					<Sun className="h-4 w-4" />
+					Light
+				</DropdownMenuItem>
+				<DropdownMenuItem onClick={() => setTheme("dark")} className="gap-2">
+					<Moon className="h-4 w-4" />
+					Dark
+				</DropdownMenuItem>
+				<DropdownMenuItem onClick={() => setTheme("system")} className="gap-2">
+					<Monitor className="h-4 w-4" />
+					System
+				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);

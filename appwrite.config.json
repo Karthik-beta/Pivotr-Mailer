@@ -127,6 +127,45 @@
             "events": [],
             "schedule": "",
             "timeout": 120
+        },
+        {
+            "$id": "create-lead",
+            "name": "create-lead",
+            "runtime": "bun-1.1",
+            "entrypoint": "src/main.ts",
+            "path": "functions/create-lead",
+            "execute": [
+                "users"
+            ],
+            "events": [],
+            "schedule": "",
+            "timeout": 30
+        },
+        {
+            "$id": "update-lead",
+            "name": "update-lead",
+            "runtime": "bun-1.1",
+            "entrypoint": "src/main.ts",
+            "path": "functions/update-lead",
+            "execute": [
+                "users"
+            ],
+            "events": [],
+            "schedule": "",
+            "timeout": 30
+        },
+        {
+            "$id": "delete-lead",
+            "name": "delete-lead",
+            "runtime": "bun-1.1",
+            "entrypoint": "src/main.ts",
+            "path": "functions/delete-lead",
+            "execute": [
+                "users"
+            ],
+            "events": [],
+            "schedule": "",
+            "timeout": 30
         }
     ]
 }
