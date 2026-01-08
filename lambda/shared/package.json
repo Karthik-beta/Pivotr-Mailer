@@ -1,0 +1,27 @@
+{
+    "name": "@pivotr-mailer/lambda-shared",
+    "version": "1.0.0",
+    "description": "Shared utilities for Pivotr Mailer Lambda functions",
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "@aws-sdk/client-dynamodb": "latest",
+        "@aws-sdk/lib-dynamodb": "latest",
+        "@aws-sdk/client-ses": "latest",
+        "@aws-sdk/client-sqs": "latest",
+        "@aws-sdk/client-secrets-manager": "latest",
+        "@aws-lambda-powertools/logger": "latest",
+        "@aws-lambda-powertools/metrics": "latest",
+        "@aws-lambda-powertools/tracer": "latest"
+    },
+    "devDependencies": {
+        "@types/aws-lambda": "latest",
+        "@types/node": "latest",
+        "typescript": "latest"
+    }
+}
