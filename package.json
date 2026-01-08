@@ -5,7 +5,7 @@
     "private": true,
     "type": "module",
     "workspaces": [
-        "frontend",
+        "old_frontend",
         "migrations",
         "functions/*"
     ],

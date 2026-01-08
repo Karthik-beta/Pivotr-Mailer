@@ -8,7 +8,6 @@
 import {
     SQSClient,
     ReceiveMessageCommand,
-    DeleteMessageCommand,
     GetQueueAttributesCommand,
     SendMessageCommand,
 } from '@aws-sdk/client-sqs';
@@ -381,7 +380,7 @@ async function testEventHandler(): Promise<void> {
     console.log('\n🎯 Simulating Event Handler Processing...');
 
     // This demonstrates how your application should handle each event type
-    for (const [eventType, payload] of Object.entries(MOCK_SES_EVENTS)) {
+    for (const [eventType] of Object.entries(MOCK_SES_EVENTS)) {
         console.log(`\n   Processing: ${eventType}`);
 
         switch (eventType) {
