@@ -1,6 +1,6 @@
 {
   "auditDate": "2026-01-08",
-  "auditVersion": "1.1",
+  "auditVersion": "1.2",
   "stackFile": "infrastructure/lib/pivotr-mailer-stack.ts",
   "components": {
     "dynamodb": {
@@ -37,6 +37,38 @@
         }
       }
     },
+    "s3": {
+      "status": "compliant",
+      "buckets": {
+        "AuditLogsBucket": {
+          "purpose": "Long-term compliance storage for all email audit logs",
+          "removalPolicy": "RETAIN",
+          "encryption": "S3_MANAGED",
+          "versioned": true,
+          "blockPublicAccess": true,
+          "enforceSSL": true,
+          "lifecycleRules": [
+            {
+              "id": "MoveToIA",
+              "description": "Move to Infrequent Access after 30 days",
+              "transitionAfter": "30 days"
+            },
+            {
+              "id": "MoveToGlacier",
+              "description": "Move to Glacier after 1 year",
+              "transitionAfter": "365 days"
+            },
+            {
+              "id": "DeleteAfter7Years",
+              "description": "Delete after 7 years (compliance retention)",
+              "expiration": "2555 days"
+            }
+          ],
+          "status": "new",
+          "fix": "Created S3 bucket for long-term audit log storage with lifecycle policies"
+        }
+      }
+    },
     "lambda": {
       "status": "compliant",
       "functions": {
@@ -45,40 +77,45 @@
           "timeout": "10s",
           "memory": 128,
           "logRetention": "ONE_MONTH",
+          "s3AuditAccess": "write",
           "status": "fixed",
-          "fixes": ["Added logRetention: ONE_MONTH", "Removed invalid events property"]
+          "fixes": ["Added logRetention: ONE_MONTH", "Removed invalid events property", "Granted S3 audit write access"]
         },
         "SendEmailLambda": {
           "reservedConcurrency": 5,
           "timeout": "30s",
           "memory": 256,
           "logRetention": "ONE_MONTH",
+          "s3AuditAccess": "write",
           "status": "fixed",
-          "fix": "Added logRetention: ONE_MONTH"
+          "fix": "Added logRetention: ONE_MONTH, S3 audit write access"
         },
         "VerifyEmailLambda": {
           "reservedConcurrency": 3,
           "timeout": "15s",
           "memory": 256,
           "logRetention": "ONE_MONTH",
+          "s3AuditAccess": "write",
           "status": "fixed",
-          "fix": "Added logRetention: ONE_MONTH"
+          "fix": "Added logRetention: ONE_MONTH, S3 audit write access"
         },
         "LeadImportLambda": {
           "reservedConcurrency": 2,
           "timeout": "60s",
           "memory": 512,
           "logRetention": "ONE_MONTH",
+          "s3AuditAccess": "write",
           "status": "fixed",
-          "fix": "Added logRetention: ONE_MONTH"
+          "fix": "Added logRetention: ONE_MONTH, S3 audit write access"
         },
         "ApiLeadsLambda": {
           "reservedConcurrency": 10,
           "timeout": "10s",
           "memory": 256,
           "logRetention": "ONE_MONTH",
+          "s3AuditAccess": "read",
           "status": "fixed",
-          "fix": "Added logRetention: ONE_MONTH"
+          "fix": "Added logRetention: ONE_MONTH, S3 audit read access for queries"
         },
         "ApiCampaignsLambda": {
           "reservedConcurrency": 10,
@@ -169,13 +206,33 @@
       }
     }
   },
+  "complianceStorage": {
+    "strategy": "S3 + DynamoDB hybrid",
+    "description": "All audit logs stored in S3 for long-term retention. DynamoDB LogsTable for fast queries on recent data.",
+    "retention": {
+      "hot": "30 days (S3 Standard)",
+      "warm": "1 year (S3 Infrequent Access)",
+      "cold": "7 years (S3 Glacier)",
+      "deletion": "After 7 years"
+    },
+    "logContents": [
+      "resolvedSubject - exact email subject sent",
+      "resolvedBody - full email body sent",
+      "templateVariables - variables used (email, name, company)",
+      "leadId - reference to recipient",
+      "campaignId - reference to campaign",
+      "sesResponse - SES API response",
+      "timestamp - when email was sent"
+    ]
+  },
   "summary": {
     "criticalIssuesResolved": [
       "SES -> SNS -> SQS pipeline now fully configured for email feedback",
       "All 5 DynamoDB tables now have Point-in-Time Recovery enabled",
-      "All 8 Lambda functions now have logRetention set to ONE_MONTH"
+      "All 8 Lambda functions now have logRetention set to ONE_MONTH",
+      "S3 bucket created for long-term audit log storage with lifecycle policies"
     ],
-    "totalIssuesFixed": 14,
+    "totalIssuesFixed": 15,
     "remainingIssues": 0,
     "deprecationWarnings": [
       "pointInTimeRecovery should be migrated to pointInTimeRecoverySpecification",

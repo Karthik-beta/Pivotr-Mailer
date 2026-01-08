@@ -3,6 +3,7 @@ import { Construct } from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
@@ -122,6 +123,45 @@ export class PivotrMailerStack extends cdk.Stack {
         });
 
         // =====================================================
+        // 1.1 S3 BUCKET FOR AUDIT LOGS (Long-term Compliance Storage)
+        // =====================================================
+        const auditLogsBucket = new s3.Bucket(this, 'AuditLogsBucket', {
+            bucketName: `pivotr-mailer-audit-logs-${this.account}`,
+            removalPolicy: cdk.RemovalPolicy.RETAIN,
+            blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+            encryption: s3.BucketEncryption.S3_MANAGED,
+            versioned: true, // Protect against accidental overwrites
+            enforceSSL: true,
+            lifecycleRules: [
+                {
+                    // Move to Infrequent Access after 30 days (cheaper storage)
+                    id: 'MoveToIA',
+                    transitions: [
+                        {
+                            storageClass: s3.StorageClass.INFREQUENT_ACCESS,
+                            transitionAfter: cdk.Duration.days(30),
+                        },
+                    ],
+                },
+                {
+                    // Move to Glacier after 1 year (very cheap, compliance archive)
+                    id: 'MoveToGlacier',
+                    transitions: [
+                        {
+                            storageClass: s3.StorageClass.GLACIER,
+                            transitionAfter: cdk.Duration.days(365),
+                        },
+                    ],
+                },
+                {
+                    // Delete after 7 years (adjust based on compliance requirements)
+                    id: 'DeleteAfter7Years',
+                    expiration: cdk.Duration.days(2555), // ~7 years
+                },
+            ],
+        });
+
+        // =====================================================
         // 2. SQS QUEUES
         // =====================================================
         // Dead Letter Queues
@@ -195,6 +235,8 @@ export class PivotrMailerStack extends cdk.Stack {
             DYNAMODB_TABLE_LEADS: leadsTable.tableName,
             DYNAMODB_TABLE_CAMPAIGNS: campaignsTable.tableName,
             DYNAMODB_TABLE_METRICS: metricsTable.tableName,
+            DYNAMODB_TABLE_LOGS: logsTable.tableName,
+            S3_AUDIT_LOGS_BUCKET: auditLogsBucket.bucketName,
             LOG_LEVEL: 'INFO',
             ENVIRONMENT: 'production', // Should be dynamic based on stage
         };
@@ -363,6 +405,13 @@ export class PivotrMailerStack extends cdk.Stack {
             resources: ['*'], // Restrict to verified identities in prod
         }));
 
+        // Grant S3 audit log write permissions to all Lambdas that generate logs
+        auditLogsBucket.grantWrite(sendEmailLambda);
+        auditLogsBucket.grantWrite(verifyEmailLambda);
+        auditLogsBucket.grantWrite(processFeedbackLambda);
+        auditLogsBucket.grantWrite(leadImportLambda);
+        auditLogsBucket.grantRead(apiLeadsLambda); // For audit trail queries
+
         // =====================================================
         // 6. MONITORING & ALARMS (PRD Section 5.3.7)
         // =====================================================
@@ -407,5 +456,7 @@ export class PivotrMailerStack extends cdk.Stack {
         new cdk.CfnOutput(this, 'AlarmTopicArn', { value: alarmTopic.topicArn });
         new cdk.CfnOutput(this, 'SESFeedbackTopicArn', { value: sesFeedbackTopic.topicArn });
         new cdk.CfnOutput(this, 'SESConfigSetName', { value: sesConfigSet.configurationSetName });
+        new cdk.CfnOutput(this, 'AuditLogsBucketName', { value: auditLogsBucket.bucketName });
+        new cdk.CfnOutput(this, 'AuditLogsBucketArn', { value: auditLogsBucket.bucketArn });
     }
 }
