@@ -94,3 +94,10 @@ export function getDynamoDbConfig(): DynamoDbConfig {
         settingsTable: getRequiredEnv('DYNAMODB_TABLE_SETTINGS'),
     };
 }
+
+/**
+ * Get secret from environment (placeholder for Secrets Manager).
+ */
+export function getSecret(name: string): string {
+    return process.env[name] || '';
+}

@@ -14,6 +14,8 @@ export * from './clients/ses.client.js';
 
 // Utils
 export * from './utils/logger.js';
+export * from './utils/spintax.js';
+export * from './utils/name-parser.js';
 
 // Errors
 export * from './errors/errors.js';

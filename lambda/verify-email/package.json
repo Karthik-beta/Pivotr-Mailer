@@ -1,7 +1,7 @@
 {
-    "name": "@pivotr-mailer/process-feedback",
+    "name": "@pivotr-mailer/verify-email",
     "version": "1.0.0",
-    "description": "Lambda function to process SES feedback (bounces, complaints)",
+    "description": "Lambda function to verify emails using MyEmailVerifier (MEV)",
     "type": "module",
     "main": "dist/index.js",
     "scripts": {
@@ -11,7 +11,8 @@
     "dependencies": {
         "@aws-lambda-powertools/logger": "latest",
         "@aws-sdk/client-dynamodb": "latest",
-        "@aws-sdk/lib-dynamodb": "latest"
+        "@aws-sdk/lib-dynamodb": "latest",
+        "axios": "latest"
     },
     "devDependencies": {
         "@types/aws-lambda": "latest",

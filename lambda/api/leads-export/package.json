@@ -1,0 +1,19 @@
+{
+    "name": "pivotr-api-leads-export",
+    "version": "1.0.0",
+    "description": "Lambda for exporting leads to Excel",
+    "main": "src/index.ts",
+    "scripts": {
+        "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js --external:'@aws-sdk/*'"
+    },
+    "dependencies": {
+        "@aws-lambda-powertools/logger": "^2.13.0",
+        "exceljs": "^4.4.0"
+    },
+    "devDependencies": {
+        "@types/aws-lambda": "^8.10.130",
+        "@types/node": "^20.10.0",
+        "esbuild": "^0.19.0",
+        "typescript": "^5.0.0"
+    }
+}

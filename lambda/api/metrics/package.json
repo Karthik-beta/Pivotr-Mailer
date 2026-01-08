@@ -1,7 +1,7 @@
 {
-    "name": "@pivotr-mailer/process-feedback",
+    "name": "@pivotr-mailer/api-metrics",
     "version": "1.0.0",
-    "description": "Lambda function to process SES feedback (bounces, complaints)",
+    "description": "Lambda function for Dashboard Metrics",
     "type": "module",
     "main": "dist/index.js",
     "scripts": {

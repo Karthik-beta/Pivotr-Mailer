@@ -5,11 +5,13 @@
     "type": "module",
     "main": "dist/index.js",
     "scripts": {
-        "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js --external:@aws-sdk/*",
+        "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js --external:'@aws-sdk/*'",
         "clean": "rm -rf dist"
     },
     "dependencies": {
-        "@aws-lambda-powertools/logger": "latest"
+        "@aws-lambda-powertools/logger": "latest",
+        "@aws-sdk/client-dynamodb": "latest",
+        "@aws-sdk/lib-dynamodb": "latest"
     },
     "devDependencies": {
         "@types/aws-lambda": "latest",

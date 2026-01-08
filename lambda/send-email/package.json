@@ -1,7 +1,7 @@
 {
-    "name": "@pivotr-mailer/process-feedback",
+    "name": "@pivotr-mailer/send-email",
     "version": "1.0.0",
-    "description": "Lambda function to process SES feedback (bounces, complaints)",
+    "description": "Lambda function to send emails via SES with Spintax support",
     "type": "module",
     "main": "dist/index.js",
     "scripts": {
@@ -11,6 +11,7 @@
     "dependencies": {
         "@aws-lambda-powertools/logger": "latest",
         "@aws-sdk/client-dynamodb": "latest",
+        "@aws-sdk/client-ses": "latest",
         "@aws-sdk/lib-dynamodb": "latest"
     },
     "devDependencies": {

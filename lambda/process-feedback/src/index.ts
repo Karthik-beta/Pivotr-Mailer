@@ -15,13 +15,14 @@
 
 import type { SQSEvent, SQSHandler, SQSRecord } from 'aws-lambda';
 import { Logger } from '@aws-lambda-powertools/logger';
+import type { LogLevel } from '@aws-lambda-powertools/logger/types';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, UpdateCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
 
 // Initialize logger
 const logger = new Logger({
     serviceName: 'process-feedback',
-    logLevel: process.env.LOG_LEVEL || 'INFO',
+    logLevel: (process.env.LOG_LEVEL as LogLevel) || 'INFO',
 });
 
 // Initialize DynamoDB client (reused across warm invocations)

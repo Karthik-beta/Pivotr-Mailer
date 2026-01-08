@@ -19,6 +19,7 @@
 
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Handler } from 'aws-lambda';
 import { Logger } from '@aws-lambda-powertools/logger';
+import type { LogLevel } from '@aws-lambda-powertools/logger/types';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
     DynamoDBDocumentClient,
@@ -33,7 +34,7 @@ import {
 // Initialize logger
 const logger = new Logger({
     serviceName: 'api-leads',
-    logLevel: process.env.LOG_LEVEL || 'INFO',
+    logLevel: (process.env.LOG_LEVEL as LogLevel) || 'INFO',
 });
 
 // Initialize DynamoDB client (reused across warm invocations)
@@ -133,13 +134,13 @@ async function listLeads(event: APIGatewayProxyEvent): Promise<APIGatewayProxyRe
     const limit = parseInt(event.queryStringParameters?.limit || '50', 10);
     const lastKey = event.queryStringParameters?.lastKey;
 
-    const params: Parameters<typeof docClient.send>[0] = new ScanCommand({
+    const command = new ScanCommand({
         TableName: LEADS_TABLE,
         Limit: Math.min(limit, 100), // Cap at 100 for safety
         ...(lastKey && { ExclusiveStartKey: JSON.parse(Buffer.from(lastKey, 'base64').toString()) }),
     });
 
-    const result = await docClient.send(params);
+    const result = await docClient.send(command);
 
     return response(200, {
         success: true,
