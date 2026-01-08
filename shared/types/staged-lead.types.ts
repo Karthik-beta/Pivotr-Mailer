@@ -23,7 +23,7 @@ export interface FieldValidationIssue {
  * Staged lead document (stored in staged_leads collection)
  */
 export interface StagedLead {
-	/** Appwrite document ID */
+	/** DynamoDB item ID */
 	$id?: string;
 
 	/** Document timestamps */

@@ -20,7 +20,10 @@
       "Bash(appwrite push functions:*)",
       "Bash(appwrite functions --help:*)",
       "Bash(appwrite functions list-variables:*)",
-      "Bash(appwrite functions create-variable:*)"
+      "Bash(appwrite functions create-variable:*)",
+      "Bash(dir:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx cdk synth:*)"
     ]
   }
 }

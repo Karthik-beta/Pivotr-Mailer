@@ -9,6 +9,8 @@ import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subs from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as cw_actions from 'aws-cdk-lib/aws-cloudwatch-actions';
+import * as logs from 'aws-cdk-lib/aws-logs';
+import * as ses from 'aws-cdk-lib/aws-ses';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as path from 'path';
 
@@ -48,7 +50,9 @@ export class PivotrMailerStack extends cdk.Stack {
                 sendingQueue: 3,
                 feedbackQueue: 5,
                 verificationQueue: 2,
-            }
+            },
+            // CloudWatch log retention to prevent infinite storage costs
+            logRetention: logs.RetentionDays.ONE_MONTH,
         };
 
         // =====================================================
@@ -84,6 +88,7 @@ export class PivotrMailerStack extends cdk.Stack {
             partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: cdk.RemovalPolicy.RETAIN,
+            pointInTimeRecovery: true,
         });
 
         const metricsTable = new dynamodb.Table(this, 'MetricsTable', {
@@ -91,6 +96,7 @@ export class PivotrMailerStack extends cdk.Stack {
             sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: cdk.RemovalPolicy.RETAIN,
+            pointInTimeRecovery: true,
         });
 
         const logsTable = new dynamodb.Table(this, 'LogsTable', {
@@ -98,6 +104,7 @@ export class PivotrMailerStack extends cdk.Stack {
             sortKey: { name: 'timestamp', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: cdk.RemovalPolicy.RETAIN,
+            pointInTimeRecovery: true,
         });
 
         // GSI for Logs (Lead History)
@@ -111,6 +118,7 @@ export class PivotrMailerStack extends cdk.Stack {
             partitionKey: { name: 'key', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: cdk.RemovalPolicy.RETAIN,
+            pointInTimeRecovery: true,
         });
 
         // =====================================================
@@ -147,6 +155,40 @@ export class PivotrMailerStack extends cdk.Stack {
         });
 
         // =====================================================
+        // 2.1 SES -> SNS -> SQS PIPELINE (Email Feedback)
+        // =====================================================
+        // SNS Topic for SES feedback (bounces, complaints, deliveries)
+        const sesFeedbackTopic = new sns.Topic(this, 'SESFeedbackTopic', {
+            topicName: 'pivotr-ses-feedback',
+            displayName: 'SES Email Feedback Notifications',
+        });
+
+        // Subscribe the FeedbackQueue to the SES Feedback SNS Topic
+        sesFeedbackTopic.addSubscription(new subs.SqsSubscription(feedbackQueue, {
+            rawMessageDelivery: true, // Deliver raw SES notification JSON
+        }));
+
+        // SES Configuration Set for tracking email events
+        const sesConfigSet = new ses.ConfigurationSet(this, 'PivotrConfigSet', {
+            configurationSetName: 'PivotrConfigSet',
+            reputationMetrics: true,
+            sendingEnabled: true,
+        });
+
+        // Event destination: Send bounce/complaint/delivery events to SNS
+        new ses.ConfigurationSetEventDestination(this, 'SESEventDestination', {
+            configurationSet: sesConfigSet,
+            configurationSetEventDestinationName: 'FeedbackToSNS',
+            destination: ses.EventDestination.snsTopic(sesFeedbackTopic),
+            events: [
+                ses.EmailSendingEvent.BOUNCE,
+                ses.EmailSendingEvent.COMPLAINT,
+                ses.EmailSendingEvent.DELIVERY,
+                ses.EmailSendingEvent.REJECT,
+            ],
+        });
+
+        // =====================================================
         // 3. LAMBDA FUNCTIONS
         // =====================================================
         const commonEnv = {
@@ -164,12 +206,8 @@ export class PivotrMailerStack extends cdk.Stack {
             timeout: SAFETY.timeouts.processFeedback,
             memorySize: SAFETY.memory.processFeedback,
             reservedConcurrentExecutions: SAFETY.concurrency.processFeedback,
+            logRetention: SAFETY.logRetention,
             environment: { ...commonEnv },
-            events: [{
-                eventSourceId: 'sqs',
-                batchSize: 10,
-                functionArn: '', // Placeholder, proper SqsEventSource usually used but keeping simple
-            } as any], // Using addEventSource below
         });
         processFeedbackLambda.addEventSource(new SqsEventSource(feedbackQueue));
 
@@ -180,6 +218,7 @@ export class PivotrMailerStack extends cdk.Stack {
             timeout: SAFETY.timeouts.sendEmail,
             memorySize: SAFETY.memory.sendEmail,
             reservedConcurrentExecutions: SAFETY.concurrency.sendEmail,
+            logRetention: SAFETY.logRetention,
             environment: {
                 ...commonEnv,
                 SES_FROM_EMAIL: 'noreply@pivotr.com', // Replace with config
@@ -195,6 +234,7 @@ export class PivotrMailerStack extends cdk.Stack {
             timeout: SAFETY.timeouts.verifyEmail,
             memorySize: SAFETY.memory.verifyEmail,
             reservedConcurrentExecutions: SAFETY.concurrency.verifyEmail,
+            logRetention: SAFETY.logRetention,
             environment: {
                 ...commonEnv,
                 // MYEMAILVERIFIER_API_KEY: secret.secretValue, // Todo: Secrets Manager
@@ -209,6 +249,7 @@ export class PivotrMailerStack extends cdk.Stack {
             timeout: SAFETY.timeouts.leadImport,
             memorySize: SAFETY.memory.leadImport,
             reservedConcurrentExecutions: SAFETY.concurrency.leadImport,
+            logRetention: SAFETY.logRetention,
             environment: { ...commonEnv },
         });
 
@@ -219,6 +260,7 @@ export class PivotrMailerStack extends cdk.Stack {
             timeout: SAFETY.timeouts.apiHandlers,
             memorySize: SAFETY.memory.apiHandlers,
             reservedConcurrentExecutions: SAFETY.concurrency.apiHandlers, // Shared if single API, but here separate
+            logRetention: SAFETY.logRetention,
             environment: { ...commonEnv },
         });
 
@@ -229,6 +271,7 @@ export class PivotrMailerStack extends cdk.Stack {
             timeout: SAFETY.timeouts.apiHandlers,
             memorySize: SAFETY.memory.apiHandlers,
             reservedConcurrentExecutions: SAFETY.concurrency.apiHandlers,
+            logRetention: SAFETY.logRetention,
             environment: { ...commonEnv },
         });
 
@@ -239,6 +282,7 @@ export class PivotrMailerStack extends cdk.Stack {
             timeout: SAFETY.timeouts.apiHandlers,
             memorySize: SAFETY.memory.apiHandlers,
             reservedConcurrentExecutions: SAFETY.concurrency.apiHandlers,
+            logRetention: SAFETY.logRetention,
             environment: { ...commonEnv },
         });
 
@@ -249,6 +293,7 @@ export class PivotrMailerStack extends cdk.Stack {
             timeout: cdk.Duration.seconds(20), // Explicit 20s as per plan
             memorySize: 1024, // Explicit 1024MB for Excel ops
             reservedConcurrentExecutions: 5, // Abuse prevention
+            logRetention: SAFETY.logRetention,
             environment: { ...commonEnv },
         });
 
@@ -360,5 +405,7 @@ export class PivotrMailerStack extends cdk.Stack {
         // Outputs
         new cdk.CfnOutput(this, 'ApiUrl', { value: api.url });
         new cdk.CfnOutput(this, 'AlarmTopicArn', { value: alarmTopic.topicArn });
+        new cdk.CfnOutput(this, 'SESFeedbackTopicArn', { value: sesFeedbackTopic.topicArn });
+        new cdk.CfnOutput(this, 'SESConfigSetName', { value: sesConfigSet.configurationSetName });
     }
 }
