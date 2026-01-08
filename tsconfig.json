@@ -27,16 +27,20 @@
             "@functions/*": [
                 "functions/*"
             ]
-        }
+        },
+        "types": [
+            "bun"
+        ]
     },
     "include": [
         "shared/**/*.ts",
         "functions/**/*.ts",
-        "migrations/**/*.ts"
+        "migrations/**/*.ts",
+        "scripts/**/*.ts"
     ],
     "exclude": [
         "node_modules",
         "frontend",
         "dist"
-    ]
+    ],
 }

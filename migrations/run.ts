@@ -13,18 +13,7 @@
  */
 import { Client } from "node-appwrite";
 
-import { createDatabase } from "./001_create_database";
-import { createLeadsCollection } from "./002_create_leads";
-import { createCampaignsCollection } from "./003_create_campaigns";
-import { createLogsCollection } from "./004_create_logs";
-import { createMetricsCollection } from "./005_create_metrics";
-import { createSettingsCollection } from "./006_create_settings";
-import { createIndexes } from "./007_create_indexes";
-import { seedInitialData } from "./008_seed_initial_data";
-import { createLocksCollection } from "./009_create_locks";
-import { createStagedLeadsCollection } from "./010_create_staged_leads";
-import { addPhoneNumberToLeads } from "./011_add_phone_number_to_leads";
-import { addLeadTypeToLeads } from "./012_add_lead_type_to_leads";
+import { createInitialSchema } from "./001_initial_setup";
 
 async function runMigrations(): Promise<void> {
 	console.log("╔═══════════════════════════════════════════════════════════════╗");
@@ -54,67 +43,11 @@ async function runMigrations(): Promise<void> {
 	console.log("");
 
 	try {
-		// Run migrations in sequence
-		console.log("─────────────────────────────────────────────────────────────────");
-		console.log("Step 1/8: Creating database...");
-		await createDatabase(client);
-
-		console.log("─────────────────────────────────────────────────────────────────");
-		console.log("Step 2/8: Creating leads collection...");
-		await createLeadsCollection(client);
-
-		console.log("─────────────────────────────────────────────────────────────────");
-		console.log("Step 3/8: Creating campaigns collection...");
-		await createCampaignsCollection(client);
-
-		console.log("─────────────────────────────────────────────────────────────────");
-		console.log("Step 4/8: Creating logs collection...");
-		await createLogsCollection(client);
-
-		console.log("─────────────────────────────────────────────────────────────────");
-		console.log("Step 5/8: Creating metrics collection...");
-		await createMetricsCollection(client);
-
-		console.log("─────────────────────────────────────────────────────────────────");
-		console.log("Step 6/8: Creating settings collection...");
-		await createSettingsCollection(client);
-
-		console.log("─────────────────────────────────────────────────────────────────");
-		console.log("Step 7/10: Creating indexes...");
-		await createIndexes(client);
-
-		console.log("─────────────────────────────────────────────────────────────────");
-		console.log("Step 8/10: Creating locks collection...");
-		await createLocksCollection(client);
-
-		console.log("─────────────────────────────────────────────────────────────────");
-		console.log("Step 9/11: Creating staged leads collection...");
-		await createStagedLeadsCollection(client);
-
-		console.log("─────────────────────────────────────────────────────────────────");
-		console.log("Step 10/12: Adding phoneNumber to leads collection...");
-		await addPhoneNumberToLeads(client);
-
-		console.log("─────────────────────────────────────────────────────────────────");
-		console.log("Step 11/12: Adding leadType to leads collection...");
-		await addLeadTypeToLeads(client);
-
-		console.log("─────────────────────────────────────────────────────────────────");
-		console.log("─────────────────────────────────────────────────────────────────");
-		console.log("Step 10/10: Seeding initial data...");
-		console.log("Waiting for attributes to be available...");
-		await new Promise((resolve) => setTimeout(resolve, 5000));
-		await seedInitialData(client);
-
+		await createInitialSchema(client);
 		console.log("");
 		console.log("═══════════════════════════════════════════════════════════════");
 		console.log("✓ ALL MIGRATIONS COMPLETED SUCCESSFULLY");
 		console.log("═══════════════════════════════════════════════════════════════");
-		console.log("");
-		console.log("Next steps:");
-		console.log("  1. Verify collections in Appwrite Console");
-		console.log("  2. Update settings document with AWS/MEV credentials");
-		console.log("  3. Deploy Appwrite Functions");
 		console.log("");
 	} catch (error) {
 		console.error("");
