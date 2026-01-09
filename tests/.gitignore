@@ -1,0 +1,28 @@
+# =============================================================================
+# Test Artifacts - Git Ignore
+# =============================================================================
+
+# Vitest
+coverage/
+test-results/
+.vitest/
+
+# SAM Build
+.aws-sam/
+.sam-temp/
+
+# LocalStack Data
+tests/localstack/volume/
+
+# Environment overrides (local only)
+.env.test.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

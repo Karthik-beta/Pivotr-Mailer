@@ -14,8 +14,10 @@ const MAX_ITERATIONS = 10;
 
 /**
  * Regex to match Spintax groups (innermost first).
+ * Uses negative lookbehind/lookahead to avoid matching {{variable}} patterns.
+ * Matches {content} but not {{content}} - single braces only.
  */
-const SPINTAX_REGEX = /\{([^{}]*)\}/g;
+const SPINTAX_REGEX = /(?<!\{)\{([^{}]*)\}(?!\})/g;
 
 /**
  * Resolve all Spintax in a template string.

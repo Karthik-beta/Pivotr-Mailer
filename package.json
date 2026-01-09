@@ -6,19 +6,52 @@
     "type": "module",
     "workspaces": [
         "frontend",
-        "lambda/*",
-        "shared"
+        "lambda/*"
     ],
     "scripts": {
         "lint": "biome check .",
         "lint:fix": "biome check --write .",
         "format": "biome format --write .",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:ui": "vitest --ui",
+        "test:coverage": "vitest run --coverage",
+        "test:unit": "vitest run --config vitest.config.unit.ts",
+        "test:unit:watch": "vitest --config vitest.config.unit.ts",
+        "test:integration": "vitest run --config vitest.config.integration.ts",
+        "test:integration:watch": "vitest --config vitest.config.integration.ts",
+        "test:lambda": "vitest run --config vitest.config.lambda.ts",
+        "test:env:check": "bun run tests/config/environment-guard.ts",
+        "localstack:up": "docker compose -f tests/localstack/docker-compose.yml up -d",
+        "localstack:down": "docker compose -f tests/localstack/docker-compose.yml down -v",
+        "localstack:logs": "docker compose -f tests/localstack/docker-compose.yml logs -f",
+        "localstack:bootstrap": "bun run tests/localstack/bootstrap.ts",
+        "localstack:status": "curl -s http://localhost:4566/_localstack/health | jq .",
+        "sam:build": "sam build",
+        "sam:build:cached": "sam build --cached",
+        "sam:local:api": "sam local start-api --docker-network pivotr-localstack-network --env-vars tests/env/sam-local.json",
+        "sam:local:invoke": "sam local invoke --docker-network pivotr-localstack-network --env-vars tests/env/sam-local.json",
+        "lambda:build": "bun run lambda:build:all",
+        "lambda:build:all": "for dir in lambda/*/; do (cd \"$dir\" && bun run build 2>/dev/null || true); done",
+        "pretest:integration": "bun run localstack:bootstrap",
+        "pretest:lambda": "bun run sam:build"
     },
     "devDependencies": {
-        "@biomejs/biome": "^2.2.4",
-        "@types/bun": "^1.3.5",
-        "@types/node": "^20.0.0",
-        "typescript": "^5.0.0"
+        "@biomejs/biome": "latest",
+        "@types/bun": "latest",
+        "@types/node": "latest",
+        "typescript": "latest",
+        "vitest": "latest",
+        "@vitest/coverage-v8": "latest",
+        "@vitest/ui": "latest",
+        "@aws-sdk/client-dynamodb": "latest",
+        "@aws-sdk/lib-dynamodb": "latest",
+        "@aws-sdk/client-sqs": "latest",
+        "@aws-sdk/client-sns": "latest",
+        "@aws-sdk/client-ses": "latest",
+        "@aws-sdk/client-s3": "latest",
+        "@aws-sdk/client-cloudwatch": "latest",
+        "@aws-sdk/client-cloudwatch-logs": "latest"
     }
 }

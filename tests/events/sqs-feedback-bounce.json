@@ -1,0 +1,20 @@
+{
+    "Records": [
+        {
+            "messageId": "feedback-message-001",
+            "receiptHandle": "receipt-handle-001",
+            "body": "{\"Type\": \"Notification\", \"MessageId\": \"sns-msg-001\", \"TopicArn\": \"arn:aws:sns:us-east-1:000000000000:pivotr-ses-feedback\", \"Subject\": \"Amazon SES Email Event Notification\", \"Message\": \"{\\\"notificationType\\\": \\\"Bounce\\\", \\\"mail\\\": {\\\"messageId\\\": \\\"ses-msg-001\\\", \\\"destination\\\": [\\\"test@example.com\\\"], \\\"timestamp\\\": \\\"2024-01-01T00:00:00.000Z\\\"}, \\\"bounce\\\": {\\\"bounceType\\\": \\\"Permanent\\\", \\\"bounceSubType\\\": \\\"General\\\", \\\"bouncedRecipients\\\": [{\\\"emailAddress\\\": \\\"test@example.com\\\"}]}}\", \"Timestamp\": \"2024-01-01T00:00:00.000Z\"}",
+            "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "1699000000000",
+                "SenderId": "AIDATEST",
+                "ApproximateFirstReceiveTimestamp": "1699000000000"
+            },
+            "messageAttributes": {},
+            "md5OfBody": "test",
+            "eventSource": "aws:sqs",
+            "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:feedback-queue",
+            "awsRegion": "us-east-1"
+        }
+    ]
+}

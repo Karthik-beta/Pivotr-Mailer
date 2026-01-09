@@ -1,0 +1,319 @@
+# AWS SAM Template for Local Lambda Execution
+# Derived from CDK Stack: infrastructure/lib/pivotr-mailer-stack.ts
+#
+# This template enables local Lambda execution using SAM CLI.
+# It mirrors the production CDK configuration for high-fidelity testing.
+#
+# Usage:
+#   sam build
+#   sam local invoke SendEmailLambda --event events/sqs/send-email.json
+#   sam local start-api --docker-network localstack-network
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Pivotr Mailer - Local Testing Template
+
+# =============================================================================
+# GLOBALS - Shared configuration across all functions
+# =============================================================================
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Architectures:
+      - x86_64
+    Timeout: 30
+    MemorySize: 256
+    Environment:
+      Variables:
+        # AWS SDK Configuration for LocalStack
+        AWS_ENDPOINT_URL: !Ref AWSEndpointUrl
+        AWS_REGION: !Ref AWSRegion
+        # DynamoDB Tables
+        DYNAMODB_TABLE_LEADS: !Ref LeadsTableName
+        DYNAMODB_TABLE_CAMPAIGNS: !Ref CampaignsTableName
+        DYNAMODB_TABLE_METRICS: !Ref MetricsTableName
+        DYNAMODB_TABLE_LOGS: !Ref LogsTableName
+        DYNAMODB_TABLE_SETTINGS: !Ref SettingsTableName
+        # SQS Queues
+        SQS_QUEUE_SENDING: !Ref SendingQueueUrl
+        SQS_QUEUE_FEEDBACK: !Ref FeedbackQueueUrl
+        SQS_QUEUE_VERIFICATION: !Ref VerificationQueueUrl
+        # General
+        LOG_LEVEL: !Ref LogLevel
+        ENVIRONMENT: local
+
+# =============================================================================
+# PARAMETERS - Configurable for different environments
+# =============================================================================
+Parameters:
+  AWSEndpointUrl:
+    Type: String
+    Default: "http://host.docker.internal:4566"
+    Description: LocalStack endpoint URL (use host.docker.internal for Docker-to-Docker)
+
+  AWSRegion:
+    Type: String
+    Default: "us-east-1"
+    Description: AWS region for LocalStack
+
+  LeadsTableName:
+    Type: String
+    Default: "pivotr-leads"
+    Description: DynamoDB Leads table name
+
+  CampaignsTableName:
+    Type: String
+    Default: "pivotr-campaigns"
+    Description: DynamoDB Campaigns table name
+
+  MetricsTableName:
+    Type: String
+    Default: "pivotr-metrics"
+    Description: DynamoDB Metrics table name
+
+  LogsTableName:
+    Type: String
+    Default: "pivotr-logs"
+    Description: DynamoDB Logs table name
+
+  SettingsTableName:
+    Type: String
+    Default: "pivotr-settings"
+    Description: DynamoDB Settings table name
+
+  SendingQueueUrl:
+    Type: String
+    Default: "http://host.docker.internal:4566/000000000000/sending-queue"
+    Description: SQS Sending Queue URL
+
+  FeedbackQueueUrl:
+    Type: String
+    Default: "http://host.docker.internal:4566/000000000000/feedback-queue"
+    Description: SQS Feedback Queue URL
+
+  VerificationQueueUrl:
+    Type: String
+    Default: "http://host.docker.internal:4566/000000000000/verification-queue"
+    Description: SQS Verification Queue URL
+
+  LogLevel:
+    Type: String
+    Default: "DEBUG"
+    AllowedValues:
+      - DEBUG
+      - INFO
+      - WARN
+      - ERROR
+    Description: Log level for Lambda functions
+
+# =============================================================================
+# RESOURCES - Lambda Functions and API Gateway
+# =============================================================================
+Resources:
+
+  # ===========================================================================
+  # API Gateway
+  # ===========================================================================
+  PivotrMailerApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: v1
+      Cors:
+        AllowMethods: "'*'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+
+  # ===========================================================================
+  # API Lambda Functions
+  # ===========================================================================
+
+  ApiLeadsLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pivotr-api-leads
+      Handler: index.handler
+      CodeUri: lambda/api/leads/dist/
+      Timeout: 10
+      MemorySize: 256
+      Events:
+        GetLeads:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads
+            Method: GET
+        CreateLead:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads
+            Method: POST
+        GetLead:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads/{id}
+            Method: GET
+        UpdateLead:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads/{id}
+            Method: PUT
+        DeleteLead:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads/{id}
+            Method: DELETE
+
+  ApiCampaignsLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pivotr-api-campaigns
+      Handler: index.handler
+      CodeUri: lambda/api/campaigns/dist/
+      Timeout: 10
+      MemorySize: 256
+      Events:
+        GetCampaigns:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /campaigns
+            Method: GET
+        CreateCampaign:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /campaigns
+            Method: POST
+        GetCampaign:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /campaigns/{id}
+            Method: GET
+        UpdateCampaign:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /campaigns/{id}
+            Method: PUT
+        DeleteCampaign:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /campaigns/{id}
+            Method: DELETE
+
+  ApiMetricsLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pivotr-api-metrics
+      Handler: index.handler
+      CodeUri: lambda/api/metrics/dist/
+      Timeout: 10
+      MemorySize: 256
+      Events:
+        GetMetrics:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /metrics
+            Method: GET
+
+  ApiLeadsExportLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pivotr-api-leads-export
+      Handler: index.handler
+      CodeUri: lambda/api/leads-export/dist/
+      Timeout: 20
+      MemorySize: 1024
+      Events:
+        ExportLeads:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads/export
+            Method: POST
+        GetTemplate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads/template
+            Method: GET
+
+  LeadImportLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pivotr-lead-import
+      Handler: index.handler
+      CodeUri: lambda/lead-import/dist/
+      Timeout: 60
+      MemorySize: 512
+      Events:
+        ImportLeads:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads/import
+            Method: POST
+
+  # ===========================================================================
+  # SQS-Triggered Lambda Functions
+  # ===========================================================================
+
+  SendEmailLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pivotr-send-email
+      Handler: index.handler
+      CodeUri: lambda/send-email/dist/
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          SES_FROM_EMAIL: noreply@pivotr.local
+          SES_CONFIGURATION_SET: PivotrLocalConfigSet
+      # Note: SQS event source requires actual queue ARN in production
+      # For local testing, we invoke directly or use LocalStack triggers
+
+  VerifyEmailLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pivotr-verify-email
+      Handler: index.handler
+      CodeUri: lambda/verify-email/dist/
+      Timeout: 15
+      MemorySize: 256
+
+  ProcessFeedbackLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pivotr-process-feedback
+      Handler: index.handler
+      CodeUri: lambda/process-feedback/dist/
+      Timeout: 10
+      MemorySize: 128
+
+# =============================================================================
+# OUTPUTS
+# =============================================================================
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub "http://localhost:3000/${PivotrMailerApi.Stage}"
+
+  SendEmailLambdaArn:
+    Description: Send Email Lambda ARN
+    Value: !GetAtt SendEmailLambda.Arn
+
+  VerifyEmailLambdaArn:
+    Description: Verify Email Lambda ARN
+    Value: !GetAtt VerifyEmailLambda.Arn
+
+  ProcessFeedbackLambdaArn:
+    Description: Process Feedback Lambda ARN
+    Value: !GetAtt ProcessFeedbackLambda.Arn

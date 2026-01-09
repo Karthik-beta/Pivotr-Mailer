@@ -1,31 +1,39 @@
 {
-      "permissions": {
-            "allow": [
-                  "Bash(git add:*)",
-                  "Bash(git commit -m \"$\\(cat <<''EOF''\\nFix staged leads display order and row numbering\\n\\n- Order staged leads by rowNumber to preserve Excel import order\\n- Start row numbers from 1 instead of 2 for sequential display\\n\\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\\n\\nCo-Authored-By: Claude <noreply@anthropic.com>\\nEOF\\n\\)\")",
-                  "Bash(git fetch:*)",
-                  "Bash(git checkout:*)",
-                  "Bash(git pull:*)",
-                  "Bash(git merge feature/excel-import-export --no-ff -m \"$\\(cat <<''EOF''\\nMerge feature/excel-import-export: Excel import/export with staging workflow\\n\\nFeatures:\\n- Excel import with dynamic header detection\\n- Lead staging workflow with validation\\n- Staged leads display in original Excel order\\n- Sequential row numbering from 1\\n- Approve valid leads / discard batch functionality\\nEOF\\n\\)\")",
-                  "Bash(git stash push:*)",
-                  "Bash(git stash:*)",
-                  "Bash(git push:*)",
-                  "Skill(frontend-design)",
-                  "Bash(cat:*)",
-                  "Bash(bunx shadcn@latest add:*)",
-                  "Bash(npm run build)",
-                  "Bash(bun install)",
-                  "Bash(appwrite deploy function)",
-                  "Bash(appwrite push functions)",
-                  "Bash(appwrite push functions:*)",
-                  "Bash(appwrite functions --help:*)",
-                  "Bash(appwrite functions list-variables:*)",
-                  "Bash(appwrite functions create-variable:*)",
-                  "Bash(dir:*)",
-                  "Bash(npx tsc:*)",
-                  "Bash(npx cdk synth:*)",
-                  "Bash(git commit -m \"$\\(cat <<''EOF''\\nrefactor: migrate from Appwrite to AWS stack\\n\\nBREAKING CHANGE: Remove all Appwrite dependencies and infrastructure\\n\\nInfrastructure Changes:\\n- Add complete SES -> SNS -> SQS pipeline for email feedback handling\\n- Enable Point-in-Time Recovery on all DynamoDB tables\\n- Add CloudWatch log retention \\(ONE_MONTH\\) to all Lambda functions\\n- Create SES Configuration Set with event destinations for bounce/complaint tracking\\n\\nRemoved Appwrite Dependencies:\\n- Remove appwrite.config.json\\n- Remove node-appwrite from package.json\\n- Remove infra/ directory \\(docker-compose for self-hosted Appwrite\\)\\n- Remove migrations/ directory \\(Appwrite database migrations\\)\\n- Remove Appwrite-related scripts \\(sync-function-vars, fix-lead-permissions, etc.\\)\\n\\nUpdated References:\\n- Update .env.example to AWS-only configuration\\n- Update shared types to reference DynamoDB instead of Appwrite\\n- Update workspaces to include frontend, lambda/*, and shared\\n\\nNote: old_frontend/ retained for reference during migration\\n\\nCo-Authored-By: Claude <noreply@anthropic.com>\\nEOF\\n\\)\")",
-                  "Bash(git commit -m \"$\\(cat <<''EOF''\\nfeat\\(infra\\): add S3 bucket for long-term audit log storage\\n\\nAdd compliance-ready S3 bucket for storing all email audit logs:\\n\\nStorage Architecture:\\n- S3 bucket with versioning enabled for data protection\\n- Block all public access + enforce SSL for security\\n- S3-managed encryption at rest\\n\\nLifecycle Policies \\(Cost Optimization\\):\\n- 0-30 days: S3 Standard \\(hot storage\\)\\n- 30-365 days: S3 Infrequent Access \\(warm storage\\)\\n- 1-7 years: S3 Glacier \\(cold archive\\)\\n- After 7 years: Auto-delete \\(adjustable per compliance needs\\)\\n\\nLambda Permissions:\\n- SendEmailLambda, VerifyEmailLambda, ProcessFeedbackLambda,\\n  LeadImportLambda: write access to store audit logs\\n- ApiLeadsLambda: read access for audit trail queries\\n\\nEnvironment Variables:\\n- S3_AUDIT_LOGS_BUCKET added to all Lambda functions\\n- DYNAMODB_TABLE_LOGS added for LogsTable reference\\n\\nLog Contents \\(per email\\):\\n- resolvedSubject, resolvedBody \\(exact content sent\\)\\n- templateVariables \\(recipient email, name, company\\)\\n- leadId, campaignId, sesResponse, timestamp\\n\\nCo-Authored-By: Claude <noreply@anthropic.com>\\nEOF\\n\\)\")"
-            ]
-      }
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\\nFix staged leads display order and row numbering\\n\\n- Order staged leads by rowNumber to preserve Excel import order\\n- Start row numbers from 1 instead of 2 for sequential display\\n\\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\\n\\nCo-Authored-By: Claude <noreply@anthropic.com>\\nEOF\\n\\)\")",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(git merge feature/excel-import-export --no-ff -m \"$\\(cat <<''EOF''\\nMerge feature/excel-import-export: Excel import/export with staging workflow\\n\\nFeatures:\\n- Excel import with dynamic header detection\\n- Lead staging workflow with validation\\n- Staged leads display in original Excel order\\n- Sequential row numbering from 1\\n- Approve valid leads / discard batch functionality\\nEOF\\n\\)\")",
+      "Bash(git stash push:*)",
+      "Bash(git stash:*)",
+      "Bash(git push:*)",
+      "Skill(frontend-design)",
+      "Bash(cat:*)",
+      "Bash(bunx shadcn@latest add:*)",
+      "Bash(npm run build)",
+      "Bash(bun install)",
+      "Bash(appwrite deploy function)",
+      "Bash(appwrite push functions)",
+      "Bash(appwrite push functions:*)",
+      "Bash(appwrite functions --help:*)",
+      "Bash(appwrite functions list-variables:*)",
+      "Bash(appwrite functions create-variable:*)",
+      "Bash(dir:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx cdk synth:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\\nrefactor: migrate from Appwrite to AWS stack\\n\\nBREAKING CHANGE: Remove all Appwrite dependencies and infrastructure\\n\\nInfrastructure Changes:\\n- Add complete SES -> SNS -> SQS pipeline for email feedback handling\\n- Enable Point-in-Time Recovery on all DynamoDB tables\\n- Add CloudWatch log retention \\(ONE_MONTH\\) to all Lambda functions\\n- Create SES Configuration Set with event destinations for bounce/complaint tracking\\n\\nRemoved Appwrite Dependencies:\\n- Remove appwrite.config.json\\n- Remove node-appwrite from package.json\\n- Remove infra/ directory \\(docker-compose for self-hosted Appwrite\\)\\n- Remove migrations/ directory \\(Appwrite database migrations\\)\\n- Remove Appwrite-related scripts \\(sync-function-vars, fix-lead-permissions, etc.\\)\\n\\nUpdated References:\\n- Update .env.example to AWS-only configuration\\n- Update shared types to reference DynamoDB instead of Appwrite\\n- Update workspaces to include frontend, lambda/*, and shared\\n\\nNote: old_frontend/ retained for reference during migration\\n\\nCo-Authored-By: Claude <noreply@anthropic.com>\\nEOF\\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\\nfeat\\(infra\\): add S3 bucket for long-term audit log storage\\n\\nAdd compliance-ready S3 bucket for storing all email audit logs:\\n\\nStorage Architecture:\\n- S3 bucket with versioning enabled for data protection\\n- Block all public access + enforce SSL for security\\n- S3-managed encryption at rest\\n\\nLifecycle Policies \\(Cost Optimization\\):\\n- 0-30 days: S3 Standard \\(hot storage\\)\\n- 30-365 days: S3 Infrequent Access \\(warm storage\\)\\n- 1-7 years: S3 Glacier \\(cold archive\\)\\n- After 7 years: Auto-delete \\(adjustable per compliance needs\\)\\n\\nLambda Permissions:\\n- SendEmailLambda, VerifyEmailLambda, ProcessFeedbackLambda,\\n  LeadImportLambda: write access to store audit logs\\n- ApiLeadsLambda: read access for audit trail queries\\n\\nEnvironment Variables:\\n- S3_AUDIT_LOGS_BUCKET added to all Lambda functions\\n- DYNAMODB_TABLE_LOGS added for LogsTable reference\\n\\nLog Contents \\(per email\\):\\n- resolvedSubject, resolvedBody \\(exact content sent\\)\\n- templateVariables \\(recipient email, name, company\\)\\n- leadId, campaignId, sesResponse, timestamp\\n\\nCo-Authored-By: Claude <noreply@anthropic.com>\\nEOF\\n\\)\")",
+      "Bash(bun run test:unit)",
+      "Bash(bun run typecheck)",
+      "Bash(bun run lint)",
+      "Bash(bun run localstack:up)",
+      "Bash(docker ps:*)",
+      "Bash(bun run localstack:bootstrap)",
+      "Bash(bun run test:integration)",
+      "Bash(npm run test:integration)"
+    ]
+  }
 }
