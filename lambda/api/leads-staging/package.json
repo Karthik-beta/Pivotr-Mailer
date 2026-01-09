@@ -1,0 +1,22 @@
+{
+    "name": "@pivotr-mailer/api-leads-staging",
+    "version": "1.0.0",
+    "description": "Lambda function for staging leads with validation before approval",
+    "type": "module",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js --external:'@aws-sdk/*'",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "@aws-lambda-powertools/logger": "latest",
+        "@aws-sdk/client-dynamodb": "latest",
+        "@aws-sdk/lib-dynamodb": "latest"
+    },
+    "devDependencies": {
+        "@types/aws-lambda": "latest",
+        "@types/node": "latest",
+        "esbuild": "latest",
+        "typescript": "latest"
+    }
+}
