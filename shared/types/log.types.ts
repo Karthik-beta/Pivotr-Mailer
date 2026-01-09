@@ -8,7 +8,7 @@ import type { LogSeverityType } from "../constants/status.constants";
  * Logs are write-only (append-only) and should never be deleted or modified.
  */
 export interface Log {
-	/** Appwrite document ID (auto-generated) */
+	/** DynamoDB item ID (auto-generated) */
 	$id: string;
 
 	/** Log timestamp */

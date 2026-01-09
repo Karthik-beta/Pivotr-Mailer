@@ -20,7 +20,11 @@
       "Bash(appwrite push functions:*)",
       "Bash(appwrite functions --help:*)",
       "Bash(appwrite functions list-variables:*)",
-      "Bash(appwrite functions create-variable:*)"
+      "Bash(appwrite functions create-variable:*)",
+      "Bash(dir:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx cdk synth:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nrefactor: migrate from Appwrite to AWS stack\n\nBREAKING CHANGE: Remove all Appwrite dependencies and infrastructure\n\nInfrastructure Changes:\n- Add complete SES -> SNS -> SQS pipeline for email feedback handling\n- Enable Point-in-Time Recovery on all DynamoDB tables\n- Add CloudWatch log retention \\(ONE_MONTH\\) to all Lambda functions\n- Create SES Configuration Set with event destinations for bounce/complaint tracking\n\nRemoved Appwrite Dependencies:\n- Remove appwrite.config.json\n- Remove node-appwrite from package.json\n- Remove infra/ directory \\(docker-compose for self-hosted Appwrite\\)\n- Remove migrations/ directory \\(Appwrite database migrations\\)\n- Remove Appwrite-related scripts \\(sync-function-vars, fix-lead-permissions, etc.\\)\n\nUpdated References:\n- Update .env.example to AWS-only configuration\n- Update shared types to reference DynamoDB instead of Appwrite\n- Update workspaces to include frontend, lambda/*, and shared\n\nNote: old_frontend/ retained for reference during migration\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

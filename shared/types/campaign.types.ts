@@ -7,7 +7,7 @@ import type { CampaignStatusType } from "../constants/status.constants";
  * Each campaign transitions through the finite state machine defined by CampaignStatus.
  */
 export interface Campaign {
-	/** Appwrite document ID (auto-generated) */
+	/** DynamoDB item ID (auto-generated) */
 	$id: string;
 
 	/** Document creation timestamp */

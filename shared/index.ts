@@ -3,7 +3,7 @@
  * ║                         SHARED TYPES & CONSTANTS                          ║
  * ║                                                                           ║
  * ║  This barrel file exports all shared types, interfaces, and constants    ║
- * ║  used across frontend and backend (Appwrite Functions).                  ║
+ * ║  used across frontend and backend (AWS Lambda Functions).                ║
  * ║                                                                           ║
  * ║  ⚠️  DO NOT duplicate these types elsewhere. Import from here.           ║
  * ╚═══════════════════════════════════════════════════════════════════════════╝
