@@ -20,7 +20,16 @@
       "Bash(appwrite push functions:*)",
       "Bash(appwrite functions --help:*)",
       "Bash(appwrite functions list-variables:*)",
+<<<<<<< Updated upstream
       "Bash(appwrite functions create-variable:*)"
+=======
+      "Bash(appwrite functions create-variable:*)",
+      "Bash(dir:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx cdk synth:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nrefactor: migrate from Appwrite to AWS stack\n\nBREAKING CHANGE: Remove all Appwrite dependencies and infrastructure\n\nInfrastructure Changes:\n- Add complete SES -> SNS -> SQS pipeline for email feedback handling\n- Enable Point-in-Time Recovery on all DynamoDB tables\n- Add CloudWatch log retention \\(ONE_MONTH\\) to all Lambda functions\n- Create SES Configuration Set with event destinations for bounce/complaint tracking\n\nRemoved Appwrite Dependencies:\n- Remove appwrite.config.json\n- Remove node-appwrite from package.json\n- Remove infra/ directory \\(docker-compose for self-hosted Appwrite\\)\n- Remove migrations/ directory \\(Appwrite database migrations\\)\n- Remove Appwrite-related scripts \\(sync-function-vars, fix-lead-permissions, etc.\\)\n\nUpdated References:\n- Update .env.example to AWS-only configuration\n- Update shared types to reference DynamoDB instead of Appwrite\n- Update workspaces to include frontend, lambda/*, and shared\n\nNote: old_frontend/ retained for reference during migration\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat\\(infra\\): add S3 bucket for long-term audit log storage\n\nAdd compliance-ready S3 bucket for storing all email audit logs:\n\nStorage Architecture:\n- S3 bucket with versioning enabled for data protection\n- Block all public access + enforce SSL for security\n- S3-managed encryption at rest\n\nLifecycle Policies \\(Cost Optimization\\):\n- 0-30 days: S3 Standard \\(hot storage\\)\n- 30-365 days: S3 Infrequent Access \\(warm storage\\)\n- 1-7 years: S3 Glacier \\(cold archive\\)\n- After 7 years: Auto-delete \\(adjustable per compliance needs\\)\n\nLambda Permissions:\n- SendEmailLambda, VerifyEmailLambda, ProcessFeedbackLambda,\n  LeadImportLambda: write access to store audit logs\n- ApiLeadsLambda: read access for audit trail queries\n\nEnvironment Variables:\n- S3_AUDIT_LOGS_BUCKET added to all Lambda functions\n- DYNAMODB_TABLE_LOGS added for LogsTable reference\n\nLog Contents \\(per email\\):\n- resolvedSubject, resolvedBody \\(exact content sent\\)\n- templateVariables \\(recipient email, name, company\\)\n- leadId, campaignId, sesResponse, timestamp\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")"
+>>>>>>> Stashed changes
     ]
   }
 }
