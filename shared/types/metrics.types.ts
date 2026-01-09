@@ -7,7 +7,7 @@ import type { MetricsScopeType } from "../constants/status.constants";
  * Updated atomically via increment operations, NEVER via full table scans.
  */
 export interface Metrics {
-	/** Appwrite document ID */
+	/** DynamoDB item ID */
 	$id: string;
 
 	/** Document creation timestamp */

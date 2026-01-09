@@ -7,11 +7,11 @@ import type {
 /**
  * Lead Document Interface
  *
- * Represents a potential email recipient in the Appwrite database.
+ * Represents a potential email recipient in DynamoDB.
  * Each lead transitions through the finite state machine defined by LeadStatus.
  */
 export interface Lead {
-	/** Appwrite document ID (auto-generated, 20 chars) */
+	/** DynamoDB item ID (auto-generated) */
 	$id: string;
 
 	/** Document creation timestamp */
