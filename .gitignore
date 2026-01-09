@@ -8,6 +8,13 @@ build/
 .vinxi/
 .vercel/
 
+# AWS SAM build artifacts
+.aws-sam/
+
+# AWS CDK outputs
+cdk.out/
+infrastructure/cdk.out/
+
 # Environment files
 .env
 .env.local
@@ -24,6 +31,9 @@ build/
 .DS_Store
 Thumbs.db
 
+# Windows artifact from failed redirects
+nul
+
 # Logs
 logs/
 *.log
@@ -37,6 +47,11 @@ bun.lockb
 
 # Testing
 coverage/
+test-results/
+
+# LocalStack state and cache (generated at runtime)
+tests/localstack/volume/cache/
+tests/localstack/volume/state/
 
 # Appwrite
 .appwrite/

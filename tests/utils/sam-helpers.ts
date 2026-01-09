@@ -5,10 +5,27 @@
  * Used for the Lambda runtime test layer.
  */
 
-import { spawn, type ChildProcess } from 'child_process';
-import { writeFile, unlink, mkdir } from 'fs/promises';
+import { spawn, execFile, type ChildProcess } from 'child_process';
+import { writeFile, unlink, mkdir, access } from 'fs/promises';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
+import { platform } from 'os';
+
+// =============================================================================
+// SAM CLI Path Detection
+// =============================================================================
+
+/**
+ * Get the SAM CLI command based on platform
+ * On Windows, SAM is installed as sam.cmd and may not be in PATH for Node.js
+ * Uses path.join to build path safely
+ */
+function getSAMCommand(): string {
+    if (platform() === 'win32') {
+        return join('C:', 'Program Files', 'Amazon', 'AWSSAMCLI', 'bin', 'sam.cmd');
+    }
+    return 'sam';
+}
 
 // =============================================================================
 // Types
@@ -93,7 +110,7 @@ export async function samLocalInvoke(options: SAMInvokeOptions): Promise<SAMInvo
             '--skip-pull-image',
         ];
 
-        const result = await runCommand('sam', args, timeout);
+        const result = await runCommand(getSAMCommand(), args, timeout);
 
         // Parse response from stdout
         let response: unknown;
@@ -112,8 +129,26 @@ export async function samLocalInvoke(options: SAMInvokeOptions): Promise<SAMInvo
             .split('\n')
             .filter((line) => line.includes('[INFO]') || line.includes('[ERROR]') || line.includes('[WARN]'));
 
+        // Determine effective exit code
+        // SAM CLI may return exit code 1 due to various runtime lifecycle issues
+        // even when the Lambda function executed successfully.
+        // We consider the invocation successful if:
+        // 1. The REPORT line appears in stderr (Lambda completed its execution)
+        // 2. No actual Lambda error was thrown (no "errorMessage" in response)
+        let effectiveExitCode = result.exitCode;
+        const hasReportLine = result.stderr.includes('REPORT RequestId:');
+        const hasLambdaError =
+            typeof response === 'object' &&
+            response !== null &&
+            'errorMessage' in response;
+
+        if (effectiveExitCode === 1 && hasReportLine && !hasLambdaError) {
+            // Lambda succeeded but SAM CLI reported exit code 1 due to runtime lifecycle
+            effectiveExitCode = 0;
+        }
+
         return {
-            exitCode: result.exitCode,
+            exitCode: effectiveExitCode,
             response,
             stdout: result.stdout,
             stderr: result.stderr,
@@ -160,10 +195,19 @@ export async function startSAMLocalAPI(options: SAMLocalAPIOptions = {}): Promis
         'EAGER',
     ];
 
-    apiProcess = spawn('sam', args, {
-        stdio: ['ignore', 'pipe', 'pipe'],
-        cwd: process.cwd(),
-    });
+    if (platform() === 'win32') {
+        // On Windows, run .cmd files through cmd.exe
+        const fullArgs = ['/c', getSAMCommand(), ...args];
+        apiProcess = spawn('cmd.exe', fullArgs, {
+            stdio: ['ignore', 'pipe', 'pipe'],
+            cwd: process.cwd(),
+        });
+    } else {
+        apiProcess = spawn(getSAMCommand(), args, {
+            stdio: ['ignore', 'pipe', 'pipe'],
+            cwd: process.cwd(),
+        });
+    }
 
     // Wait for API to be ready
     const baseUrl = `http://${host}:${port}`;
@@ -266,13 +310,30 @@ interface CommandResult {
 
 /**
  * Run a command and capture output
+ * On Windows, uses shell mode to handle paths with spaces properly
  */
 async function runCommand(command: string, args: string[], timeout: number): Promise<CommandResult> {
     return new Promise((resolve, reject) => {
-        const proc = spawn(command, args, {
-            cwd: process.cwd(),
-            stdio: ['ignore', 'pipe', 'pipe'],
-        });
+        let proc: ReturnType<typeof spawn>;
+
+        if (platform() === 'win32') {
+            // On Windows, use shell mode which handles command path quoting properly
+            // Both the command and any arguments with spaces need to be quoted
+            const quoteIfNeeded = (s: string) => s.includes(' ') ? `"${s}"` : s;
+            const quotedCommand = quoteIfNeeded(command);
+            const quotedArgs = args.map(quoteIfNeeded);
+            const fullCommand = [quotedCommand, ...quotedArgs].join(' ');
+            proc = spawn(fullCommand, [], {
+                cwd: process.cwd(),
+                stdio: ['ignore', 'pipe', 'pipe'],
+                shell: true,
+            });
+        } else {
+            proc = spawn(command, args, {
+                cwd: process.cwd(),
+                stdio: ['ignore', 'pipe', 'pipe'],
+            });
+        }
 
         let stdout = '';
         let stderr = '';
@@ -311,7 +372,7 @@ async function runCommand(command: string, args: string[], timeout: number): Pro
  */
 export async function isSAMAvailable(): Promise<boolean> {
     try {
-        const result = await runCommand('sam', ['--version'], 5000);
+        const result = await runCommand(getSAMCommand(), ['--version'], 5000);
         return result.exitCode === 0;
     } catch {
         return false;

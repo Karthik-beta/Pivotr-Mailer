@@ -23,10 +23,18 @@ const logger = new Logger({
     logLevel: (process.env.LOG_LEVEL as any) || 'INFO',
 });
 
-// Initialize Clients
-const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION || 'ap-south-1' });
+// Get endpoint configuration for LocalStack support
+const awsEndpoint = process.env.AWS_ENDPOINT_URL;
+const awsRegion = process.env.AWS_REGION || 'us-east-1';
+
+// Initialize Clients with optional custom endpoint for LocalStack
+const clientConfig = awsEndpoint
+    ? { region: awsRegion, endpoint: awsEndpoint }
+    : { region: awsRegion };
+
+const dynamoClient = new DynamoDBClient(clientConfig);
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
-const sesClient = new SESClient({ region: process.env.AWS_REGION || 'ap-south-1' });
+const sesClient = new SESClient(clientConfig);
 
 // Configuration
 const LEADS_TABLE = process.env.DYNAMODB_TABLE_LEADS || '';

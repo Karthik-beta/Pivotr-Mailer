@@ -52,8 +52,8 @@ export class PivotrMailerStack extends cdk.Stack {
                 feedbackQueue: 5,
                 verificationQueue: 2,
             },
-            // CloudWatch log retention to prevent infinite storage costs
-            logRetention: logs.RetentionDays.ONE_MONTH,
+            // CloudWatch log retention for Lambda log groups
+            logRetentionDays: logs.RetentionDays.ONE_MONTH,
         };
 
         // =====================================================
@@ -63,7 +63,7 @@ export class PivotrMailerStack extends cdk.Stack {
             partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: cdk.RemovalPolicy.RETAIN,
-            pointInTimeRecovery: true,
+            pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
         });
 
         // GSIs for Leads
@@ -89,7 +89,7 @@ export class PivotrMailerStack extends cdk.Stack {
             partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: cdk.RemovalPolicy.RETAIN,
-            pointInTimeRecovery: true,
+            pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
         });
 
         const metricsTable = new dynamodb.Table(this, 'MetricsTable', {
@@ -97,7 +97,7 @@ export class PivotrMailerStack extends cdk.Stack {
             sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: cdk.RemovalPolicy.RETAIN,
-            pointInTimeRecovery: true,
+            pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
         });
 
         const logsTable = new dynamodb.Table(this, 'LogsTable', {
@@ -105,7 +105,7 @@ export class PivotrMailerStack extends cdk.Stack {
             sortKey: { name: 'timestamp', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: cdk.RemovalPolicy.RETAIN,
-            pointInTimeRecovery: true,
+            pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
         });
 
         // GSI for Logs (Lead History)
@@ -119,7 +119,7 @@ export class PivotrMailerStack extends cdk.Stack {
             partitionKey: { name: 'key', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: cdk.RemovalPolicy.RETAIN,
-            pointInTimeRecovery: true,
+            pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
         });
 
         // =====================================================
@@ -241,26 +241,86 @@ export class PivotrMailerStack extends cdk.Stack {
             ENVIRONMENT: 'production', // Should be dynamic based on stage
         };
 
+        // =====================================================
+        // 3.1 LOG GROUPS (Replaces deprecated logRetention property)
+        // =====================================================
+        // Create explicit LogGroups for each Lambda function
+        // This follows AWS CDK best practice for managing log retention
+
+        const processFeedbackLogGroup = new logs.LogGroup(this, 'ProcessFeedbackLogGroup', {
+            logGroupName: '/aws/lambda/pivotr-process-feedback',
+            retention: SAFETY.logRetentionDays,
+            removalPolicy: cdk.RemovalPolicy.RETAIN,
+        });
+
+        const sendEmailLogGroup = new logs.LogGroup(this, 'SendEmailLogGroup', {
+            logGroupName: '/aws/lambda/pivotr-send-email',
+            retention: SAFETY.logRetentionDays,
+            removalPolicy: cdk.RemovalPolicy.RETAIN,
+        });
+
+        const verifyEmailLogGroup = new logs.LogGroup(this, 'VerifyEmailLogGroup', {
+            logGroupName: '/aws/lambda/pivotr-verify-email',
+            retention: SAFETY.logRetentionDays,
+            removalPolicy: cdk.RemovalPolicy.RETAIN,
+        });
+
+        const leadImportLogGroup = new logs.LogGroup(this, 'LeadImportLogGroup', {
+            logGroupName: '/aws/lambda/pivotr-lead-import',
+            retention: SAFETY.logRetentionDays,
+            removalPolicy: cdk.RemovalPolicy.RETAIN,
+        });
+
+        const apiLeadsLogGroup = new logs.LogGroup(this, 'ApiLeadsLogGroup', {
+            logGroupName: '/aws/lambda/pivotr-api-leads',
+            retention: SAFETY.logRetentionDays,
+            removalPolicy: cdk.RemovalPolicy.RETAIN,
+        });
+
+        const apiCampaignsLogGroup = new logs.LogGroup(this, 'ApiCampaignsLogGroup', {
+            logGroupName: '/aws/lambda/pivotr-api-campaigns',
+            retention: SAFETY.logRetentionDays,
+            removalPolicy: cdk.RemovalPolicy.RETAIN,
+        });
+
+        const apiMetricsLogGroup = new logs.LogGroup(this, 'ApiMetricsLogGroup', {
+            logGroupName: '/aws/lambda/pivotr-api-metrics',
+            retention: SAFETY.logRetentionDays,
+            removalPolicy: cdk.RemovalPolicy.RETAIN,
+        });
+
+        const apiLeadsExportLogGroup = new logs.LogGroup(this, 'ApiLeadsExportLogGroup', {
+            logGroupName: '/aws/lambda/pivotr-api-leads-export',
+            retention: SAFETY.logRetentionDays,
+            removalPolicy: cdk.RemovalPolicy.RETAIN,
+        });
+
+        // =====================================================
+        // 3.2 LAMBDA FUNCTION DEFINITIONS
+        // =====================================================
+
         const processFeedbackLambda = new lambda.Function(this, 'ProcessFeedbackLambda', {
+            functionName: 'pivotr-process-feedback',
             runtime: lambda.Runtime.NODEJS_20_X,
             code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/process-feedback/dist')),
             handler: 'index.handler',
             timeout: SAFETY.timeouts.processFeedback,
             memorySize: SAFETY.memory.processFeedback,
             reservedConcurrentExecutions: SAFETY.concurrency.processFeedback,
-            logRetention: SAFETY.logRetention,
+            logGroup: processFeedbackLogGroup,
             environment: { ...commonEnv },
         });
         processFeedbackLambda.addEventSource(new SqsEventSource(feedbackQueue));
 
         const sendEmailLambda = new lambda.Function(this, 'SendEmailLambda', {
+            functionName: 'pivotr-send-email',
             runtime: lambda.Runtime.NODEJS_20_X,
             code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/send-email/dist')),
             handler: 'index.handler',
             timeout: SAFETY.timeouts.sendEmail,
             memorySize: SAFETY.memory.sendEmail,
             reservedConcurrentExecutions: SAFETY.concurrency.sendEmail,
-            logRetention: SAFETY.logRetention,
+            logGroup: sendEmailLogGroup,
             environment: {
                 ...commonEnv,
                 SES_FROM_EMAIL: 'noreply@pivotr.com', // Replace with config
@@ -270,13 +330,14 @@ export class PivotrMailerStack extends cdk.Stack {
         sendEmailLambda.addEventSource(new SqsEventSource(sendingQueue));
 
         const verifyEmailLambda = new lambda.Function(this, 'VerifyEmailLambda', {
+            functionName: 'pivotr-verify-email',
             runtime: lambda.Runtime.NODEJS_20_X,
             code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/verify-email/dist')),
             handler: 'index.handler',
             timeout: SAFETY.timeouts.verifyEmail,
             memorySize: SAFETY.memory.verifyEmail,
             reservedConcurrentExecutions: SAFETY.concurrency.verifyEmail,
-            logRetention: SAFETY.logRetention,
+            logGroup: verifyEmailLogGroup,
             environment: {
                 ...commonEnv,
                 // MYEMAILVERIFIER_API_KEY: secret.secretValue, // Todo: Secrets Manager
@@ -285,57 +346,62 @@ export class PivotrMailerStack extends cdk.Stack {
         verifyEmailLambda.addEventSource(new SqsEventSource(verificationQueue));
 
         const leadImportLambda = new lambda.Function(this, 'LeadImportLambda', {
+            functionName: 'pivotr-lead-import',
             runtime: lambda.Runtime.NODEJS_20_X,
             code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/lead-import/dist')),
             handler: 'index.handler',
             timeout: SAFETY.timeouts.leadImport,
             memorySize: SAFETY.memory.leadImport,
             reservedConcurrentExecutions: SAFETY.concurrency.leadImport,
-            logRetention: SAFETY.logRetention,
+            logGroup: leadImportLogGroup,
             environment: { ...commonEnv },
         });
 
         const apiLeadsLambda = new lambda.Function(this, 'ApiLeadsLambda', {
+            functionName: 'pivotr-api-leads',
             runtime: lambda.Runtime.NODEJS_20_X,
             code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/api/leads/dist')),
             handler: 'index.handler',
             timeout: SAFETY.timeouts.apiHandlers,
             memorySize: SAFETY.memory.apiHandlers,
-            reservedConcurrentExecutions: SAFETY.concurrency.apiHandlers, // Shared if single API, but here separate
-            logRetention: SAFETY.logRetention,
+            reservedConcurrentExecutions: SAFETY.concurrency.apiHandlers,
+            logGroup: apiLeadsLogGroup,
             environment: { ...commonEnv },
         });
 
         const apiCampaignsLambda = new lambda.Function(this, 'ApiCampaignsLambda', {
+            functionName: 'pivotr-api-campaigns',
             runtime: lambda.Runtime.NODEJS_20_X,
             code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/api/campaigns/dist')),
             handler: 'index.handler',
             timeout: SAFETY.timeouts.apiHandlers,
             memorySize: SAFETY.memory.apiHandlers,
             reservedConcurrentExecutions: SAFETY.concurrency.apiHandlers,
-            logRetention: SAFETY.logRetention,
+            logGroup: apiCampaignsLogGroup,
             environment: { ...commonEnv },
         });
 
         const apiMetricsLambda = new lambda.Function(this, 'ApiMetricsLambda', {
+            functionName: 'pivotr-api-metrics',
             runtime: lambda.Runtime.NODEJS_20_X,
             code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/api/metrics/dist')),
             handler: 'index.handler',
             timeout: SAFETY.timeouts.apiHandlers,
             memorySize: SAFETY.memory.apiHandlers,
             reservedConcurrentExecutions: SAFETY.concurrency.apiHandlers,
-            logRetention: SAFETY.logRetention,
+            logGroup: apiMetricsLogGroup,
             environment: { ...commonEnv },
         });
 
         const apiLeadsExportLambda = new lambda.Function(this, 'ApiLeadsExportLambda', {
+            functionName: 'pivotr-api-leads-export',
             runtime: lambda.Runtime.NODEJS_20_X,
             code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/api/leads-export/dist')),
             handler: 'index.handler',
             timeout: cdk.Duration.seconds(20), // Explicit 20s as per plan
             memorySize: 1024, // Explicit 1024MB for Excel ops
             reservedConcurrentExecutions: 5, // Abuse prevention
-            logRetention: SAFETY.logRetention,
+            logGroup: apiLeadsExportLogGroup,
             environment: { ...commonEnv },
         });
 
