@@ -1,8 +1,8 @@
 /**
- * Appwrite Collection Constants
+ * DynamoDB Table Constants
  *
- * Contains database and collection IDs for Appwrite.
- * Update these values after creating collections in Appwrite Console.
+ * Contains table names and identifiers for AWS DynamoDB.
+ * These values correspond to tables defined in the CDK stack.
  */
 
 /** Database ID for Pivotr Mailer */
