@@ -93,6 +93,13 @@ interface StagingLeadsDataTableProps {
     onSelectionChange?: (selectedIds: string[]) => void;
     isApproving?: boolean;
     isDeleting?: boolean;
+    // URL-driven state
+    statusFilter?: StagingStatus | 'all';
+    onStatusFilterChange?: (status: string) => void;
+    pageSize?: number;
+    onPageSizeChange?: (size: number) => void;
+    pageIndex?: number;
+    onPageIndexChange?: (index: number) => void;
 }
 
 export function StagingLeadsDataTable({
@@ -106,14 +113,33 @@ export function StagingLeadsDataTable({
     onSelectionChange,
     isApproving,
     isDeleting,
+    statusFilter = 'all',
+    onStatusFilterChange,
+    pageSize = 10,
+    onPageSizeChange,
+    pageIndex = 0,
+    onPageIndexChange,
 }: StagingLeadsDataTableProps) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
     const [expanded, setExpanded] = useState<ExpandedState>({});
     const [globalFilter, setGlobalFilter] = useState('');
-    const [statusFilter, setStatusFilter] = useState<string>('all');
     const [editingLead, setEditingLead] = useState<StagedLead | null>(null);
+
+    // Sync status filter from URL to table column filter
+    const effectiveColumnFilters = useMemo(() => {
+        if (statusFilter && statusFilter !== 'all') {
+            return [...columnFilters.filter(f => f.id !== 'status'), { id: 'status', value: statusFilter }];
+        }
+        return columnFilters.filter(f => f.id !== 'status');
+    }, [columnFilters, statusFilter]);
+
+    // Derive pagination state from URL params
+    const pagination = useMemo(() => ({
+        pageIndex,
+        pageSize,
+    }), [pageIndex, pageSize]);
     const [editFormData, setEditFormData] = useState({
         fullName: '',
         email: '',
@@ -463,16 +489,15 @@ export function StagingLeadsDataTable({
     const table = useReactTable({
         data,
         columns,
-        initialState: {
-            pagination: { pageIndex: 0, pageSize: 10 },
-        },
         state: {
             sorting,
-            columnFilters,
+            columnFilters: effectiveColumnFilters,
             rowSelection,
             globalFilter,
             expanded,
+            pagination,
         },
+        manualPagination: false,
         enableRowSelection: true,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
@@ -487,6 +512,15 @@ export function StagingLeadsDataTable({
         },
         onGlobalFilterChange: setGlobalFilter,
         onExpandedChange: setExpanded,
+        onPaginationChange: (updater) => {
+            const newPagination = typeof updater === 'function' ? updater(pagination) : updater;
+            if (newPagination.pageSize !== pageSize) {
+                onPageSizeChange?.(newPagination.pageSize);
+            }
+            if (newPagination.pageIndex !== pageIndex) {
+                onPageIndexChange?.(newPagination.pageIndex);
+            }
+        },
         getRowCanExpand: (row) =>
             row.original.validationResult.errors.length > 0 ||
             row.original.validationResult.warnings.length > 0,
@@ -519,8 +553,7 @@ export function StagingLeadsDataTable({
                     <Select
                         value={statusFilter}
                         onValueChange={(value) => {
-                            setStatusFilter(value);
-                            table.getColumn('status')?.setFilterValue(value === 'all' ? undefined : value);
+                            onStatusFilterChange?.(value);
                         }}
                     >
                         <SelectTrigger className="w-[180px]">
