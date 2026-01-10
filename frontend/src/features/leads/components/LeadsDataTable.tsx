@@ -74,6 +74,13 @@ interface LeadsDataTableProps {
     onRetry?: () => void;
     onRowClick?: (lead: Lead) => void;
     onSelectionChange?: (selectedIds: string[]) => void;
+    // URL-driven state
+    statusFilter?: string;
+    onStatusFilterChange?: (status: string) => void;
+    pageSize?: number;
+    onPageSizeChange?: (size: number) => void;
+    pageIndex?: number;
+    onPageIndexChange?: (index: number) => void;
 }
 
 export function LeadsDataTable({
@@ -83,11 +90,25 @@ export function LeadsDataTable({
     onRetry,
     onRowClick,
     onSelectionChange,
+    statusFilter = 'all',
+    onStatusFilterChange,
+    pageSize = 10,
+    onPageSizeChange,
+    pageIndex = 0,
+    onPageIndexChange,
 }: LeadsDataTableProps) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
     const [globalFilter, setGlobalFilter] = useState('');
+
+    // Sync status filter from URL to table column filter
+    const effectiveColumnFilters = useMemo(() => {
+        if (statusFilter && statusFilter !== 'all') {
+            return [...columnFilters.filter(f => f.id !== 'status'), { id: 'status', value: statusFilter }];
+        }
+        return columnFilters.filter(f => f.id !== 'status');
+    }, [columnFilters, statusFilter]);
 
     const columns = useMemo<ColumnDef<Lead>[]>(
         () => [
@@ -243,15 +264,23 @@ export function LeadsDataTable({
         []
     );
 
+    // Derive pagination state from URL params
+    const pagination = useMemo(() => ({
+        pageIndex,
+        pageSize,
+    }), [pageIndex, pageSize]);
+
     const table = useReactTable({
         data,
         columns,
         state: {
             sorting,
-            columnFilters,
+            columnFilters: effectiveColumnFilters,
             rowSelection,
             globalFilter,
+            pagination,
         },
+        manualPagination: false,
         enableRowSelection: true,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
@@ -263,6 +292,15 @@ export function LeadsDataTable({
             onSelectionChange?.(selectedLeadIds as string[]);
         },
         onGlobalFilterChange: setGlobalFilter,
+        onPaginationChange: (updater) => {
+            const newPagination = typeof updater === 'function' ? updater(pagination) : updater;
+            if (newPagination.pageSize !== pageSize) {
+                onPageSizeChange?.(newPagination.pageSize);
+            }
+            if (newPagination.pageIndex !== pageIndex) {
+                onPageIndexChange?.(newPagination.pageIndex);
+            }
+        },
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getSortedRowModel: getSortedRowModel(),
@@ -299,10 +337,10 @@ export function LeadsDataTable({
                     />
                 </div>
                 <Select
-                    value={(table.getColumn('status')?.getFilterValue() as string) || 'all'}
-                    onValueChange={(value) =>
-                        table.getColumn('status')?.setFilterValue(value === 'all' ? undefined : value)
-                    }
+                    value={statusFilter}
+                    onValueChange={(value) => {
+                        onStatusFilterChange?.(value);
+                    }}
                 >
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Filter by status" />
@@ -423,7 +461,7 @@ export function LeadsDataTable({
                         </Select>
                     </div>
                     <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-                        Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                        Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
                     </div>
                     <div className="flex items-center space-x-2">
                         <Button

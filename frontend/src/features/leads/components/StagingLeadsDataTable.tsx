@@ -112,6 +112,7 @@ export function StagingLeadsDataTable({
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
     const [expanded, setExpanded] = useState<ExpandedState>({});
     const [globalFilter, setGlobalFilter] = useState('');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
     const [editingLead, setEditingLead] = useState<StagedLead | null>(null);
     const [editFormData, setEditFormData] = useState({
         fullName: '',
@@ -462,6 +463,9 @@ export function StagingLeadsDataTable({
     const table = useReactTable({
         data,
         columns,
+        initialState: {
+            pagination: { pageIndex: 0, pageSize: 10 },
+        },
         state: {
             sorting,
             columnFilters,
@@ -513,10 +517,11 @@ export function StagingLeadsDataTable({
                         />
                     </div>
                     <Select
-                        value={(table.getColumn('status')?.getFilterValue() as string) || 'all'}
-                        onValueChange={(value) =>
-                            table.getColumn('status')?.setFilterValue(value === 'all' ? undefined : value)
-                        }
+                        value={statusFilter}
+                        onValueChange={(value) => {
+                            setStatusFilter(value);
+                            table.getColumn('status')?.setFilterValue(value === 'all' ? undefined : value);
+                        }}
                     >
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Filter by status" />
@@ -659,7 +664,7 @@ export function StagingLeadsDataTable({
                             </Select>
                         </div>
                         <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-                            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
                         </div>
                         <div className="flex items-center space-x-2">
                             <Button

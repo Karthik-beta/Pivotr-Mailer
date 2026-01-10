@@ -2,10 +2,12 @@
  * Leads Page
  *
  * Main leads management page with premium data table.
+ * Uses URL-driven state for table filtering and pagination.
  */
 
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
+import { z } from 'zod';
 import { Layout } from '@/features/shared/Layout';
 import {
     BreadcrumbItem,
@@ -29,15 +31,47 @@ import { useLeads, useExportLeads, useDownloadTemplate } from '@/features/leads/
 import { LeadsDataTable } from '@/features/leads/components/LeadsDataTable';
 import type { Lead } from '@/features/leads/types';
 
+// Search params schema for URL-driven table state
+const leadsSearchSchema = z.object({
+    status: z.string().optional().default('all'),
+    page: z.number().optional().default(0),
+    pageSize: z.number().optional().default(10),
+});
+
 export const Route = createFileRoute('/_app/leads/')({
     component: LeadsPage,
+    validateSearch: leadsSearchSchema,
 });
 
 function LeadsPage() {
+    const navigate = useNavigate();
+    const { status, page, pageSize } = Route.useSearch();
     const [, setSelectedIds] = useState<string[]>([]);
     const { data, isLoading, error, refetch, isRefetching } = useLeads({ limit: 100 });
     const exportMutation = useExportLeads();
     const templateMutation = useDownloadTemplate();
+
+    // URL state update handlers
+    const handleStatusFilterChange = (newStatus: string) => {
+        navigate({
+            search: (prev) => ({ ...prev, status: newStatus, page: 0 }),
+            replace: true,
+        });
+    };
+
+    const handlePageSizeChange = (newPageSize: number) => {
+        navigate({
+            search: (prev) => ({ ...prev, pageSize: newPageSize, page: 0 }),
+            replace: true,
+        });
+    };
+
+    const handlePageIndexChange = (newPageIndex: number) => {
+        navigate({
+            search: (prev) => ({ ...prev, page: newPageIndex }),
+            replace: true,
+        });
+    };
 
     const leads = data?.data || [];
 
@@ -182,6 +216,12 @@ function LeadsPage() {
                             onRetry={() => refetch()}
                             onRowClick={handleRowClick}
                             onSelectionChange={setSelectedIds}
+                            statusFilter={status}
+                            onStatusFilterChange={handleStatusFilterChange}
+                            pageSize={pageSize}
+                            onPageSizeChange={handlePageSizeChange}
+                            pageIndex={page}
+                            onPageIndexChange={handlePageIndexChange}
                         />
                     </CardContent>
                 </Card>
