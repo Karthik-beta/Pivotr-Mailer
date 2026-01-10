@@ -1,0 +1,20 @@
+{
+	"name": "bulk-verify",
+	"version": "1.0.0",
+	"description": "Bulk verification Lambda for email, name, and company validation",
+	"main": "dist/index.js",
+	"scripts": {
+		"build": "tsc",
+		"watch": "tsc -w"
+	},
+	"dependencies": {
+		"@aws-lambda-powertools/logger": "^2.0.0",
+		"@aws-sdk/client-dynamodb": "^3.0.0",
+		"@aws-sdk/lib-dynamodb": "^3.0.0",
+		"@aws-sdk/client-sqs": "^3.0.0"
+	},
+	"devDependencies": {
+		"@types/aws-lambda": "^8.10.0",
+		"typescript": "^5.0.0"
+	}
+}

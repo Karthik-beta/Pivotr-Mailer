@@ -12,6 +12,8 @@ import * as subs from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as cw_actions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as ses from 'aws-cdk-lib/aws-ses';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as path from 'path';
 
@@ -32,6 +34,8 @@ export class PivotrMailerStack extends cdk.Stack {
                 processFeedback: 10,
                 leadImport: 2,
                 apiHandlers: 10,
+                campaignProcessor: 1, // Single instance to prevent race conditions
+                bulkVerify: 5, // Parallel verification with rate limiting
             },
             timeouts: {
                 sendEmail: cdk.Duration.seconds(30),
@@ -39,6 +43,8 @@ export class PivotrMailerStack extends cdk.Stack {
                 processFeedback: cdk.Duration.seconds(10),
                 leadImport: cdk.Duration.seconds(60),
                 apiHandlers: cdk.Duration.seconds(10),
+                campaignProcessor: cdk.Duration.seconds(55), // Under 1-min cron
+                bulkVerify: cdk.Duration.seconds(30),
             },
             memory: {
                 sendEmail: 256,
@@ -46,6 +52,8 @@ export class PivotrMailerStack extends cdk.Stack {
                 processFeedback: 128,
                 leadImport: 512,
                 apiHandlers: 256,
+                campaignProcessor: 256,
+                bulkVerify: 256,
             },
             sqsRetries: {
                 sendingQueue: 3,
@@ -295,6 +303,18 @@ export class PivotrMailerStack extends cdk.Stack {
             removalPolicy: cdk.RemovalPolicy.RETAIN,
         });
 
+        const campaignProcessorLogGroup = new logs.LogGroup(this, 'CampaignProcessorLogGroup', {
+            logGroupName: '/aws/lambda/pivotr-campaign-processor',
+            retention: SAFETY.logRetentionDays,
+            removalPolicy: cdk.RemovalPolicy.RETAIN,
+        });
+
+        const bulkVerifyLogGroup = new logs.LogGroup(this, 'BulkVerifyLogGroup', {
+            logGroupName: '/aws/lambda/pivotr-bulk-verify',
+            retention: SAFETY.logRetentionDays,
+            removalPolicy: cdk.RemovalPolicy.RETAIN,
+        });
+
         // =====================================================
         // 3.2 LAMBDA FUNCTION DEFINITIONS
         // =====================================================
@@ -378,7 +398,12 @@ export class PivotrMailerStack extends cdk.Stack {
             memorySize: SAFETY.memory.apiHandlers,
             reservedConcurrentExecutions: SAFETY.concurrency.apiHandlers,
             logGroup: apiCampaignsLogGroup,
-            environment: { ...commonEnv },
+            environment: {
+                ...commonEnv,
+                SQS_VERIFICATION_QUEUE_URL: verificationQueue.queueUrl,
+                SES_FROM_EMAIL: 'noreply@pivotr.com', // Replace with config
+                SES_CONFIGURATION_SET: 'PivotrConfigSet',
+            },
         });
 
         const apiMetricsLambda = new lambda.Function(this, 'ApiMetricsLambda', {
@@ -404,6 +429,52 @@ export class PivotrMailerStack extends cdk.Stack {
             logGroup: apiLeadsExportLogGroup,
             environment: { ...commonEnv },
         });
+
+        // Campaign Processor Lambda (Orchestrator with Gaussian timing)
+        const campaignProcessorLambda = new lambda.Function(this, 'CampaignProcessorLambda', {
+            functionName: 'pivotr-campaign-processor',
+            runtime: lambda.Runtime.NODEJS_20_X,
+            code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/campaign-processor/dist')),
+            handler: 'index.handler',
+            timeout: SAFETY.timeouts.campaignProcessor,
+            memorySize: SAFETY.memory.campaignProcessor,
+            reservedConcurrentExecutions: SAFETY.concurrency.campaignProcessor,
+            logGroup: campaignProcessorLogGroup,
+            environment: {
+                ...commonEnv,
+                SQS_VERIFICATION_QUEUE_URL: verificationQueue.queueUrl,
+                SQS_SENDING_QUEUE_URL: sendingQueue.queueUrl,
+            },
+        });
+
+        // EventBridge rule: trigger every minute for Gaussian timing precision
+        const campaignProcessorRule = new events.Rule(this, 'CampaignProcessorSchedule', {
+            ruleName: 'pivotr-campaign-processor-schedule',
+            schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
+            description: 'Triggers campaign processor every minute for Gaussian email scheduling',
+        });
+        campaignProcessorRule.addTarget(new targets.LambdaFunction(campaignProcessorLambda));
+
+        // Bulk Verify Lambda (Email, Name, Company verification)
+        const bulkVerifyLambda = new lambda.Function(this, 'BulkVerifyLambda', {
+            functionName: 'pivotr-bulk-verify',
+            runtime: lambda.Runtime.NODEJS_20_X,
+            code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/bulk-verify/dist')),
+            handler: 'index.handler',
+            timeout: SAFETY.timeouts.bulkVerify,
+            memorySize: SAFETY.memory.bulkVerify,
+            reservedConcurrentExecutions: SAFETY.concurrency.bulkVerify,
+            logGroup: bulkVerifyLogGroup,
+            environment: {
+                ...commonEnv,
+                SQS_SENDING_QUEUE_URL: sendingQueue.queueUrl,
+                // MYEMAILVERIFIER_API_KEY: from Secrets Manager
+            },
+        });
+        bulkVerifyLambda.addEventSource(new SqsEventSource(verificationQueue, {
+            batchSize: 10,
+            maxBatchingWindow: cdk.Duration.seconds(5),
+        }));
 
         // =====================================================
         // 4. API GATEWAY
@@ -440,10 +511,33 @@ export class PivotrMailerStack extends cdk.Stack {
         campaigns.addMethod('GET', new apigateway.LambdaIntegration(apiCampaignsLambda));
         campaigns.addMethod('POST', new apigateway.LambdaIntegration(apiCampaignsLambda));
 
+        // Preview leads endpoint (before creating campaign)
+        const previewLeads = campaigns.addResource('preview-leads');
+        previewLeads.addMethod('POST', new apigateway.LambdaIntegration(apiCampaignsLambda));
+
         const campaign = campaigns.addResource('{id}');
         campaign.addMethod('GET', new apigateway.LambdaIntegration(apiCampaignsLambda));
         campaign.addMethod('PUT', new apigateway.LambdaIntegration(apiCampaignsLambda));
         campaign.addMethod('DELETE', new apigateway.LambdaIntegration(apiCampaignsLambda));
+
+        // Campaign sub-resources
+        const campaignLeads = campaign.addResource('leads');
+        campaignLeads.addMethod('GET', new apigateway.LambdaIntegration(apiCampaignsLambda));
+
+        const assignLeads = campaign.addResource('assign-leads');
+        assignLeads.addMethod('POST', new apigateway.LambdaIntegration(apiCampaignsLambda));
+
+        const campaignStatus = campaign.addResource('status');
+        campaignStatus.addMethod('PUT', new apigateway.LambdaIntegration(apiCampaignsLambda));
+
+        const testEmail = campaign.addResource('test-email');
+        testEmail.addMethod('POST', new apigateway.LambdaIntegration(apiCampaignsLambda));
+
+        const campaignMetrics = campaign.addResource('metrics');
+        campaignMetrics.addMethod('GET', new apigateway.LambdaIntegration(apiCampaignsLambda));
+
+        const verifyLeads = campaign.addResource('verify');
+        verifyLeads.addMethod('POST', new apigateway.LambdaIntegration(bulkVerifyLambda));
 
         const metrics = api.root.addResource('metrics');
         metrics.addMethod('GET', new apigateway.LambdaIntegration(apiMetricsLambda));
@@ -464,6 +558,26 @@ export class PivotrMailerStack extends cdk.Stack {
         metricsTable.grantReadData(apiMetricsLambda);
         metricsTable.grantReadWriteData(processFeedbackLambda);
         metricsTable.grantReadWriteData(sendEmailLambda); // daily cap check & increment
+        metricsTable.grantReadWriteData(campaignProcessorLambda); // campaign metrics
+        metricsTable.grantReadWriteData(bulkVerifyLambda); // verification metrics
+
+        // Campaign Processor permissions
+        campaignsTable.grantReadWriteData(campaignProcessorLambda);
+        leadsTable.grantReadWriteData(campaignProcessorLambda);
+        sendingQueue.grantSendMessages(campaignProcessorLambda);
+        verificationQueue.grantSendMessages(campaignProcessorLambda);
+
+        // Bulk Verify permissions
+        leadsTable.grantReadWriteData(bulkVerifyLambda);
+        sendingQueue.grantSendMessages(bulkVerifyLambda);
+
+        // API Campaigns needs SES for test emails and SQS for bulk verification
+        apiCampaignsLambda.addToRolePolicy(new iam.PolicyStatement({
+            actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+            resources: ['*'],
+        }));
+        leadsTable.grantReadWriteData(apiCampaignsLambda);
+        verificationQueue.grantSendMessages(apiCampaignsLambda);
 
         // Grant SES permissions
         sendEmailLambda.addToRolePolicy(new iam.PolicyStatement({
@@ -489,6 +603,8 @@ export class PivotrMailerStack extends cdk.Stack {
             { id: 'SendEmail', fn: sendEmailLambda },
             { id: 'VerifyEmail', fn: verifyEmailLambda },
             { id: 'ProcessFeedback', fn: processFeedbackLambda },
+            { id: 'CampaignProcessor', fn: campaignProcessorLambda },
+            { id: 'BulkVerify', fn: bulkVerifyLambda },
         ];
 
         lambdas.forEach(({ id, fn }) => {
