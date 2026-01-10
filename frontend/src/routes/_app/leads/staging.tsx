@@ -65,9 +65,9 @@ import type { StagedLead, StageLeadsRequest, StagingStatus } from '@/features/le
 
 // Search params schema for URL-driven table state
 const stagingSearchSchema = z.object({
-    status: z.string().optional().default('all'),
-    page: z.number().optional().default(0),
-    pageSize: z.number().optional().default(10),
+    status: z.string().catch('all'),
+    page: z.number().catch(0),
+    pageSize: z.number().catch(10),
 });
 
 export const Route = createFileRoute('/_app/leads/staging')({

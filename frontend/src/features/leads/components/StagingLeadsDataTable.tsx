@@ -551,7 +551,8 @@ export function StagingLeadsDataTable({
                         />
                     </div>
                     <Select
-                        value={statusFilter}
+                        value={statusFilter || 'all'}
+                        defaultValue="all"
                         onValueChange={(value) => {
                             onStatusFilterChange?.(value);
                         }}
@@ -682,10 +683,11 @@ export function StagingLeadsDataTable({
                             <p className="text-sm font-medium">Rows per page</p>
                             <Select
                                 value={`${table.getState().pagination.pageSize}`}
+                                defaultValue="10"
                                 onValueChange={(value) => table.setPageSize(Number(value))}
                             >
                                 <SelectTrigger className="h-8 w-[70px]">
-                                    <SelectValue placeholder={table.getState().pagination.pageSize} />
+                                    <SelectValue placeholder="10" />
                                 </SelectTrigger>
                                 <SelectContent side="top">
                                     {[10, 20, 30, 40, 50].map((pageSize) => (
