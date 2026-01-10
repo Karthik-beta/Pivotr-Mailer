@@ -1,15 +1,76 @@
+# =============================================================================
+# Pivotr Mailer - LocalStack Docker Compose Configuration
+# =============================================================================
+#
+# Professional-grade LocalStack setup for local AWS service emulation.
+# Provides high-fidelity testing of DynamoDB, SQS, SNS, SES, S3, CloudWatch, and Lambda.
+#
+# Usage:
+#   docker compose up -d                    # Start LocalStack
+#   docker compose logs -f localstack       # View logs
+#   docker compose down -v                  # Stop and clean up
+#
+# Bootstrap:
+#   After starting, run: bun run localstack:bootstrap
+#
+# =============================================================================
+
 version: "3.8"
+
+networks:
+  pivotr-localstack-network:
+    driver: bridge
+    name: pivotr-localstack-network
 
 services:
   localstack:
-    container_name: "${LOCALSTACK_DOCKER_NAME:-localstack-main}"
-    image: localstack/localstack
+    container_name: pivotr-localstack
+    image: localstack/localstack:3.4
     ports:
       - "127.0.0.1:4566:4566"            # LocalStack Gateway
-      - "127.0.0.1:4510-4559:4510-4559"  # external services port range
+      - "127.0.0.1:4510-4559:4510-4559"  # External services port range
+    networks:
+      - pivotr-localstack-network
     environment:
-      # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
+      # Core Configuration
       - DEBUG=${DEBUG:-0}
+      - PERSISTENCE=${PERSISTENCE:-1}
+      - EAGER_SERVICE_LOADING=1
+
+      # Services to enable (includes S3, CloudWatch Logs, and CloudWatch Metrics)
+      - SERVICES=dynamodb,sqs,sns,ses,s3,cloudwatch,logs,sts,iam
+
+      # Docker integration for Lambda
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - LAMBDA_DOCKER_NETWORK=pivotr-localstack-network
+      - LAMBDA_REMOVE_CONTAINERS=true
+
+      # SES Configuration
+      - SMTP_HOST=localhost
+      - SES_SKIP_CERTIFICATE_VERIFICATION=1
+
+      # Logging
+      - LS_LOG=${LS_LOG:-warn}
+
     volumes:
+      # Persistent data storage
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
+      # Docker socket for Lambda execution
       - "/var/run/docker.sock:/var/run/docker.sock"
+      # Bootstrap scripts (executed on startup)
+      - "./init-scripts:/etc/localstack/init/ready.d"
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G

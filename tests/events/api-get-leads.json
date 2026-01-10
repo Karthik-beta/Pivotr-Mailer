@@ -1,0 +1,33 @@
+{
+    "httpMethod": "GET",
+    "path": "/leads",
+    "pathParameters": null,
+    "queryStringParameters": {
+        "limit": "10"
+    },
+    "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    },
+    "body": null,
+    "isBase64Encoded": false,
+    "requestContext": {
+        "accountId": "000000000000",
+        "apiId": "test-api",
+        "authorizer": {},
+        "httpMethod": "GET",
+        "identity": {
+            "sourceIp": "127.0.0.1",
+            "userAgent": "test-agent"
+        },
+        "path": "/leads",
+        "protocol": "HTTP/1.1",
+        "requestId": "test-request-001",
+        "requestTimeEpoch": 1699000000000,
+        "resourceId": "test-resource",
+        "resourcePath": "/leads",
+        "stage": "test"
+    },
+    "resource": "/leads",
+    "stageVariables": null
+}

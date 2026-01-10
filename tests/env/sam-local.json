@@ -1,0 +1,67 @@
+{
+    "Parameters": {
+        "AWSEndpointUrl": "http://host.docker.internal:4566",
+        "AWSRegion": "us-east-1",
+        "LeadsTableName": "pivotr-leads",
+        "CampaignsTableName": "pivotr-campaigns",
+        "MetricsTableName": "pivotr-metrics",
+        "LogsTableName": "pivotr-logs",
+        "SettingsTableName": "pivotr-settings",
+        "SendingQueueUrl": "http://host.docker.internal:4566/000000000000/sending-queue",
+        "FeedbackQueueUrl": "http://host.docker.internal:4566/000000000000/feedback-queue",
+        "VerificationQueueUrl": "http://host.docker.internal:4566/000000000000/verification-queue",
+        "LogLevel": "DEBUG"
+    },
+    "SendEmailLambda": {
+        "AWS_ENDPOINT_URL": "http://host.docker.internal:4566",
+        "DYNAMODB_TABLE_LEADS": "pivotr-leads",
+        "DYNAMODB_TABLE_CAMPAIGNS": "pivotr-campaigns",
+        "DYNAMODB_TABLE_METRICS": "pivotr-metrics",
+        "SQS_QUEUE_SENDING": "http://host.docker.internal:4566/000000000000/sending-queue",
+        "SES_FROM_EMAIL": "noreply@pivotr.local",
+        "SES_CONFIGURATION_SET": "PivotrLocalConfigSet",
+        "LOG_LEVEL": "DEBUG",
+        "ENVIRONMENT": "local"
+    },
+    "VerifyEmailLambda": {
+        "AWS_ENDPOINT_URL": "http://host.docker.internal:4566",
+        "DYNAMODB_TABLE_LEADS": "pivotr-leads",
+        "SQS_QUEUE_VERIFICATION": "http://host.docker.internal:4566/000000000000/verification-queue",
+        "LOG_LEVEL": "DEBUG",
+        "ENVIRONMENT": "local"
+    },
+    "ProcessFeedbackLambda": {
+        "AWS_ENDPOINT_URL": "http://host.docker.internal:4566",
+        "DYNAMODB_TABLE_LEADS": "pivotr-leads",
+        "DYNAMODB_TABLE_METRICS": "pivotr-metrics",
+        "DYNAMODB_TABLE_CAMPAIGNS": "pivotr-campaigns",
+        "SQS_QUEUE_FEEDBACK": "http://host.docker.internal:4566/000000000000/feedback-queue",
+        "LOG_LEVEL": "DEBUG",
+        "ENVIRONMENT": "local"
+    },
+    "ApiLeadsLambda": {
+        "AWS_ENDPOINT_URL": "http://host.docker.internal:4566",
+        "DYNAMODB_TABLE_LEADS": "pivotr-leads",
+        "LOG_LEVEL": "DEBUG",
+        "ENVIRONMENT": "local"
+    },
+    "ApiCampaignsLambda": {
+        "AWS_ENDPOINT_URL": "http://host.docker.internal:4566",
+        "DYNAMODB_TABLE_CAMPAIGNS": "pivotr-campaigns",
+        "LOG_LEVEL": "DEBUG",
+        "ENVIRONMENT": "local"
+    },
+    "ApiMetricsLambda": {
+        "AWS_ENDPOINT_URL": "http://host.docker.internal:4566",
+        "DYNAMODB_TABLE_METRICS": "pivotr-metrics",
+        "LOG_LEVEL": "DEBUG",
+        "ENVIRONMENT": "local"
+    },
+    "LeadImportLambda": {
+        "AWS_ENDPOINT_URL": "http://host.docker.internal:4566",
+        "DYNAMODB_TABLE_LEADS": "pivotr-leads",
+        "SQS_QUEUE_VERIFICATION": "http://host.docker.internal:4566/000000000000/verification-queue",
+        "LOG_LEVEL": "DEBUG",
+        "ENVIRONMENT": "local"
+    }
+}

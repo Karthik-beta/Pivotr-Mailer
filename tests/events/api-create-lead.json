@@ -1,0 +1,31 @@
+{
+    "httpMethod": "POST",
+    "path": "/leads",
+    "pathParameters": null,
+    "queryStringParameters": null,
+    "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    },
+    "body": "{\"fullName\": \"Test User\", \"email\": \"test@example.com\", \"companyName\": \"Test Company\", \"leadType\": \"SOFTWARE\"}",
+    "isBase64Encoded": false,
+    "requestContext": {
+        "accountId": "000000000000",
+        "apiId": "test-api",
+        "authorizer": {},
+        "httpMethod": "POST",
+        "identity": {
+            "sourceIp": "127.0.0.1",
+            "userAgent": "test-agent"
+        },
+        "path": "/leads",
+        "protocol": "HTTP/1.1",
+        "requestId": "test-request-002",
+        "requestTimeEpoch": 1699000000000,
+        "resourceId": "test-resource",
+        "resourcePath": "/leads",
+        "stage": "test"
+    },
+    "resource": "/leads",
+    "stageVariables": null
+}

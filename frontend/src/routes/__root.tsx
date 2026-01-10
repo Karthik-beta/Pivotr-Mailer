@@ -14,12 +14,14 @@ import appCss from '../styles.css?url'
 
 import type { QueryClient } from '@tanstack/react-query'
 
+import { ThemeProvider } from '../components/theme-provider'
+
 interface MyRouterContext {
   queryClient: QueryClient
 }
 
 import NotFoundPage from '../components/NotFoundPage'
-import { Layout } from '../features/shared/layout'
+import { Layout } from '../features/shared/Layout'
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   head: () => ({
@@ -58,12 +60,32 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var config = JSON.parse(localStorage.getItem('pivotr-theme-config') || '{}');
+                  var mode = config.mode || 'system';
+                  var isDark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                  if (isDark) {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
       </head>
       <body>
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
         <TanStackDevtools
           config={{
             position: 'bottom-right',

@@ -1,0 +1,20 @@
+{
+    "Records": [
+        {
+            "messageId": "test-message-001",
+            "receiptHandle": "receipt-handle-001",
+            "body": "{\"leadId\": \"lead-test-001\", \"campaignId\": \"campaign-test-001\", \"subjectTemplate\": \"{Hi|Hello} {{firstName}}!\", \"bodyTemplate\": \"<p>Hi {{firstName}}, this is a test email for {{company}}.</p>\"}",
+            "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "1699000000000",
+                "SenderId": "AIDATEST",
+                "ApproximateFirstReceiveTimestamp": "1699000000000"
+            },
+            "messageAttributes": {},
+            "md5OfBody": "test",
+            "eventSource": "aws:sqs",
+            "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:sending-queue",
+            "awsRegion": "us-east-1"
+        }
+    ]
+}

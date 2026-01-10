@@ -1,0 +1,54 @@
+# SAM CLI Configuration
+# Used for local testing and development
+#
+# Usage:
+#   sam build
+#   sam local invoke SendEmailLambda --event tests/events/sqs-send-email.json
+#   sam local start-api --docker-network localstack-network
+
+version = 0.1
+
+[default]
+[default.global.parameters]
+stack_name = "pivotr-mailer-local"
+
+[default.build.parameters]
+cached = true
+parallel = true
+use_container = false
+
+[default.local_invoke.parameters]
+docker_network = "pivotr-localstack-network"
+env_vars = "tests/env/sam-local.json"
+skip_pull_image = true
+
+[default.local_start_api.parameters]
+docker_network = "pivotr-localstack-network"
+env_vars = "tests/env/sam-local.json"
+port = 3000
+host = "127.0.0.1"
+skip_pull_image = true
+warm_containers = "EAGER"
+
+[default.local_start_lambda.parameters]
+docker_network = "pivotr-localstack-network"
+env_vars = "tests/env/sam-local.json"
+port = 3001
+host = "127.0.0.1"
+skip_pull_image = true
+warm_containers = "EAGER"
+
+# Testing environment
+[testing]
+[testing.global.parameters]
+stack_name = "pivotr-mailer-test"
+
+[testing.build.parameters]
+cached = false
+parallel = true
+use_container = false
+
+[testing.local_invoke.parameters]
+docker_network = "pivotr-localstack-network"
+env_vars = "tests/env/sam-local.json"
+skip_pull_image = false

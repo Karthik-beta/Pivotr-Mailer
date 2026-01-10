@@ -2,16 +2,11 @@
 
 import * as React from "react"
 import {
-  AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  GalleryVerticalEnd,
-  Map,
-  PieChart,
+  LayoutDashboard,
+  Users,
+  Mail,
+  BarChart3,
   Settings2,
-  SquareTerminal,
 } from "lucide-react"
 
 import { NavMain } from "./nav-main"
@@ -25,132 +20,97 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 
-// This is sample data.
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+    name: "Admin",
+    email: "admin@pivotr.in",
+    avatar: "/avatars/admin.jpg",
   },
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
-  ],
   navMain: [
     {
-      title: "Playground",
-      url: "#",
-      icon: SquareTerminal,
+      title: "Dashboard",
+      url: "/",
+      icon: LayoutDashboard,
+      isActive: false,
+      items: [
+        {
+          title: "Overview",
+          url: "/",
+        },
+        {
+          title: "Analytics",
+          url: "/analytics",
+        },
+      ],
+    },
+    {
+      title: "Leads",
+      url: "/leads",
+      icon: Users,
       isActive: true,
       items: [
         {
-          title: "History",
-          url: "#",
+          title: "All Leads",
+          url: "/leads",
         },
         {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
-          url: "#",
+          title: "Import / Staging",
+          url: "/leads/staging",
         },
       ],
     },
     {
-      title: "Models",
-      url: "#",
-      icon: Bot,
+      title: "Campaigns",
+      url: "/campaigns",
+      icon: Mail,
       items: [
         {
-          title: "Genesis",
-          url: "#",
+          title: "All Campaigns",
+          url: "/campaigns",
         },
         {
-          title: "Explorer",
-          url: "#",
+          title: "Create Campaign",
+          url: "/campaigns/new",
         },
         {
-          title: "Quantum",
-          url: "#",
+          title: "Templates",
+          url: "/campaigns/templates",
         },
       ],
     },
     {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
+      title: "Reports",
+      url: "/reports",
+      icon: BarChart3,
       items: [
         {
-          title: "Introduction",
-          url: "#",
+          title: "Delivery Stats",
+          url: "/reports/delivery",
         },
         {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
+          title: "Engagement",
+          url: "/reports/engagement",
         },
       ],
     },
     {
       title: "Settings",
-      url: "#",
+      url: "/settings",
       icon: Settings2,
       items: [
         {
           title: "General",
-          url: "#",
+          url: "/settings",
         },
         {
-          title: "Team",
-          url: "#",
+          title: "Email Config",
+          url: "/settings/email",
         },
         {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
+          title: "API Keys",
+          url: "/settings/api",
         },
       ],
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
     },
   ],
 }
