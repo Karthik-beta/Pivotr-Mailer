@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from "react"
-import { useThemeConfig, useResolvedTokens } from "@/lib/theme"
+import { useThemeConfig, useResolvedTokens, hydrateThemeFromStorage } from "@/lib/theme"
 import { generateThemeCSS } from "@/lib/theme/colors"
 import { FONT_META } from "@/lib/theme/types"
 
@@ -7,15 +7,15 @@ import { FONT_META } from "@/lib/theme/types"
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect
 
 function useSystemTheme(): "light" | "dark" {
-    const [systemTheme, setSystemTheme] = useState<"light" | "dark">(() => {
-        if (typeof window === "undefined") return "light"
-        return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
-    })
+    // Always initialize with "light" for SSR hydration consistency
+    // The server cannot detect system theme, so client must match server's initial value
+    const [systemTheme, setSystemTheme] = useState<"light" | "dark">("light")
 
     useEffect(() => {
-        if (typeof window === "undefined") return
-
+        // Detect actual system theme after hydration completes
         const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+        setSystemTheme(mediaQuery.matches ? "dark" : "light")
+
         const handleChange = (e: MediaQueryListEvent) => {
             setSystemTheme(e.matches ? "dark" : "light")
         }
@@ -31,6 +31,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const config = useThemeConfig()
     const tokens = useResolvedTokens()
     const systemTheme = useSystemTheme()
+
+    // Hydrate theme store from localStorage after initial render
+    // This must happen after hydration to avoid SSR/client mismatch
+    useEffect(() => {
+        hydrateThemeFromStorage()
+    }, [])
 
     const resolvedMode = config.mode === "system" ? systemTheme : config.mode
     const isDark = resolvedMode === "dark"

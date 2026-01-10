@@ -8,14 +8,15 @@ import type {
     ThemeMode,
     StylePreset,
 } from "./types"
-import { DEFAULT_THEME_CONFIG, resolveThemeTokens, STYLE_PRESETS } from "./types"
+import { DEFAULT_THEME_CONFIG, resolveThemeTokens } from "./types"
 
 const STORAGE_KEY = "pivotr-theme-config"
 
-function loadThemeConfig(): ThemeConfig {
-    if (typeof window === "undefined") {
-        return DEFAULT_THEME_CONFIG
-    }
+/**
+ * Load theme config from localStorage.
+ * Only call this on the client after hydration.
+ */
+function loadThemeConfigFromStorage(): ThemeConfig {
     try {
         const stored = localStorage.getItem(STORAGE_KEY)
         if (stored) {
@@ -49,12 +50,31 @@ function saveThemeConfig(config: ThemeConfig): void {
     }
 }
 
-export const themeStore = new Store<ThemeConfig>(loadThemeConfig())
+// Initialize with DEFAULT_THEME_CONFIG for SSR hydration consistency.
+// Server and client must start with the same value to avoid hydration mismatch.
+// localStorage values are loaded after hydration via hydrateThemeFromStorage().
+export const themeStore = new Store<ThemeConfig>(DEFAULT_THEME_CONFIG)
 
 // Subscribe to changes and persist
 themeStore.subscribe(() => {
     saveThemeConfig(themeStore.state)
 })
+
+/**
+ * Hydrate theme store from localStorage after client mount.
+ * Call this once in a useEffect to avoid hydration mismatch.
+ */
+let isHydrated = false
+export function hydrateThemeFromStorage(): void {
+    if (typeof window === "undefined" || isHydrated) return
+    isHydrated = true
+
+    const stored = loadThemeConfigFromStorage()
+    // Only update if different from default to avoid unnecessary re-renders
+    if (JSON.stringify(stored) !== JSON.stringify(DEFAULT_THEME_CONFIG)) {
+        themeStore.setState(() => stored)
+    }
+}
 
 // =============================================================================
 // HOOKS - Read state reactively
