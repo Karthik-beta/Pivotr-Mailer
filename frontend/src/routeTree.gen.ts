@@ -16,6 +16,7 @@ import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-qu
 import { Route as DemoTableRouteImport } from './routes/demo/table'
 import { Route as DemoStoreRouteImport } from './routes/demo/store'
 import { Route as DemoMcpTodosRouteImport } from './routes/demo/mcp-todos'
+import { Route as AppLeadsIndexRouteImport } from './routes/_app/leads/index'
 import { Route as DemoStartServerFuncsRouteImport } from './routes/demo/start.server-funcs'
 import { Route as DemoStartApiRequestRouteImport } from './routes/demo/start.api-request'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
@@ -23,6 +24,7 @@ import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as DemoApiTqTodosRouteImport } from './routes/demo/api.tq-todos'
 import { Route as DemoApiNamesRouteImport } from './routes/demo/api.names'
 import { Route as DemoApiMcpTodosRouteImport } from './routes/demo/api.mcp-todos'
+import { Route as AppLeadsStagingRouteImport } from './routes/_app/leads/staging'
 import { Route as DemoStartSsrIndexRouteImport } from './routes/demo/start.ssr.index'
 import { Route as DemoStartSsrSpaModeRouteImport } from './routes/demo/start.ssr.spa-mode'
 import { Route as DemoStartSsrFullSsrRouteImport } from './routes/demo/start.ssr.full-ssr'
@@ -63,6 +65,11 @@ const DemoMcpTodosRoute = DemoMcpTodosRouteImport.update({
   path: '/demo/mcp-todos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppLeadsIndexRoute = AppLeadsIndexRouteImport.update({
+  id: '/_app/leads/',
+  path: '/leads/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemoStartServerFuncsRoute = DemoStartServerFuncsRouteImport.update({
   id: '/demo/start/server-funcs',
   path: '/demo/start/server-funcs',
@@ -98,6 +105,11 @@ const DemoApiMcpTodosRoute = DemoApiMcpTodosRouteImport.update({
   path: '/demo/api/mcp-todos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppLeadsStagingRoute = AppLeadsStagingRouteImport.update({
+  id: '/_app/leads/staging',
+  path: '/leads/staging',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemoStartSsrIndexRoute = DemoStartSsrIndexRouteImport.update({
   id: '/demo/start/ssr/',
   path: '/demo/start/ssr/',
@@ -127,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/': typeof AppIndexRoute
+  '/leads/staging': typeof AppLeadsStagingRoute
   '/demo/api/mcp-todos': typeof DemoApiMcpTodosRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
@@ -134,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/leads': typeof AppLeadsIndexRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
@@ -147,6 +161,7 @@ export interface FileRoutesByTo {
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/': typeof AppIndexRoute
+  '/leads/staging': typeof AppLeadsStagingRoute
   '/demo/api/mcp-todos': typeof DemoApiMcpTodosRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
@@ -154,6 +169,7 @@ export interface FileRoutesByTo {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/leads': typeof AppLeadsIndexRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
@@ -168,6 +184,7 @@ export interface FileRoutesById {
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/leads/staging': typeof AppLeadsStagingRoute
   '/demo/api/mcp-todos': typeof DemoApiMcpTodosRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
@@ -175,6 +192,7 @@ export interface FileRoutesById {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/_app/leads/': typeof AppLeadsIndexRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
@@ -190,6 +208,7 @@ export interface FileRouteTypes {
     | '/demo/table'
     | '/demo/tanstack-query'
     | '/'
+    | '/leads/staging'
     | '/demo/api/mcp-todos'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
@@ -197,6 +216,7 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/leads'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
@@ -210,6 +230,7 @@ export interface FileRouteTypes {
     | '/demo/table'
     | '/demo/tanstack-query'
     | '/'
+    | '/leads/staging'
     | '/demo/api/mcp-todos'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
@@ -217,6 +238,7 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/leads'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
@@ -230,6 +252,7 @@ export interface FileRouteTypes {
     | '/demo/table'
     | '/demo/tanstack-query'
     | '/_app/'
+    | '/_app/leads/staging'
     | '/demo/api/mcp-todos'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
@@ -237,6 +260,7 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/_app/leads/'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
@@ -251,6 +275,7 @@ export interface RootRouteChildren {
   DemoTableRoute: typeof DemoTableRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppLeadsStagingRoute: typeof AppLeadsStagingRoute
   DemoApiMcpTodosRoute: typeof DemoApiMcpTodosRoute
   DemoApiNamesRoute: typeof DemoApiNamesRoute
   DemoApiTqTodosRoute: typeof DemoApiTqTodosRoute
@@ -258,6 +283,7 @@ export interface RootRouteChildren {
   DemoFormSimpleRoute: typeof DemoFormSimpleRoute
   DemoStartApiRequestRoute: typeof DemoStartApiRequestRoute
   DemoStartServerFuncsRoute: typeof DemoStartServerFuncsRoute
+  AppLeadsIndexRoute: typeof AppLeadsIndexRoute
   DemoStartSsrDataOnlyRoute: typeof DemoStartSsrDataOnlyRoute
   DemoStartSsrFullSsrRoute: typeof DemoStartSsrFullSsrRoute
   DemoStartSsrSpaModeRoute: typeof DemoStartSsrSpaModeRoute
@@ -315,6 +341,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoMcpTodosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/leads/': {
+      id: '/_app/leads/'
+      path: '/leads'
+      fullPath: '/leads'
+      preLoaderRoute: typeof AppLeadsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/start/server-funcs': {
       id: '/demo/start/server-funcs'
       path: '/demo/start/server-funcs'
@@ -364,6 +397,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoApiMcpTodosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/leads/staging': {
+      id: '/_app/leads/staging'
+      path: '/leads/staging'
+      fullPath: '/leads/staging'
+      preLoaderRoute: typeof AppLeadsStagingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/start/ssr/': {
       id: '/demo/start/ssr/'
       path: '/demo/start/ssr'
@@ -403,6 +443,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemoTableRoute: DemoTableRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   AppIndexRoute: AppIndexRoute,
+  AppLeadsStagingRoute: AppLeadsStagingRoute,
   DemoApiMcpTodosRoute: DemoApiMcpTodosRoute,
   DemoApiNamesRoute: DemoApiNamesRoute,
   DemoApiTqTodosRoute: DemoApiTqTodosRoute,
@@ -410,6 +451,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemoFormSimpleRoute: DemoFormSimpleRoute,
   DemoStartApiRequestRoute: DemoStartApiRequestRoute,
   DemoStartServerFuncsRoute: DemoStartServerFuncsRoute,
+  AppLeadsIndexRoute: AppLeadsIndexRoute,
   DemoStartSsrDataOnlyRoute: DemoStartSsrDataOnlyRoute,
   DemoStartSsrFullSsrRoute: DemoStartSsrFullSsrRoute,
   DemoStartSsrSpaModeRoute: DemoStartSsrSpaModeRoute,
