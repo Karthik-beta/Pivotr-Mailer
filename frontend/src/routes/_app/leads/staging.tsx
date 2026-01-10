@@ -73,7 +73,7 @@ function StagingLeadsPage() {
     const [confirmApproveAll, setConfirmApproveAll] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-    const { data, isLoading, refetch, isRefetching } = useStagedLeads({ limit: 100 });
+    const { data, isLoading, error, refetch, isRefetching } = useStagedLeads({ limit: 100 });
     const stageLeadsMutation = useStageLeads();
     const approveMutation = useApproveLead();
     const batchApproveMutation = useBatchApproveLeads();
@@ -428,6 +428,8 @@ function StagingLeadsPage() {
                                 <StagingLeadsDataTable
                                     data={stagedLeads}
                                     isLoading={isLoading}
+                                    error={error}
+                                    onRetry={() => refetch()}
                                     onApprove={handleApprove}
                                     onDelete={(id) => setConfirmDelete(id)}
                                     onUpdate={handleUpdate}

@@ -19,6 +19,37 @@ import type {
 // API Base URL - configure based on environment
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
+// Default timeout for API requests (10 seconds)
+const DEFAULT_TIMEOUT = 10000;
+
+/**
+ * Fetch with timeout using AbortController
+ * Throws an error if the request takes longer than the specified timeout
+ */
+async function fetchWithTimeout(
+    url: string,
+    options: RequestInit = {},
+    timeout: number = DEFAULT_TIMEOUT
+): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+        });
+        return response;
+    } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+            throw new Error('Request timed out. Please check your connection and try again.');
+        }
+        throw error;
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
+
 // =============================================================================
 // Leads Queries
 // =============================================================================
@@ -32,7 +63,7 @@ export function useLeads(params?: { limit?: number; lastKey?: string; status?: s
             if (params?.lastKey) searchParams.set('lastKey', params.lastKey);
             if (params?.status) searchParams.set('status', params.status);
 
-            const response = await fetch(`${API_BASE}/leads?${searchParams}`);
+            const response = await fetchWithTimeout(`${API_BASE}/leads?${searchParams}`);
             if (!response.ok) throw new Error('Failed to fetch leads');
             return response.json();
         },
@@ -43,7 +74,7 @@ export function useLead(id: string) {
     return useQuery({
         queryKey: ['leads', id],
         queryFn: async (): Promise<{ success: boolean; data: Lead }> => {
-            const response = await fetch(`${API_BASE}/leads/${id}`);
+            const response = await fetchWithTimeout(`${API_BASE}/leads/${id}`);
             if (!response.ok) throw new Error('Failed to fetch lead');
             return response.json();
         },
@@ -64,7 +95,7 @@ export function useStagedLeads(params?: { limit?: number; lastKey?: string; stat
             if (params?.lastKey) searchParams.set('lastKey', params.lastKey);
             if (params?.status) searchParams.set('status', params.status);
 
-            const response = await fetch(`${API_BASE}/leads/staging?${searchParams}`);
+            const response = await fetchWithTimeout(`${API_BASE}/leads/staging?${searchParams}`);
             if (!response.ok) throw new Error('Failed to fetch staged leads');
             return response.json();
         },
@@ -75,7 +106,7 @@ export function useStagedLead(id: string) {
     return useQuery({
         queryKey: ['staged-leads', id],
         queryFn: async (): Promise<{ success: boolean; data: StagedLead }> => {
-            const response = await fetch(`${API_BASE}/leads/staging/${id}`);
+            const response = await fetchWithTimeout(`${API_BASE}/leads/staging/${id}`);
             if (!response.ok) throw new Error('Failed to fetch staged lead');
             return response.json();
         },

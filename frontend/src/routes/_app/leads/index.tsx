@@ -35,7 +35,7 @@ export const Route = createFileRoute('/_app/leads/')({
 
 function LeadsPage() {
     const [, setSelectedIds] = useState<string[]>([]);
-    const { data, isLoading, refetch, isRefetching } = useLeads({ limit: 100 });
+    const { data, isLoading, error, refetch, isRefetching } = useLeads({ limit: 100 });
     const exportMutation = useExportLeads();
     const templateMutation = useDownloadTemplate();
 
@@ -178,6 +178,8 @@ function LeadsPage() {
                         <LeadsDataTable
                             data={leads}
                             isLoading={isLoading}
+                            error={error}
+                            onRetry={() => refetch()}
                             onRowClick={handleRowClick}
                             onSelectionChange={setSelectedIds}
                         />

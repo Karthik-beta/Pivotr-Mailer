@@ -53,6 +53,8 @@ import {
     Building2,
     Phone,
     User,
+    AlertCircle,
+    RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Lead, LeadStatus } from '../types';
@@ -68,6 +70,8 @@ const fuzzyFilter: FilterFn<Lead> = (row, columnId, value, addMeta) => {
 interface LeadsDataTableProps {
     data: Lead[];
     isLoading?: boolean;
+    error?: Error | null;
+    onRetry?: () => void;
     onRowClick?: (lead: Lead) => void;
     onSelectionChange?: (selectedIds: string[]) => void;
 }
@@ -75,6 +79,8 @@ interface LeadsDataTableProps {
 export function LeadsDataTable({
     data,
     isLoading,
+    error,
+    onRetry,
     onRowClick,
     onSelectionChange,
 }: LeadsDataTableProps) {
@@ -339,6 +345,26 @@ export function LeadsDataTable({
                                     <div className="flex items-center justify-center gap-2">
                                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                                         Loading leads...
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ) : error ? (
+                            <TableRow>
+                                <TableCell colSpan={columns.length} className="h-32 text-center">
+                                    <div className="flex flex-col items-center justify-center gap-3">
+                                        <AlertCircle className="h-8 w-8 text-destructive" />
+                                        <div className="space-y-1">
+                                            <p className="font-medium text-destructive">Failed to load leads</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                {error.message || 'An unexpected error occurred'}
+                                            </p>
+                                        </div>
+                                        {onRetry && (
+                                            <Button variant="outline" size="sm" onClick={onRetry}>
+                                                <RefreshCw className="mr-2 h-4 w-4" />
+                                                Try Again
+                                            </Button>
+                                        )}
                                     </div>
                                 </TableCell>
                             </TableRow>
