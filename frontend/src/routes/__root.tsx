@@ -21,7 +21,7 @@ interface MyRouterContext {
 }
 
 import NotFoundPage from '../components/NotFoundPage'
-import { Layout } from '../features/shared/layout'
+import { Layout } from '../features/shared/Layout'
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   head: () => ({

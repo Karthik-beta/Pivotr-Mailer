@@ -11,7 +11,7 @@
 
 import { useState, useCallback } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
-import { Layout } from '@/features/shared/layout';
+import { Layout } from '@/features/shared/Layout';
 import {
     BreadcrumbItem,
     BreadcrumbLink,

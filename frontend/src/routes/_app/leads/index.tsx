@@ -6,7 +6,7 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Layout } from '@/features/shared/layout';
+import { Layout } from '@/features/shared/Layout';
 import {
     BreadcrumbItem,
     BreadcrumbLink,

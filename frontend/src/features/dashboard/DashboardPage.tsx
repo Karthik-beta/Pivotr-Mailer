@@ -4,7 +4,7 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { Layout } from "../shared/layout"
+import { Layout } from "../shared/Layout"
 
 export default function Page() {
     return (
