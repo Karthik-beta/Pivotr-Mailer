@@ -149,27 +149,10 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         // Let's assume we proceed.
 
         // Batch Write (Max 25 items per batch)
-        const chunks = chunkArray(leads, 25);
-        let insertedCount = 0;
-
-        for (const chunk of chunks) {
-            const putRequests = chunk.map(lead => ({
-                PutRequest: { Item: lead }
-            }));
-
-            try {
-                await docClient.send(new BatchWriteCommand({
-                    RequestItems: {
-                        [LEADS_TABLE]: putRequests
-                    }
-                }));
-                insertedCount += chunk.length;
-            } catch (err) {
-                logger.error('Batch write failed', { error: err });
-                // Continue with next batch? Or fail?
-                // Partial success is common in bulk imports.
-            }
-        }
+        // Batch Write (Max 25 items per batch)
+        const { inserted, errors: saveErrors } = await saveLeads(leads);
+        let insertedCount = inserted;
+        errors.push(...saveErrors);
 
         return response(200, {
             success: true,
@@ -186,6 +169,62 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
         return response(500, { success: false, message: 'Internal Server Error' });
     }
 };
+
+/**
+ * Save leads to DynamoDB with retry logic for UnprocessedItems.
+ */
+export async function saveLeads(leads: Lead[]): Promise<{ inserted: number; errors: string[] }> {
+    const chunks = chunkArray(leads, 25);
+    let insertedCount = 0;
+    const errors: string[] = [];
+
+    for (const chunk of chunks) {
+        let requestItems: Record<string, any[]> = {
+            [LEADS_TABLE]: chunk.map(lead => ({
+                PutRequest: { Item: lead }
+            }))
+        };
+
+        let attempts = 0;
+        const MAX_RETRIES = 3;
+
+        while (attempts <= MAX_RETRIES && Object.keys(requestItems).length > 0) {
+            try {
+                const result = await docClient.send(new BatchWriteCommand({
+                    RequestItems: requestItems
+                }));
+
+                if (result.UnprocessedItems && Object.keys(result.UnprocessedItems).length > 0) {
+                    logger.warn('BatchWrite partial failure (throttling)', {
+                        unprocessedCount: Object.values(result.UnprocessedItems).reduce((acc: any, val: any) => acc + val.length, 0),
+                        attempt: attempts + 1
+                    });
+
+                    requestItems = result.UnprocessedItems;
+                    attempts++;
+
+                    await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, attempts)));
+                } else {
+                    requestItems = {}; // All done
+                }
+            } catch (err) {
+                logger.error('Batch write failed completely for chunk', { error: err, attempt: attempts + 1 });
+                attempts++;
+                await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, attempts)));
+            }
+        }
+
+        if (Object.keys(requestItems).length > 0) {
+            const failedCount = Object.values(requestItems).reduce((acc: any, val: any) => acc + val.length, 0);
+            errors.push(`Failed to save ${failedCount} leads due to persistent database errors.`);
+            insertedCount += (chunk.length - failedCount);
+        } else {
+            insertedCount += chunk.length;
+        }
+    }
+
+    return { inserted: insertedCount, errors };
+}
 
 function response(statusCode: number, body: any): APIGatewayProxyResult {
     return {

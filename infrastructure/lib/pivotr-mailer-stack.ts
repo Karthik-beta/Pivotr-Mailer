@@ -87,6 +87,11 @@ export class PivotrMailerStack extends cdk.Stack {
             nonKeyAttributes: ['email', 'updatedAt'],
         });
         leadsTable.addGlobalSecondaryIndex({
+            indexName: 'MessageIdIndex',
+            partitionKey: { name: 'lastMessageId', type: dynamodb.AttributeType.STRING },
+            projectionType: dynamodb.ProjectionType.KEYS_ONLY,
+        });
+        leadsTable.addGlobalSecondaryIndex({
             indexName: 'CampaignIndex',
             partitionKey: { name: 'campaignId', type: dynamodb.AttributeType.STRING },
             sortKey: { name: 'status', type: dynamodb.AttributeType.STRING },

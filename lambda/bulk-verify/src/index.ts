@@ -141,17 +141,29 @@ interface BulkVerifyRequest {
 export const sqsHandler: SQSHandler = async (event: SQSEvent) => {
 	logger.info("Processing verification batch", { count: event.Records.length });
 
-	for (const record of event.Records) {
-		try {
-			await processVerificationRecord(record);
-			// Rate limiting between requests
+	// Process in chunks of 5 for concurrency control (half of batch size 10)
+	// This provides a balance between speed and rate limiting safety.
+	const CONCURRENCY_LIMIT = 5;
+	const records = event.Records;
+
+	for (let i = 0; i < records.length; i += CONCURRENCY_LIMIT) {
+		const chunk = records.slice(i, i + CONCURRENCY_LIMIT);
+
+		await Promise.all(chunk.map(async (record) => {
+			try {
+				await processVerificationRecord(record);
+			} catch (error) {
+				logger.error("Failed to process verification", {
+					messageId: record.messageId,
+					error: error instanceof Error ? error.message : String(error),
+				});
+				// Don't throw - let other messages process
+			}
+		}));
+
+		// Small delay between chunks if there are more
+		if (i + CONCURRENCY_LIMIT < records.length) {
 			await sleep(RATE_LIMIT_DELAY_MS);
-		} catch (error) {
-			logger.error("Failed to process verification", {
-				messageId: record.messageId,
-				error: error instanceof Error ? error.message : String(error),
-			});
-			// Don't throw - let other messages process
 		}
 	}
 };
@@ -730,9 +742,9 @@ function response(statusCode: number, body: unknown): APIGatewayProxyResult {
 export const handler = async (event: SQSEvent | APIGatewayProxyEvent) => {
 	// Check if it's an SQS event
 	if ("Records" in event && Array.isArray(event.Records)) {
-		return sqsHandler(event as SQSEvent, {} as any, () => {});
+		return sqsHandler(event as SQSEvent, {} as any, () => { });
 	}
 
 	// Otherwise treat as API Gateway event
-	return apiHandler(event as APIGatewayProxyEvent, {} as any, () => {});
+	return apiHandler(event as APIGatewayProxyEvent, {} as any, () => { });
 };

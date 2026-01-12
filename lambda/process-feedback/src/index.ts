@@ -17,7 +17,7 @@ import type { SQSEvent, SQSHandler, SQSRecord } from 'aws-lambda';
 import { Logger } from '@aws-lambda-powertools/logger';
 import type { LogLevel } from '@aws-lambda-powertools/logger/types';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, UpdateCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, UpdateCommand, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 
 // Initialize logger
 const logger = new Logger({
@@ -96,6 +96,14 @@ export const handler: SQSHandler = async (event: SQSEvent) => {
 
     logger.info('Batch processing complete', results);
 
+    // Check reputation once per batch if needed
+    if (results.bounces > 0) {
+        await checkReputationAndPause('bounce');
+    }
+    if (results.complaints > 0) {
+        await checkReputationAndPause('complaint');
+    }
+
     return { batchItemFailures };
 };
 
@@ -169,9 +177,6 @@ async function handleBounce(notification: SesNotification): Promise<void> {
 
     // Increment bounce counter in metrics
     await incrementMetric('bounces');
-
-    // Check if we need to auto-pause due to reputation risk
-    await checkReputationAndPause('bounce');
 }
 
 /**
@@ -200,9 +205,6 @@ async function handleComplaint(notification: SesNotification): Promise<void> {
 
     // Increment complaint counter in metrics
     await incrementMetric('complaints');
-
-    // Check if we need to auto-pause due to reputation risk
-    await checkReputationAndPause('complaint');
 }
 
 /**
@@ -244,11 +246,42 @@ async function updateLeadByMessageId(
         expressionAttributeValues[attrValue] = value;
     });
 
-    // Note: This assumes we have a GSI on sesMessageId
-    // For now, we update by partition key (would need to query first in real impl)
-    // This is a simplified version - full implementation would use Query + Update
+    // 1. Find the Lead ID using the MessageIdIndex
+    try {
+        const queryResult = await docClient.send(new QueryCommand({
+            TableName: LEADS_TABLE,
+            IndexName: 'MessageIdIndex',
+            KeyConditionExpression: 'lastMessageId = :mid',
+            ExpressionAttributeValues: {
+                ':mid': messageId,
+            },
+            Limit: 1,
+        }));
 
-    logger.debug('Updating lead by messageId', { messageId, updates });
+        if (!queryResult.Items || queryResult.Items.length === 0) {
+            logger.warn('No lead found for messageId', { messageId });
+            return;
+        }
+
+        const leadId = queryResult.Items[0].id;
+
+        logger.info('Found lead for feedback', { leadId, messageId });
+
+        // 2. Update the Lead using the found ID
+        await docClient.send(new UpdateCommand({
+            TableName: LEADS_TABLE,
+            Key: { id: leadId },
+            UpdateExpression: `SET ${updateExpressionParts.join(', ')}`,
+            ExpressionAttributeNames: expressionAttributeNames,
+            ExpressionAttributeValues: expressionAttributeValues,
+        }));
+
+        logger.info('Successfully updated lead status', { leadId, status: updates.status });
+
+    } catch (error) {
+        logger.error('Failed to update lead by messageId', { messageId, error });
+        throw error;
+    }
 }
 
 /**

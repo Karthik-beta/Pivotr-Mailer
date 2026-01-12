@@ -50,6 +50,8 @@ import {
 	type GaussianConfig,
 } from "../../../shared/utils/gaussian";
 import type { Campaign } from "../../../shared/validation/campaign.schema";
+import { safeBatchWrite } from "./utils/dynamo";
+
 
 // =============================================================================
 // Configuration
@@ -89,10 +91,17 @@ const MAX_QUEUE_DEPTH = 2000; // Backpressure limit
 // Types
 // =============================================================================
 
+/**
+ * WARNING: This interface must match the DynamoDB table schema exactly.
+ * Since we use BatchWriteItem (PutItem) for updates, any attribute in the DB
+ * that is NOT in this interface will be silently deleted during an update.
+ * Do not add hidden fields to the DB without updating this interface.
+ */
 interface Lead {
 	id: string;
 	email: string;
 	fullName: string;
+
 	companyName: string;
 	status: string;
 	campaignId?: string;
@@ -437,13 +446,24 @@ async function queueForVerification(leads: Lead[], campaign: Campaign): Promise<
 			}),
 		}));
 
-		await sqsClient.send(
-			new SendMessageBatchCommand({
-				QueueUrl: VERIFICATION_QUEUE_URL,
-				Entries: entries,
-			})
-		);
+		try {
+			await sqsClient.send(
+				new SendMessageBatchCommand({
+					QueueUrl: VERIFICATION_QUEUE_URL,
+					Entries: entries,
+				})
+			);
+		} catch (error) {
+			logger.error("Failed to send batch to verification queue, reverting status", {
+				error,
+				leadIds: chunk.map((l) => l.id),
+			});
+			// Best-effort rollback to QUEUED so they can be picked up again
+			await updateLeadsStatus(chunk, "QUEUED");
+			throw error; // Re-throw to stop processing this campaign
+		}
 	}
+
 
 	logger.info("Queued leads for verification", {
 		campaignId: campaign.id,
@@ -497,13 +517,24 @@ async function queueForSending(
 			};
 		});
 
-		await sqsClient.send(
-			new SendMessageBatchCommand({
-				QueueUrl: SENDING_QUEUE_URL,
-				Entries: entries,
-			})
-		);
+		try {
+			await sqsClient.send(
+				new SendMessageBatchCommand({
+					QueueUrl: SENDING_QUEUE_URL,
+					Entries: entries,
+				})
+			);
+		} catch (error) {
+			logger.error("Failed to send batch to sending queue, reverting status", {
+				error,
+				leadIds: chunk.map((l) => l.id),
+			});
+			// Best-effort rollback to QUEUED
+			await updateLeadsStatus(chunk, "QUEUED");
+			throw error;
+		}
 	}
+
 
 	logger.info("Queued leads for sending", {
 		campaignId: campaign.id,
@@ -518,24 +549,24 @@ async function queueForSending(
 async function updateLeadsStatus(leads: Lead[], status: string): Promise<void> {
 	const now = new Date().toISOString();
 
-	// Use UpdateCommand instead of BatchWriteCommand with PutRequest
-	// to avoid overwriting fields not in our Lead interface
-	for (const lead of leads) {
-		await docClient.send(
-			new UpdateCommand({
-				TableName: LEADS_TABLE,
-				Key: { id: lead.id },
-				UpdateExpression: "SET #status = :status, #updatedAt = :now",
-				ExpressionAttributeNames: {
-					"#status": "status",
-					"#updatedAt": "updatedAt",
-				},
-				ExpressionAttributeValues: {
-					":status": status,
-					":now": now,
-				},
-			})
-		);
+	const chunks = chunkArray(leads, 25);
+	for (const chunk of chunks) {
+        // WARNING: BatchWrite (PutItem) overwrites the entire item.
+        // We assume exclusive ownership of the lead object during this processing window.
+        // If other services modify leads concurrently, those changes will be lost.
+		await safeBatchWrite(docClient, {
+            RequestItems: {
+                [LEADS_TABLE]: chunk.map((lead) => ({
+                    PutRequest: {
+                        Item: {
+                            ...lead,
+                            status: status,
+                            updatedAt: now,
+                        },
+                    },
+                })),
+            },
+        });
 	}
 }
 
@@ -554,7 +585,7 @@ async function updateCampaignProgress(
 			TableName: CAMPAIGNS_TABLE,
 			Key: { id: campaignId },
 			UpdateExpression:
-				"SET #metrics.#processedCount = #metrics.#processedCount + :inc, #lastActivityAt = :now, #updatedAt = :now",
+				"SET #metrics.#processedCount = if_not_exists(#metrics.#processedCount, :zero) + :inc, #lastActivityAt = :now, #updatedAt = :now",
 			ExpressionAttributeNames: {
 				"#metrics": "metrics",
 				"#processedCount": "processedCount",
@@ -564,7 +595,9 @@ async function updateCampaignProgress(
 			ExpressionAttributeValues: {
 				":inc": processedCount,
 				":now": now,
+                ":zero": 0
 			},
+
 		})
 	);
 }
