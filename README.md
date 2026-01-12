@@ -1,312 +1,375 @@
 # Pivotr Mailer
 
-A modern full-stack web application built with **TanStack Start** for the frontend and **Appwrite** as the Backend-as-a-Service (BaaS). This project is designed to be a robust foundation for building scalable mailer applications.
+Event-driven B2B email automation platform with Gaussian scheduling and reputation protection.
 
-<img src="frontend/public/tanstack-circle-logo.png" alt="TanStack x Appwrite" width="100" />
+## Tech Stack
 
-## 🚀 Tech Stack
+| Layer | Technology |
+|-------|------------|
+| Frontend | [TanStack Start](https://tanstack.com/start/latest) (React 19, Router, Query) |
+| Styling | [Tailwind CSS v4](https://tailwindcss.com/) |
+| Backend | AWS Lambda (Node.js 20, TypeScript) |
+| Infrastructure | [AWS CDK](https://aws.amazon.com/cdk/) + [SAM CLI](https://aws.amazon.com/serverless/sam/) |
+| Local Dev | [LocalStack](https://localstack.cloud/) (Docker) |
+| Runtime | [Bun](https://bun.sh/) |
+| Build Tool | [Vite](https://vite.dev/) |
+| Testing | [Vitest](https://vitest.dev/) |
 
-| Layer      | Technology                                                        |
-| ---------- | ----------------------------------------------------------------- |
-| Frontend   | [TanStack Start](https://tanstack.com/start/latest) (Router, Query, Table, Virtual) |
-| UI Library | [React 19](https://react.dev/)                                    |
-| Styling    | [Tailwind CSS v4](https://tailwindcss.com/)                       |
-| Backend    | [Appwrite](https://appwrite.io/) (Self-hosted via Docker Compose) |
-| Runtime    | [Bun](https://bun.sh/)                                            |
-| Build Tool | [Vite](https://vite.dev/)                                         |
-| Testing    | [Vitest](https://vitest.dev/)                                     |
-| Linting    | [Biome](https://biomejs.dev/)                                     |
+---
 
-## 📁 Project Structure
+## Architecture Overview
 
 ```
-Pivotr Mailer/
-├── .agent/                    # AI agent configuration & skills
-│   └── skills/
-│       └── frontend-skill/    # Frontend development guidelines
-├── frontend/                  # TanStack Start application
-│   ├── src/
-│   │   ├── lib/               # Appwrite client configuration
-│   │   ├── routes/            # File-based routing (TanStack Router)
-│   │   └── styles.css         # Global styles
-│   ├── public/                # Static assets
-│   ├── .env                   # Frontend environment variables
-│   ├── package.json
-│   └── vite.config.ts
-├── functions/                 # Appwrite Functions (serverless)
-├── infra/                     # Infrastructure as Code (IaC)
-│   ├── docker-compose.yml     # Appwrite self-hosted configuration
-│   └── .env                   # Infrastructure environment variables
-├── migrations/                # Database migrations
-├── scripts/                   # Automation & utility scripts
-├── shared/                    # Shared utilities & types
-├── appwrite.config.json       # Appwrite CLI configuration
-├── ABOUT.md                   # Project overview
-├── AGENTS.md                  # AI agent guidelines
-└── README.md
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                              LOCAL DEVELOPMENT                                │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   Browser (:3000)                                                            │
+│       │                                                                      │
+│       ▼                                                                      │
+│   ┌─────────────────┐         ┌─────────────────┐                           │
+│   │  Vite Frontend  │ ──────► │   SAM Local API │                           │
+│   │     (:3000)     │  proxy  │     (:3001)     │                           │
+│   │                 │ /api/*  │                 │                           │
+│   │  React 19       │   →     │  Lambda Funcs   │                           │
+│   │  TanStack Start │ /v1/*   │  Node.js 20     │                           │
+│   └─────────────────┘         └────────┬────────┘                           │
+│                                        │                                     │
+│                                        ▼                                     │
+│                          ┌─────────────────────────┐                        │
+│                          │    LocalStack (:4566)   │                        │
+│                          │ ┌─────────┬───────────┐ │                        │
+│                          │ │DynamoDB │    SQS    │ │                        │
+│                          │ │(5 tables)│(3 queues)│ │                        │
+│                          │ ├─────────┼───────────┤ │                        │
+│                          │ │   SES   │    SNS    │ │                        │
+│                          │ │ (mock)  │(2 topics) │ │                        │
+│                          │ ├─────────┴───────────┤ │                        │
+│                          │ │         S3          │ │                        │
+│                          │ │    (audit logs)     │ │                        │
+│                          │ └─────────────────────┘ │                        │
+│                          └─────────────────────────┘                        │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## 🔧 Prerequisites
+### LocalStack Replaces These AWS Services
 
-- [Bun](https://bun.sh/) (v1.0+)
-- [Docker](https://www.docker.com/) & [Docker Compose](https://docs.docker.com/compose/)
+| AWS Service | LocalStack Equivalent | Purpose |
+|-------------|----------------------|---------|
+| DynamoDB | `localhost:4566` | 5 tables: leads, campaigns, metrics, logs, settings |
+| SQS | `localhost:4566` | 3 queues: sending, feedback, verification (+DLQs) |
+| SES | `localhost:4566` | Mock email sending (no real emails sent) |
+| SNS | `localhost:4566` | 2 topics: alarms, ses-feedback |
+| S3 | `localhost:4566` | Audit logs bucket |
 
-## 🏁 Getting Started
+---
 
-### 1. Clone the Repository
+## Prerequisites
+
+- **Docker Desktop** - Running and healthy
+- **Bun** >= 1.0 - JavaScript runtime (`curl -fsSL https://bun.sh/install | bash`)
+- **AWS SAM CLI** - Lambda local execution ([install guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html))
+- **Node.js** 20.x - Lambda runtime compatibility
+
+### Verify Prerequisites
 
 ```bash
-git clone <your-repo-url>
-cd "Pivotr Mailer"
+docker --version        # Docker version 24+
+bun --version           # 1.0+
+sam --version           # SAM CLI 1.100+
+node --version          # v20.x
 ```
 
-### 2. Start Appwrite (Backend)
+---
 
-Start the self-hosted Appwrite instance using Docker Compose:
+## Quick Start
+
+### Step 1: Install Dependencies
 
 ```bash
-cd infra
-docker-compose up -d
-```
-
-> This will spin up all required Appwrite services including the API, console, database, storage, and worker containers.
-
-The Appwrite Console will be available at `http://localhost:5000/console`.
-
-### 3. Configure Environment Variables
-
-All environment variables are managed from a single `.env` file in the project root:
-
-```bash
-# From project root
-cp .env.example .env
-```
-
-Edit `.env` with your configuration:
-
-```env
-# Appwrite connection (used by both frontend and migrations)
-APPWRITE_ENDPOINT=http://localhost:5000/v1
-APPWRITE_PROJECT_ID=your-project-id
-APPWRITE_PROJECT_NAME=Pivotr Mailer
-
-# API Key (server-side only, never exposed to frontend)
-APPWRITE_API_KEY=your-api-key
-```
-
-> **Note**: The Vite config automatically exposes `APPWRITE_*` variables to the frontend as `import.meta.env.VITE_APPWRITE_*`. No duplication needed!
-
-### 4. Install Dependencies
-
-```bash
-cd frontend
+# Install all workspace dependencies
 bun install
 ```
 
-### 5. Start Development Server
+### Step 2: Start LocalStack (Terminal 1)
 
 ```bash
-bun dev
+bun run dev:infra
 ```
 
-The application will be available at `http://localhost:3000`.
+This command:
+1. Starts LocalStack container with Docker
+2. Creates all DynamoDB tables, SQS queues, SNS topics
+3. Verifies SES email identities
+
+**Verify LocalStack is healthy:**
+```bash
+bun run localstack:status
+# Should show: "running" for all services
+```
+
+### Step 3: Start Backend API (Terminal 2)
+
+```bash
+bun run dev:api
+```
+
+This command:
+1. Builds all Lambda functions using SAM
+2. Starts local API Gateway on port 3001
+
+**Verify API is running:**
+```bash
+curl http://localhost:3001/v1/campaigns
+# Should return: {"success":true,"data":{"campaigns":[],...}}
+```
+
+### Step 4: Start Frontend (Terminal 3)
+
+```bash
+bun run dev:frontend
+```
+
+This starts Vite dev server on port 3000 with proxy configuration.
+
+**Open the application:**
+```
+http://localhost:3000
+```
 
 ---
 
-## 🔐 Appwrite Backend Setup
+## Port Reference
 
-### Step 1: Create a Project
+| Service | Port | URL |
+|---------|------|-----|
+| Frontend (Vite) | 3000 | http://localhost:3000 |
+| Backend API (SAM) | 3001 | http://localhost:3001/v1 |
+| LocalStack | 4566 | http://localhost:4566 |
 
-1. Access Appwrite Console at `http://localhost:5000/console`
-2. Create a new project named **Pivotr Mailer**
-3. Note your **Project ID** for the environment variables
+---
 
-### Step 2: Configure Google OAuth
+## Available Scripts
 
-1. Go to **Auth → Settings → OAuth2 Providers**
-2. Enable **Google** and add your OAuth credentials
-3. In Google Cloud Console, add the redirect URI:
-   ```
-   http://localhost:5000/v1/account/sessions/oauth2/callback/google/YOUR_PROJECT_ID
-   ```
+### Development
 
-### Step 3: Add Platform
+| Command | Description |
+|---------|-------------|
+| `bun run dev:infra` | Start LocalStack and bootstrap resources |
+| `bun run dev:api` | Build and start SAM local API |
+| `bun run dev:frontend` | Start Vite frontend dev server |
+| `bun run dev:reset` | Stop LocalStack, then restart and re-bootstrap |
 
-1. Go to **Overview → Platforms**
-2. Add a **Web** platform with hostname: `localhost`
+### LocalStack
 
-### Step 4: Create API Key
+| Command | Description |
+|---------|-------------|
+| `bun run localstack:up` | Start LocalStack container |
+| `bun run localstack:down` | Stop and remove LocalStack container |
+| `bun run localstack:logs` | View LocalStack container logs |
+| `bun run localstack:status` | Check LocalStack health status |
+| `bun run localstack:bootstrap` | Create AWS resources in LocalStack |
 
-1. Go to **Overview → API Keys → Create API Key**
-2. Name: `migrations-key`
-3. Select **ALL scopes** for full access
-4. Copy the generated key
+### SAM CLI
 
-### Step 5: Run Database Migrations
+| Command | Description |
+|---------|-------------|
+| `bun run sam:build` | Build Lambda functions |
+| `bun run sam:build:cached` | Build with caching (faster) |
+| `bun run sam:local:api` | Start local API Gateway on port 3001 |
+| `bun run sam:local:invoke` | Invoke individual Lambda functions |
 
-First, create a `.env` file in the project root:
+### Testing
+
+| Command | Description |
+|---------|-------------|
+| `bun run test` | Run all tests |
+| `bun run test:unit` | Run unit tests only |
+| `bun run test:integration` | Run integration tests (requires LocalStack) |
+| `bun run test:lambda` | Run Lambda-specific tests |
+
+---
+
+## Email Verification (SES)
+
+**LocalStack SES does NOT send real emails.** All emails are captured locally for testing.
+
+### View Captured Emails
 
 ```bash
-# From project root
-cp .env.example .env
+# Method 1: Via LocalStack SES API
+bun run ses:emails
+
+# Method 2: With jq formatting
+curl -s http://localhost:4566/_aws/ses | jq
+
+# Method 3: Check container logs
+docker logs pivotr-localstack 2>&1 | grep -i "ses\|email"
 ```
 
-Edit `.env` with your Appwrite credentials:
+### List Verified SES Identities
+
+```bash
+aws --endpoint-url=http://localhost:4566 ses list-verified-email-addresses
+```
+
+### Send a Test Email (via UI)
+
+1. Open http://localhost:3000
+2. Navigate to Campaigns
+3. Create or select a campaign
+4. Click "Send Test Email"
+5. Run `bun run ses:emails` to verify the email was captured
+
+---
+
+## Troubleshooting
+
+### Frontend Can't Reach API
+
+**Symptoms:** Network errors, CORS errors, 502 errors
+
+**Solutions:**
+1. Verify SAM API is running:
+   ```bash
+   curl http://localhost:3001/v1/campaigns
+   ```
+2. Check Vite proxy logs in Terminal 3
+3. Ensure SAM build completed successfully:
+   ```bash
+   bun run sam:build
+   ```
+
+### LocalStack Not Responding
+
+**Symptoms:** Connection refused on port 4566
+
+**Solutions:**
+1. Check Docker is running:
+   ```bash
+   docker ps
+   ```
+2. Check LocalStack container status:
+   ```bash
+   docker logs pivotr-localstack
+   ```
+3. Restart LocalStack:
+   ```bash
+   bun run dev:reset
+   ```
+
+### SAM Build Fails
+
+**Symptoms:** Build errors, missing modules
+
+**Solutions:**
+1. Ensure Node.js 20 is installed
+2. Install Lambda dependencies:
+   ```bash
+   bun install
+   ```
+3. Clean and rebuild:
+   ```bash
+   rm -rf .aws-sam
+   bun run sam:build
+   ```
+
+### Port Already in Use
+
+**Symptoms:** EADDRINUSE errors
+
+**Solutions:**
+```bash
+# Find process using the port (macOS/Linux)
+lsof -i :3000  # or :3001, :4566
+
+# Windows
+netstat -ano | findstr :3000
+
+# Kill the process
+kill -9 <PID>
+```
+
+### Docker Network Issues
+
+**Symptoms:** Lambda functions can't reach LocalStack
+
+**Solutions:**
+1. Ensure the Docker network exists:
+   ```bash
+   docker network ls | grep pivotr-localstack-network
+   ```
+2. If missing, restart LocalStack:
+   ```bash
+   bun run dev:reset
+   ```
+
+---
+
+## Project Structure
+
+```
+pivotr-mailer/
+├── frontend/                 # React/TanStack frontend
+│   ├── src/
+│   │   ├── features/         # Feature-based modules
+│   │   │   ├── campaigns/    # Campaign management
+│   │   │   └── leads/        # Lead management
+│   │   └── routes/           # TanStack Router routes
+│   ├── vite.config.ts        # Vite + proxy configuration
+│   └── .env.local            # Local environment variables
+├── lambda/                   # AWS Lambda functions
+│   ├── api/                  # API handlers
+│   │   ├── campaigns/
+│   │   ├── leads/
+│   │   └── metrics/
+│   ├── send-email/           # Email sending logic
+│   ├── campaign-processor/   # Scheduled campaign processing
+│   └── shared/               # Shared utilities
+├── infrastructure/           # AWS CDK definitions
+├── tests/
+│   ├── localstack/           # LocalStack configuration
+│   │   ├── docker-compose.yml
+│   │   └── bootstrap.ts
+│   └── env/                  # Environment configs for testing
+├── template.yaml             # SAM template for local Lambda
+├── package.json              # Root package with scripts
+└── README.md                 # This file
+```
+
+---
+
+## Environment Variables
+
+### Frontend (`frontend/.env.local`)
 
 ```env
-APPWRITE_ENDPOINT=http://localhost:5000/v1
-APPWRITE_PROJECT_ID=your-project-id
-APPWRITE_API_KEY=your-api-key
+VITE_API_URL=/api
+VITE_ENV=development
 ```
 
-Then run the migrations:
+### Backend (SAM/Lambda)
 
-```bash
-bun run migrations/run.ts
-```
+Configured automatically via `tests/env/sam-local.json`:
 
-This creates the database, collections, indexes, and seed data.
-
-### Step 6: Deploy Appwrite Functions
-
-**Important**: Each function must have its dependencies installed locally before deployment, as Appwrite does not install dependencies during build.
-
-### Step 6: Deploy Appwrite Functions
-
-**Recommended Method: Bundled Deployment**
-
-We use `bun build` to bundle dependencies into a single file, avoiding runtime resolution issues and significantly reducing upload size.
-
-1. **Run the Build Script**:
-   ```bash
-   cd functions/export-leads
-   bun run build.ts
-   ```
-
-2. **Deploy the `dist` folder**:
-   ```bash
-   cd ../..
-   npx appwrite functions create-deployment \
-     --function-id export-leads \
-     --activate true \
-     --entrypoint main.js \
-     --code ./functions/export-leads/dist
-   ```
-
-> **Why Bundling?** Packages like `exceljs` have deep dependency trees (`readdir-glob` → `minimatch` → ...) that are hard to manage in serverless runtimes. Bundling compilation bakes them all into one file.
-
-#### Troubleshooting: Manual Dependencies (Legacy)
-
-If you prefer not to bundle, install missing packages explicitly:
-1. Identify missing package from logs.
-2. `bun add <package>` in function dir.
-3. Redeploy.
-
-**Known tricky chains:** `exceljs` → `jszip`, `fast-csv`, `archiver`, `saxes`. All solved by bundling.
-
-### Step 7: Configure Function Environment Variables
-
-For each function in **Functions → Settings → Variables**, add:
-
-```env
-APPWRITE_FUNCTION_PROJECT_ID=your-project-id
-APPWRITE_FUNCTION_API_KEY=your-api-key
-
-# AWS SES (for orchestrator)
-AWS_SES_ACCESS_KEY_ID=your-aws-key
-AWS_SES_SECRET_ACCESS_KEY=your-aws-secret
-AWS_SES_REGION=ap-south-1
-
-# AWS SQS (for sqs-poller)
-AWS_SQS_QUEUE_URL=your-sqs-queue-url
-AWS_SQS_REGION=ap-south-1
-
-# Email Verifier (for orchestrator)
-MY_EMAIL_VERIFIER_API_KEY=your-mev-key
-```
+| Variable | Default Value |
+|----------|---------------|
+| `AWS_ENDPOINT_URL` | `http://host.docker.internal:4566` |
+| `AWS_REGION` | `us-east-1` |
+| `DYNAMODB_TABLE_LEADS` | `pivotr-leads` |
+| `DYNAMODB_TABLE_CAMPAIGNS` | `pivotr-campaigns` |
+| `SQS_QUEUE_SENDING` | `http://host.docker.internal:4566/000000000000/sending-queue` |
 
 ---
 
+## Additional Documentation
 
-## 📜 Available Scripts
-
-Run these commands from the `frontend/` directory:
-
-| Command       | Description                    |
-| ------------- | ------------------------------ |
-| `bun dev`     | Start development server       |
-| `bun build`   | Build for production           |
-| `bun serve`   | Preview production build       |
-| `bun test`    | Run tests with Vitest          |
-| `bun lint`    | Lint code with Biome           |
-| `bun format`  | Format code with Biome         |
-| `bun check`   | Run all Biome checks           |
-
-## 🧪 Testing
-
-This project uses [Vitest](https://vitest.dev/) for testing:
-
-```bash
-bun test
-```
-
-## 🎨 Styling
-
-The project uses [Tailwind CSS v4](https://tailwindcss.com/) for styling, integrated via the Vite plugin.
-
-## 🔗 Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are automatically generated from files in `src/routes/`.
-
-### Adding a New Route
-
-Simply create a new file in `frontend/src/routes/`:
-
-```tsx
-// frontend/src/routes/about.tsx
-import { createFileRoute } from "@tanstack/react-router";
-
-export const Route = createFileRoute("/about")({
-  component: AboutPage,
-});
-
-function AboutPage() {
-  return <h1>About Page</h1>;
-}
-```
-
-## 📦 Building for Production
-
-```bash
-cd frontend
-bun build
-```
-
-The production build will be output to `frontend/dist/`.
-
-## 🐳 Docker Services
-
-The `infra/docker-compose.yml` includes a complete Appwrite setup:
-
-- **Appwrite API** - Main backend service
-- **Appwrite Console** - Admin dashboard
-- **Appwrite Realtime** - WebSocket connections
-- **MariaDB** - Database
-- **Redis** - Caching & queues
-- **Traefik** - Reverse proxy
-- **Worker Services** - Background job processing
-
-## 📚 Documentation
-
-- [TanStack Start Documentation](https://tanstack.com/start/latest)
-- [TanStack Router Documentation](https://tanstack.com/router/latest)
-- [Appwrite Documentation](https://appwrite.io/docs)
-- [Bun Documentation](https://bun.sh/docs)
-
-## 📄 License
-
-See [LICENSE](frontend/LICENSE) for details.
+- [Local Testing Guide](docs/LOCAL_TESTING_GUIDE.md) - Detailed testing procedures
+- [AWS Implementation Guide](docs/AWS_IMPLEMENTATION_GUIDE.md) - Production deployment
 
 ---
 
-Built with ❤️ by Pivotr
+## License
+
+Private - Pivotr

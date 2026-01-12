@@ -16,6 +16,7 @@ import type {
     AssignLeadsRequest,
     AssignLeadsResponse,
     CampaignMetricsResponse,
+    StatusChangeRequest,
 } from '../types';
 
 // API Base URL - configure based on environment

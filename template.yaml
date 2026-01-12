@@ -175,6 +175,11 @@ Resources:
       CodeUri: lambda/api/campaigns/dist/
       Timeout: 10
       MemorySize: 256
+      Environment:
+        Variables:
+          SQS_VERIFICATION_QUEUE_URL: !Ref VerificationQueueUrl
+          SES_FROM_EMAIL: noreply@pivotr.local
+          SES_CONFIGURATION_SET: PivotrLocalConfigSet
       Events:
         GetCampaigns:
           Type: Api
@@ -187,6 +192,12 @@ Resources:
           Properties:
             RestApiId: !Ref PivotrMailerApi
             Path: /campaigns
+            Method: POST
+        PreviewLeads:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /campaigns/preview-leads
             Method: POST
         GetCampaign:
           Type: Api
@@ -206,6 +217,36 @@ Resources:
             RestApiId: !Ref PivotrMailerApi
             Path: /campaigns/{id}
             Method: DELETE
+        GetCampaignLeads:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /campaigns/{id}/leads
+            Method: GET
+        AssignLeads:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /campaigns/{id}/assign-leads
+            Method: POST
+        UpdateStatus:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /campaigns/{id}/status
+            Method: PUT
+        TestEmail:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /campaigns/{id}/test-email
+            Method: POST
+        GetCampaignMetrics:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /campaigns/{id}/metrics
+            Method: GET
 
   ApiMetricsLambda:
     Type: AWS::Serverless::Function
@@ -298,6 +339,44 @@ Resources:
       Timeout: 10
       MemorySize: 128
 
+  # ===========================================================================
+  # Campaign Orchestration Lambda Functions
+  # ===========================================================================
+
+  CampaignProcessorLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pivotr-campaign-processor
+      Handler: index.handler
+      CodeUri: lambda/campaign-processor/dist/
+      Timeout: 55
+      MemorySize: 256
+      Environment:
+        Variables:
+          SQS_VERIFICATION_QUEUE_URL: !Ref VerificationQueueUrl
+          SQS_SENDING_QUEUE_URL: !Ref SendingQueueUrl
+      # Note: In production, triggered by EventBridge every minute
+      # For local testing, invoke directly with: sam local invoke CampaignProcessorLambda
+
+  BulkVerifyLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pivotr-bulk-verify
+      Handler: index.handler
+      CodeUri: lambda/bulk-verify/dist/
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          SQS_SENDING_QUEUE_URL: !Ref SendingQueueUrl
+      Events:
+        VerifyLeads:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /campaigns/{id}/verify
+            Method: POST
+
 # =============================================================================
 # OUTPUTS
 # =============================================================================
@@ -317,3 +396,11 @@ Outputs:
   ProcessFeedbackLambdaArn:
     Description: Process Feedback Lambda ARN
     Value: !GetAtt ProcessFeedbackLambda.Arn
+
+  CampaignProcessorLambdaArn:
+    Description: Campaign Processor Lambda ARN
+    Value: !GetAtt CampaignProcessorLambda.Arn
+
+  BulkVerifyLambdaArn:
+    Description: Bulk Verify Lambda ARN
+    Value: !GetAtt BulkVerifyLambda.Arn

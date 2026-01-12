@@ -17,6 +17,7 @@ import { Route as DemoTableRouteImport } from './routes/demo/table'
 import { Route as DemoStoreRouteImport } from './routes/demo/store'
 import { Route as DemoMcpTodosRouteImport } from './routes/demo/mcp-todos'
 import { Route as AppLeadsIndexRouteImport } from './routes/_app/leads/index'
+import { Route as AppCampaignsIndexRouteImport } from './routes/_app/campaigns/index'
 import { Route as DemoStartServerFuncsRouteImport } from './routes/demo/start.server-funcs'
 import { Route as DemoStartApiRequestRouteImport } from './routes/demo/start.api-request'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
@@ -25,10 +26,13 @@ import { Route as DemoApiTqTodosRouteImport } from './routes/demo/api.tq-todos'
 import { Route as DemoApiNamesRouteImport } from './routes/demo/api.names'
 import { Route as DemoApiMcpTodosRouteImport } from './routes/demo/api.mcp-todos'
 import { Route as AppLeadsStagingRouteImport } from './routes/_app/leads/staging'
+import { Route as AppCampaignsNewRouteImport } from './routes/_app/campaigns/new'
+import { Route as AppCampaignsIdRouteImport } from './routes/_app/campaigns/$id'
 import { Route as DemoStartSsrIndexRouteImport } from './routes/demo/start.ssr.index'
 import { Route as DemoStartSsrSpaModeRouteImport } from './routes/demo/start.ssr.spa-mode'
 import { Route as DemoStartSsrFullSsrRouteImport } from './routes/demo/start.ssr.full-ssr'
 import { Route as DemoStartSsrDataOnlyRouteImport } from './routes/demo/start.ssr.data-only'
+import { Route as AppCampaignsIdEditRouteImport } from './routes/_app/campaigns/$id.edit'
 
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
@@ -68,6 +72,11 @@ const DemoMcpTodosRoute = DemoMcpTodosRouteImport.update({
 const AppLeadsIndexRoute = AppLeadsIndexRouteImport.update({
   id: '/_app/leads/',
   path: '/leads/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppCampaignsIndexRoute = AppCampaignsIndexRouteImport.update({
+  id: '/_app/campaigns/',
+  path: '/campaigns/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoStartServerFuncsRoute = DemoStartServerFuncsRouteImport.update({
@@ -110,6 +119,16 @@ const AppLeadsStagingRoute = AppLeadsStagingRouteImport.update({
   path: '/leads/staging',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppCampaignsNewRoute = AppCampaignsNewRouteImport.update({
+  id: '/_app/campaigns/new',
+  path: '/campaigns/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppCampaignsIdRoute = AppCampaignsIdRouteImport.update({
+  id: '/_app/campaigns/$id',
+  path: '/campaigns/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemoStartSsrIndexRoute = DemoStartSsrIndexRouteImport.update({
   id: '/demo/start/ssr/',
   path: '/demo/start/ssr/',
@@ -130,6 +149,11 @@ const DemoStartSsrDataOnlyRoute = DemoStartSsrDataOnlyRouteImport.update({
   path: '/demo/start/ssr/data-only',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppCampaignsIdEditRoute = AppCampaignsIdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => AppCampaignsIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/$notFound': typeof NotFoundRoute
@@ -139,6 +163,8 @@ export interface FileRoutesByFullPath {
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/': typeof AppIndexRoute
+  '/campaigns/$id': typeof AppCampaignsIdRouteWithChildren
+  '/campaigns/new': typeof AppCampaignsNewRoute
   '/leads/staging': typeof AppLeadsStagingRoute
   '/demo/api/mcp-todos': typeof DemoApiMcpTodosRoute
   '/demo/api/names': typeof DemoApiNamesRoute
@@ -147,7 +173,9 @@ export interface FileRoutesByFullPath {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/campaigns': typeof AppCampaignsIndexRoute
   '/leads': typeof AppLeadsIndexRoute
+  '/campaigns/$id/edit': typeof AppCampaignsIdEditRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
@@ -161,6 +189,8 @@ export interface FileRoutesByTo {
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/': typeof AppIndexRoute
+  '/campaigns/$id': typeof AppCampaignsIdRouteWithChildren
+  '/campaigns/new': typeof AppCampaignsNewRoute
   '/leads/staging': typeof AppLeadsStagingRoute
   '/demo/api/mcp-todos': typeof DemoApiMcpTodosRoute
   '/demo/api/names': typeof DemoApiNamesRoute
@@ -169,7 +199,9 @@ export interface FileRoutesByTo {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/campaigns': typeof AppCampaignsIndexRoute
   '/leads': typeof AppLeadsIndexRoute
+  '/campaigns/$id/edit': typeof AppCampaignsIdEditRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
@@ -184,6 +216,8 @@ export interface FileRoutesById {
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/campaigns/$id': typeof AppCampaignsIdRouteWithChildren
+  '/_app/campaigns/new': typeof AppCampaignsNewRoute
   '/_app/leads/staging': typeof AppLeadsStagingRoute
   '/demo/api/mcp-todos': typeof DemoApiMcpTodosRoute
   '/demo/api/names': typeof DemoApiNamesRoute
@@ -192,7 +226,9 @@ export interface FileRoutesById {
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/_app/campaigns/': typeof AppCampaignsIndexRoute
   '/_app/leads/': typeof AppLeadsIndexRoute
+  '/_app/campaigns/$id/edit': typeof AppCampaignsIdEditRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
@@ -208,6 +244,8 @@ export interface FileRouteTypes {
     | '/demo/table'
     | '/demo/tanstack-query'
     | '/'
+    | '/campaigns/$id'
+    | '/campaigns/new'
     | '/leads/staging'
     | '/demo/api/mcp-todos'
     | '/demo/api/names'
@@ -216,7 +254,9 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/campaigns'
     | '/leads'
+    | '/campaigns/$id/edit'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
@@ -230,6 +270,8 @@ export interface FileRouteTypes {
     | '/demo/table'
     | '/demo/tanstack-query'
     | '/'
+    | '/campaigns/$id'
+    | '/campaigns/new'
     | '/leads/staging'
     | '/demo/api/mcp-todos'
     | '/demo/api/names'
@@ -238,7 +280,9 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/campaigns'
     | '/leads'
+    | '/campaigns/$id/edit'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
@@ -252,6 +296,8 @@ export interface FileRouteTypes {
     | '/demo/table'
     | '/demo/tanstack-query'
     | '/_app/'
+    | '/_app/campaigns/$id'
+    | '/_app/campaigns/new'
     | '/_app/leads/staging'
     | '/demo/api/mcp-todos'
     | '/demo/api/names'
@@ -260,7 +306,9 @@ export interface FileRouteTypes {
     | '/demo/form/simple'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/_app/campaigns/'
     | '/_app/leads/'
+    | '/_app/campaigns/$id/edit'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
@@ -275,6 +323,8 @@ export interface RootRouteChildren {
   DemoTableRoute: typeof DemoTableRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppCampaignsIdRoute: typeof AppCampaignsIdRouteWithChildren
+  AppCampaignsNewRoute: typeof AppCampaignsNewRoute
   AppLeadsStagingRoute: typeof AppLeadsStagingRoute
   DemoApiMcpTodosRoute: typeof DemoApiMcpTodosRoute
   DemoApiNamesRoute: typeof DemoApiNamesRoute
@@ -283,6 +333,7 @@ export interface RootRouteChildren {
   DemoFormSimpleRoute: typeof DemoFormSimpleRoute
   DemoStartApiRequestRoute: typeof DemoStartApiRequestRoute
   DemoStartServerFuncsRoute: typeof DemoStartServerFuncsRoute
+  AppCampaignsIndexRoute: typeof AppCampaignsIndexRoute
   AppLeadsIndexRoute: typeof AppLeadsIndexRoute
   DemoStartSsrDataOnlyRoute: typeof DemoStartSsrDataOnlyRoute
   DemoStartSsrFullSsrRoute: typeof DemoStartSsrFullSsrRoute
@@ -348,6 +399,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLeadsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/campaigns/': {
+      id: '/_app/campaigns/'
+      path: '/campaigns'
+      fullPath: '/campaigns'
+      preLoaderRoute: typeof AppCampaignsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/start/server-funcs': {
       id: '/demo/start/server-funcs'
       path: '/demo/start/server-funcs'
@@ -404,6 +462,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLeadsStagingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/campaigns/new': {
+      id: '/_app/campaigns/new'
+      path: '/campaigns/new'
+      fullPath: '/campaigns/new'
+      preLoaderRoute: typeof AppCampaignsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/campaigns/$id': {
+      id: '/_app/campaigns/$id'
+      path: '/campaigns/$id'
+      fullPath: '/campaigns/$id'
+      preLoaderRoute: typeof AppCampaignsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/start/ssr/': {
       id: '/demo/start/ssr/'
       path: '/demo/start/ssr'
@@ -432,8 +504,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoStartSsrDataOnlyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/campaigns/$id/edit': {
+      id: '/_app/campaigns/$id/edit'
+      path: '/edit'
+      fullPath: '/campaigns/$id/edit'
+      preLoaderRoute: typeof AppCampaignsIdEditRouteImport
+      parentRoute: typeof AppCampaignsIdRoute
+    }
   }
 }
+
+interface AppCampaignsIdRouteChildren {
+  AppCampaignsIdEditRoute: typeof AppCampaignsIdEditRoute
+}
+
+const AppCampaignsIdRouteChildren: AppCampaignsIdRouteChildren = {
+  AppCampaignsIdEditRoute: AppCampaignsIdEditRoute,
+}
+
+const AppCampaignsIdRouteWithChildren = AppCampaignsIdRoute._addFileChildren(
+  AppCampaignsIdRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   NotFoundRoute: NotFoundRoute,
@@ -443,6 +534,8 @@ const rootRouteChildren: RootRouteChildren = {
   DemoTableRoute: DemoTableRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   AppIndexRoute: AppIndexRoute,
+  AppCampaignsIdRoute: AppCampaignsIdRouteWithChildren,
+  AppCampaignsNewRoute: AppCampaignsNewRoute,
   AppLeadsStagingRoute: AppLeadsStagingRoute,
   DemoApiMcpTodosRoute: DemoApiMcpTodosRoute,
   DemoApiNamesRoute: DemoApiNamesRoute,
@@ -451,6 +544,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemoFormSimpleRoute: DemoFormSimpleRoute,
   DemoStartApiRequestRoute: DemoStartApiRequestRoute,
   DemoStartServerFuncsRoute: DemoStartServerFuncsRoute,
+  AppCampaignsIndexRoute: AppCampaignsIndexRoute,
   AppLeadsIndexRoute: AppLeadsIndexRoute,
   DemoStartSsrDataOnlyRoute: DemoStartSsrDataOnlyRoute,
   DemoStartSsrFullSsrRoute: DemoStartSsrFullSsrRoute,

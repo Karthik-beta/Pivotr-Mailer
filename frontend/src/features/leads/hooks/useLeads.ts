@@ -313,7 +313,7 @@ export function useExportLeads() {
 export function useDownloadTemplate() {
     return useMutation({
         mutationFn: async () => {
-            const response = await fetch(`${API_BASE}/leads/export/template`);
+            const response = await fetch(`${API_BASE}/leads/template`);
             if (!response.ok) throw new Error('Failed to download template');
             const result = await response.json();
 

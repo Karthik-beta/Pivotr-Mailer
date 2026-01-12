@@ -42,6 +42,28 @@ export interface DelayConfig {
     gaussianEnabled: boolean;
 }
 
+// Sign-off Image/Media
+export interface SignOffMedia {
+    type: 'image' | 'gif' | 'logo';
+    url: string;
+    alt?: string;
+    width?: number;
+    height?: number;
+    link?: string;
+}
+
+// Sign-off Configuration
+export interface SignOffConfig {
+    enabled: boolean;
+    content: string; // Markdown content
+    media?: SignOffMedia[];
+    socialLinks?: Array<{
+        platform: 'linkedin' | 'twitter' | 'website' | 'email' | 'phone';
+        url: string;
+        label?: string;
+    }>;
+}
+
 // Email Template
 export interface EmailTemplate {
     subject: string;
@@ -49,6 +71,7 @@ export interface EmailTemplate {
     senderName: string;
     senderEmail: string;
     ccEmail?: string;
+    signOff?: SignOffConfig;
 }
 
 // Lead Selection Criteria

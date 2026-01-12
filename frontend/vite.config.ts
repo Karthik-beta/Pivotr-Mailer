@@ -22,6 +22,18 @@ const config = defineConfig({
       },
     }),
   ],
+  server: {
+    port: 3000,
+    proxy: {
+      // Proxy /api requests to SAM local API running on port 3001
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        // Rewrite /api/* to /* to match SAM local API (no stage name)
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
 })
 
 export default config

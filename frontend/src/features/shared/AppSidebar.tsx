@@ -47,7 +47,6 @@ const data = {
       title: "Leads",
       url: "/leads",
       icon: Users,
-      isActive: true,
       items: [
         {
           title: "All Leads",
@@ -71,10 +70,6 @@ const data = {
         {
           title: "Create Campaign",
           url: "/campaigns/new",
-        },
-        {
-          title: "Templates",
-          url: "/campaigns/templates",
         },
       ],
     },

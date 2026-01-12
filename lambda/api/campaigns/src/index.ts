@@ -337,6 +337,7 @@ async function getCampaignMetrics(
 	const metrics: CampaignMetrics = {
 		totalLeads: campaign.metrics?.totalLeads ?? 0,
 		processedCount: campaign.metrics?.processedCount ?? 0,
+		sentToday: metricsRecord?.sentToday ?? 0,
 		sentCount: metricsRecord?.sentCount ?? campaign.metrics?.sentCount ?? 0,
 		deliveredCount: metricsRecord?.deliveredCount ?? 0,
 		bouncedCount: metricsRecord?.bouncedCount ?? 0,
@@ -390,6 +391,7 @@ async function createCampaign(
 		metrics: {
 			totalLeads: 0,
 			processedCount: 0,
+			sentToday: 0,
 			sentCount: 0,
 			deliveredCount: 0,
 			bouncedCount: 0,

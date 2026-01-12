@@ -10,8 +10,9 @@ import {
     SidebarInset,
     SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { AppSidebar } from "./app-sidebar"
+import { AppSidebar } from "./AppSidebar"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { GridPattern } from "@/components/ui/grid-pattern"
 
 interface LayoutProps {
     children: React.ReactNode
@@ -22,8 +23,10 @@ export function Layout({ children, breadcrumbs }: LayoutProps) {
     return (
         <SidebarProvider>
             <AppSidebar />
-            <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center justify-between gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+            <SidebarInset className="relative overflow-hidden">
+                {/* Grid pattern background - only in main content, not sidebar */}
+                <GridPattern className="z-0" />
+                <header className="relative z-10 flex h-16 shrink-0 items-center justify-between gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
                     <div className="flex items-center gap-2 px-4">
                         <SidebarTrigger className="-ml-1" />
                         <Separator
@@ -51,10 +54,11 @@ export function Layout({ children, breadcrumbs }: LayoutProps) {
                         <ThemeToggle />
                     </div>
                 </header>
-                <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+                <div className="relative z-10 flex flex-1 flex-col gap-4 p-4 pt-0">
                     {children}
                 </div>
             </SidebarInset>
         </SidebarProvider>
     )
 }
+
