@@ -330,7 +330,9 @@ export class PivotrMailerStack extends cdk.Stack {
             logGroup: processFeedbackLogGroup,
             environment: { ...commonEnv },
         });
-        processFeedbackLambda.addEventSource(new SqsEventSource(feedbackQueue));
+        processFeedbackLambda.addEventSource(new SqsEventSource(feedbackQueue, {
+            reportBatchItemFailures: true,
+        }));
 
         const sendEmailLambda = new lambda.Function(this, 'SendEmailLambda', {
             functionName: 'pivotr-send-email',
@@ -347,7 +349,9 @@ export class PivotrMailerStack extends cdk.Stack {
                 SES_CONFIGURATION_SET: 'PivotrConfigSet',
             },
         });
-        sendEmailLambda.addEventSource(new SqsEventSource(sendingQueue));
+        sendEmailLambda.addEventSource(new SqsEventSource(sendingQueue, {
+            reportBatchItemFailures: true,
+        }));
 
         const verifyEmailLambda = new lambda.Function(this, 'VerifyEmailLambda', {
             functionName: 'pivotr-verify-email',
@@ -363,7 +367,9 @@ export class PivotrMailerStack extends cdk.Stack {
                 // MYEMAILVERIFIER_API_KEY: secret.secretValue, // Todo: Secrets Manager
             },
         });
-        verifyEmailLambda.addEventSource(new SqsEventSource(verificationQueue));
+        verifyEmailLambda.addEventSource(new SqsEventSource(verificationQueue, {
+            reportBatchItemFailures: true,
+        }));
 
         const leadImportLambda = new lambda.Function(this, 'LeadImportLambda', {
             functionName: 'pivotr-lead-import',
@@ -479,11 +485,14 @@ export class PivotrMailerStack extends cdk.Stack {
         // =====================================================
         // 4. API GATEWAY
         // =====================================================
+        // Context or Default CORS
+        const corsAllowedOrigins = this.node.tryGetContext('corsAllowedOrigins') || ['http://localhost:5173', 'http://localhost:3000'];
+
         const api = new apigateway.RestApi(this, 'PivotrMailerApi', {
             restApiName: 'Pivotr Mailer API',
             deployOptions: { stageName: 'v1' },
             defaultCorsPreflightOptions: {
-                allowOrigins: apigateway.Cors.ALL_ORIGINS,
+                allowOrigins: corsAllowedOrigins,
                 allowMethods: apigateway.Cors.ALL_METHODS,
             },
         });
@@ -574,15 +583,21 @@ export class PivotrMailerStack extends cdk.Stack {
         // API Campaigns needs SES for test emails and SQS for bulk verification
         apiCampaignsLambda.addToRolePolicy(new iam.PolicyStatement({
             actions: ['ses:SendEmail', 'ses:SendRawEmail'],
-            resources: ['*'],
+            resources: [
+                `arn:aws:ses:${this.region}:${this.account}:identity/*`,
+                `arn:aws:ses:${this.region}:${this.account}:configuration-set/PivotrConfigSet`
+            ],
         }));
         leadsTable.grantReadWriteData(apiCampaignsLambda);
         verificationQueue.grantSendMessages(apiCampaignsLambda);
 
-        // Grant SES permissions
+        // Grant SES permissions (Scoped)
         sendEmailLambda.addToRolePolicy(new iam.PolicyStatement({
             actions: ['ses:SendEmail', 'ses:SendRawEmail'],
-            resources: ['*'], // Restrict to verified identities in prod
+            resources: [
+                `arn:aws:ses:${this.region}:${this.account}:identity/*`,
+                `arn:aws:ses:${this.region}:${this.account}:configuration-set/PivotrConfigSet`
+            ],
         }));
 
         // Grant S3 audit log write permissions to all Lambdas that generate logs

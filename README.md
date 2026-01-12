@@ -17,6 +17,12 @@ Event-driven B2B email automation platform with Gaussian scheduling and reputati
 
 ---
 
+## Reliability & Guarantees
+
+This system enforces **effectively-once** email delivery on top of at-least-once infrastructure. It prioritizes preventing duplicate emails over guaranteed liveness in edge cases.
+
+For the normative contract and failure mode analysis, see [System Guarantees](docs/SYSTEM_GUARANTEES.md).
+
 ## Architecture Overview
 
 ```

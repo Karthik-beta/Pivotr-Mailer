@@ -77,24 +77,26 @@ export const handler: SQSHandler = async (event: SQSEvent) => {
         errors: 0,
     };
 
+    const batchItemFailures: { itemIdentifier: string }[] = [];
+
     for (const record of event.Records) {
         try {
             await processRecord(record, results);
             results.processed++;
         } catch (error) {
-            // Log but don't throw - prevents message from being retried infinitely
+            // Log but return to SQS for retry
             logger.error('Error processing record', {
                 messageId: record.messageId,
                 error: error instanceof Error ? error.message : String(error),
             });
             results.errors++;
+            batchItemFailures.push({ itemIdentifier: record.messageId });
         }
     }
 
     logger.info('Batch processing complete', results);
 
-    // Note: We don't throw on partial failures to prevent infinite retries.
-    // Failed messages will be logged and should be investigated via CloudWatch.
+    return { batchItemFailures };
 };
 
 /**

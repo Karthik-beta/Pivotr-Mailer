@@ -39,6 +39,7 @@ import {
 import {
 	SQSClient,
 	SendMessageBatchCommand,
+	GetQueueAttributesCommand,
 	type SendMessageBatchRequestEntry,
 } from "@aws-sdk/client-sqs";
 import {
@@ -82,6 +83,7 @@ const VERIFICATION_QUEUE_URL = process.env.SQS_VERIFICATION_QUEUE_URL || "";
 // Processing constants
 const SLOT_MINUTES = 1; // How often this Lambda runs
 const MAX_BATCH_PER_CAMPAIGN = 100; // Safety limit per invocation
+const MAX_QUEUE_DEPTH = 2000; // Backpressure limit
 
 // =============================================================================
 // Types
@@ -126,6 +128,24 @@ interface SendQueueMessage {
 export const handler: ScheduledHandler = async (event: ScheduledEvent) => {
 	const startTime = Date.now();
 	logger.info("Campaign processor started", { eventTime: event.time });
+
+	// 0. Check Backpressure
+	try {
+		if (SENDING_QUEUE_URL) {
+			const queueAttributes = await sqsClient.send(new GetQueueAttributesCommand({
+				QueueUrl: SENDING_QUEUE_URL,
+				AttributeNames: ['ApproximateNumberOfMessages']
+			}));
+			const pending = parseInt(queueAttributes.Attributes?.ApproximateNumberOfMessages || '0');
+			
+			if (pending > MAX_QUEUE_DEPTH) {
+				logger.warn('Backpressure active: Sending queue full, skipping run', { pending, limit: MAX_QUEUE_DEPTH });
+				return;
+			}
+		}
+	} catch (error) {
+		logger.warn('Failed to check queue depth, proceeding anyway', { error });
+	}
 
 	const results: ProcessingResult[] = [];
 
