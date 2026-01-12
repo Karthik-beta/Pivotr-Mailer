@@ -56,6 +56,38 @@ Parameters:
     Default: "us-east-1"
     Description: AWS region for LocalStack
 
+  # CORS Configuration
+  CorsAllowedOrigins:
+    Type: String
+    Default: "http://localhost:5173,http://localhost:3000"
+    Description: Comma-separated list of allowed CORS origins
+
+  # Throttling Configuration (Conservative for 2 users)
+  ThrottlingBurstLimit:
+    Type: Number
+    Default: 5
+    Description: API Gateway throttling burst limit (requests per second)
+
+  ThrottlingRateLimit:
+    Type: Number
+    Default: 2
+    Description: API Gateway throttling steady-state rate limit (requests per second)
+
+  # Usage Plan Configuration (Conservative for 2 users)
+  UsagePlanQuotaLimit:
+    Type: Number
+    Default: 1000
+    Description: Monthly quota limit for API usage (conservative for 2 users)
+
+  UsagePlanQuotaPeriod:
+    Type: String
+    Default: "MONTH"
+    AllowedValues:
+      - DAY
+      - WEEK
+      - MONTH
+    Description: Quota period for API usage
+
   LeadsTableName:
     Type: String
     Default: "pivotr-leads"
@@ -118,10 +150,249 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: v1
+      Description: Pivotr Mailer REST API
+
+      # Throttling Configuration (10 RPS burst, 5 RPS steady-state)
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          ThrottlingBurstLimit: !Ref ThrottlingBurstLimit
+          ThrottlingRateLimit: !Ref ThrottlingRateLimit
+          LoggingLevel: INFO
+          DataTraceEnabled: false
+          MetricsEnabled: true
+
+      # CORS Configuration - Stricter than wildcard
       Cors:
-        AllowMethods: "'*'"
-        AllowHeaders: "'Content-Type,Authorization'"
-        AllowOrigin: "'*'"
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: !Sub "'${CorsAllowedOrigins}'"
+        MaxAge: "'86400'"
+
+      # Request Models for Validation
+      Models:
+        LeadModel:
+          type: object
+          required:
+            - email
+          properties:
+            email:
+              type: string
+              format: email
+              maxLength: 254
+            firstName:
+              type: string
+              maxLength: 100
+            lastName:
+              type: string
+              maxLength: 100
+            company:
+              type: string
+              maxLength: 200
+            status:
+              type: string
+              enum:
+                - pending
+                - verified
+                - invalid
+                - bounced
+
+        CampaignModel:
+          type: object
+          required:
+            - name
+            - subject
+            - body
+          properties:
+            name:
+              type: string
+              minLength: 1
+              maxLength: 200
+            subject:
+              type: string
+              minLength: 1
+              maxLength: 500
+            body:
+              type: string
+              minLength: 1
+              maxLength: 50000
+            status:
+              type: string
+              enum:
+                - draft
+                - scheduled
+                - running
+                - paused
+                - completed
+                - cancelled
+
+        AssignLeadsModel:
+          type: object
+          required:
+            - leadIds
+          properties:
+            leadIds:
+              type: array
+              items:
+                type: string
+              minItems: 1
+              maxItems: 100
+
+        StatusUpdateModel:
+          type: object
+          required:
+            - status
+          properties:
+            status:
+              type: string
+              enum:
+                - draft
+                - scheduled
+                - running
+                - paused
+                - completed
+                - cancelled
+
+        TestEmailModel:
+          type: object
+          required:
+            - recipientEmail
+          properties:
+            recipientEmail:
+              type: string
+              format: email
+
+        ImportLeadsModel:
+          type: object
+          required:
+            - leads
+          properties:
+            leads:
+              type: array
+              items:
+                type: object
+                required:
+                  - email
+                properties:
+                  email:
+                    type: string
+                    format: email
+              minItems: 1
+              maxItems: 500
+
+        ErrorModel:
+          type: object
+          properties:
+            message:
+              type: string
+            errorCode:
+              type: string
+            requestId:
+              type: string
+
+      # Gateway Responses - Standardized Error Responses
+      GatewayResponses:
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigins}'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key'"
+          ResponseTemplates:
+            application/json: '{"message": "$context.error.messageString", "errorCode": "CLIENT_ERROR", "requestId": "$context.requestId"}'
+
+        DEFAULT_5XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigins}'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key'"
+          ResponseTemplates:
+            application/json: '{"message": "Internal server error", "errorCode": "SERVER_ERROR", "requestId": "$context.requestId"}'
+
+        BAD_REQUEST_BODY:
+          StatusCode: 400
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigins}'"
+          ResponseTemplates:
+            application/json: '{"message": "Invalid request body", "errorCode": "VALIDATION_ERROR", "requestId": "$context.requestId"}'
+
+        THROTTLED:
+          StatusCode: 429
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigins}'"
+              Retry-After: "'60'"
+          ResponseTemplates:
+            application/json: '{"message": "Rate limit exceeded. Please retry after 60 seconds.", "errorCode": "RATE_LIMIT_EXCEEDED", "requestId": "$context.requestId"}'
+
+        QUOTA_EXCEEDED:
+          StatusCode: 429
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigins}'"
+          ResponseTemplates:
+            application/json: '{"message": "API quota exceeded", "errorCode": "QUOTA_EXCEEDED", "requestId": "$context.requestId"}'
+
+        MISSING_AUTHENTICATION_TOKEN:
+          StatusCode: 403
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigins}'"
+          ResponseTemplates:
+            application/json: '{"message": "Missing or invalid API key", "errorCode": "MISSING_API_KEY", "requestId": "$context.requestId"}'
+
+        INVALID_API_KEY:
+          StatusCode: 403
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigins}'"
+          ResponseTemplates:
+            application/json: '{"message": "Invalid API key", "errorCode": "INVALID_API_KEY", "requestId": "$context.requestId"}'
+
+        RESOURCE_NOT_FOUND:
+          StatusCode: 404
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigins}'"
+          ResponseTemplates:
+            application/json: '{"message": "Resource not found", "errorCode": "NOT_FOUND", "requestId": "$context.requestId"}'
+
+  # ===========================================================================
+  # Usage Plan and API Key
+  # ===========================================================================
+  PivotrApiUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn: PivotrMailerApiv1Stage
+    Properties:
+      UsagePlanName: PivotrMailerUsagePlan
+      Description: Usage plan for Pivotr Mailer API
+      ApiStages:
+        - ApiId: !Ref PivotrMailerApi
+          Stage: v1
+      Quota:
+        Limit: !Ref UsagePlanQuotaLimit
+        Period: !Ref UsagePlanQuotaPeriod
+      Throttle:
+        BurstLimit: !Ref ThrottlingBurstLimit
+        RateLimit: !Ref ThrottlingRateLimit
+
+  PivotrApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    DependsOn: PivotrMailerApiv1Stage
+    Properties:
+      Name: PivotrMailerApiKey
+      Description: API Key for Pivotr Mailer
+      Enabled: true
+      StageKeys:
+        - RestApiId: !Ref PivotrMailerApi
+          StageName: v1
+
+  PivotrApiUsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref PivotrApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref PivotrApiUsagePlan
 
   # ===========================================================================
   # API Lambda Functions
@@ -135,6 +406,7 @@ Resources:
       CodeUri: lambda/api/leads/dist/
       Timeout: 10
       MemorySize: 256
+      ReservedConcurrentExecutions: 2
       Events:
         GetLeads:
           Type: Api
@@ -148,24 +420,41 @@ Resources:
             RestApiId: !Ref PivotrMailerApi
             Path: /leads
             Method: POST
+            RequestModel:
+              Model: LeadModel
+              Required: true
+              ValidateBody: true
         GetLead:
           Type: Api
           Properties:
             RestApiId: !Ref PivotrMailerApi
             Path: /leads/{id}
             Method: GET
+            RequestParameters:
+              - method.request.path.id:
+                  Required: true
         UpdateLead:
           Type: Api
           Properties:
             RestApiId: !Ref PivotrMailerApi
             Path: /leads/{id}
             Method: PUT
+            RequestModel:
+              Model: LeadModel
+              Required: true
+              ValidateBody: true
+            RequestParameters:
+              - method.request.path.id:
+                  Required: true
         DeleteLead:
           Type: Api
           Properties:
             RestApiId: !Ref PivotrMailerApi
             Path: /leads/{id}
             Method: DELETE
+            RequestParameters:
+              - method.request.path.id:
+                  Required: true
 
   ApiCampaignsLambda:
     Type: AWS::Serverless::Function
@@ -175,6 +464,7 @@ Resources:
       CodeUri: lambda/api/campaigns/dist/
       Timeout: 10
       MemorySize: 256
+      ReservedConcurrentExecutions: 2
       Environment:
         Variables:
           SQS_VERIFICATION_QUEUE_URL: !Ref VerificationQueueUrl
@@ -193,6 +483,10 @@ Resources:
             RestApiId: !Ref PivotrMailerApi
             Path: /campaigns
             Method: POST
+            RequestModel:
+              Model: CampaignModel
+              Required: true
+              ValidateBody: true
         PreviewLeads:
           Type: Api
           Properties:
@@ -205,48 +499,88 @@ Resources:
             RestApiId: !Ref PivotrMailerApi
             Path: /campaigns/{id}
             Method: GET
+            RequestParameters:
+              - method.request.path.id:
+                  Required: true
         UpdateCampaign:
           Type: Api
           Properties:
             RestApiId: !Ref PivotrMailerApi
             Path: /campaigns/{id}
             Method: PUT
+            RequestModel:
+              Model: CampaignModel
+              Required: true
+              ValidateBody: true
+            RequestParameters:
+              - method.request.path.id:
+                  Required: true
         DeleteCampaign:
           Type: Api
           Properties:
             RestApiId: !Ref PivotrMailerApi
             Path: /campaigns/{id}
             Method: DELETE
+            RequestParameters:
+              - method.request.path.id:
+                  Required: true
         GetCampaignLeads:
           Type: Api
           Properties:
             RestApiId: !Ref PivotrMailerApi
             Path: /campaigns/{id}/leads
             Method: GET
+            RequestParameters:
+              - method.request.path.id:
+                  Required: true
         AssignLeads:
           Type: Api
           Properties:
             RestApiId: !Ref PivotrMailerApi
             Path: /campaigns/{id}/assign-leads
             Method: POST
+            RequestModel:
+              Model: AssignLeadsModel
+              Required: true
+              ValidateBody: true
+            RequestParameters:
+              - method.request.path.id:
+                  Required: true
         UpdateStatus:
           Type: Api
           Properties:
             RestApiId: !Ref PivotrMailerApi
             Path: /campaigns/{id}/status
             Method: PUT
+            RequestModel:
+              Model: StatusUpdateModel
+              Required: true
+              ValidateBody: true
+            RequestParameters:
+              - method.request.path.id:
+                  Required: true
         TestEmail:
           Type: Api
           Properties:
             RestApiId: !Ref PivotrMailerApi
             Path: /campaigns/{id}/test-email
             Method: POST
+            RequestModel:
+              Model: TestEmailModel
+              Required: true
+              ValidateBody: true
+            RequestParameters:
+              - method.request.path.id:
+                  Required: true
         GetCampaignMetrics:
           Type: Api
           Properties:
             RestApiId: !Ref PivotrMailerApi
             Path: /campaigns/{id}/metrics
             Method: GET
+            RequestParameters:
+              - method.request.path.id:
+                  Required: true
 
   ApiMetricsLambda:
     Type: AWS::Serverless::Function
@@ -256,6 +590,7 @@ Resources:
       CodeUri: lambda/api/metrics/dist/
       Timeout: 10
       MemorySize: 256
+      ReservedConcurrentExecutions: 2
       Events:
         GetMetrics:
           Type: Api
@@ -272,6 +607,7 @@ Resources:
       CodeUri: lambda/api/leads-export/dist/
       Timeout: 20
       MemorySize: 1024
+      ReservedConcurrentExecutions: 1
       Events:
         ExportLeads:
           Type: Api
@@ -294,6 +630,7 @@ Resources:
       CodeUri: lambda/lead-import/dist/
       Timeout: 60
       MemorySize: 512
+      ReservedConcurrentExecutions: 1
       Events:
         ImportLeads:
           Type: Api
@@ -301,6 +638,10 @@ Resources:
             RestApiId: !Ref PivotrMailerApi
             Path: /leads/import
             Method: POST
+            RequestModel:
+              Model: ImportLeadsModel
+              Required: true
+              ValidateBody: true
 
   # ===========================================================================
   # SQS-Triggered Lambda Functions
@@ -314,6 +655,7 @@ Resources:
       CodeUri: lambda/send-email/dist/
       Timeout: 30
       MemorySize: 256
+      ReservedConcurrentExecutions: 2
       Environment:
         Variables:
           SES_FROM_EMAIL: noreply@pivotr.local
@@ -329,6 +671,7 @@ Resources:
       CodeUri: lambda/verify-email/dist/
       Timeout: 15
       MemorySize: 256
+      ReservedConcurrentExecutions: 2
 
   ProcessFeedbackLambda:
     Type: AWS::Serverless::Function
@@ -338,6 +681,7 @@ Resources:
       CodeUri: lambda/process-feedback/dist/
       Timeout: 10
       MemorySize: 128
+      ReservedConcurrentExecutions: 2
 
   # ===========================================================================
   # Campaign Orchestration Lambda Functions
@@ -351,6 +695,7 @@ Resources:
       CodeUri: lambda/campaign-processor/dist/
       Timeout: 55
       MemorySize: 256
+      ReservedConcurrentExecutions: 1
       Environment:
         Variables:
           SQS_VERIFICATION_QUEUE_URL: !Ref VerificationQueueUrl
@@ -366,6 +711,7 @@ Resources:
       CodeUri: lambda/bulk-verify/dist/
       Timeout: 30
       MemorySize: 256
+      ReservedConcurrentExecutions: 1
       Environment:
         Variables:
           SQS_SENDING_QUEUE_URL: !Ref SendingQueueUrl
@@ -377,13 +723,117 @@ Resources:
             Path: /campaigns/{id}/verify
             Method: POST
 
+  # ===========================================================================
+  # CloudWatch Alarms - Cost & Usage Monitoring (Conservative for 2 users)
+  # ===========================================================================
+
+  # Alert when total API invocations exceed expected for 2 users
+  HighApiInvocationsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: pivotr-high-api-invocations
+      AlarmDescription: Alert when API invocations exceed expected threshold for 2 users (500/day)
+      Namespace: AWS/ApiGateway
+      MetricName: Count
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref PivotrMailerApi
+      Statistic: Sum
+      Period: 86400
+      EvaluationPeriods: 1
+      Threshold: 500
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  # Alert on Lambda errors
+  LambdaErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: pivotr-lambda-errors
+      AlarmDescription: Alert when Lambda errors exceed threshold
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Statistic: Sum
+      Period: 3600
+      EvaluationPeriods: 1
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  # Alert on API Gateway 4xx errors (client errors, potential abuse)
+  Api4xxErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: pivotr-api-4xx-errors
+      AlarmDescription: Alert when 4xx errors exceed threshold (potential abuse or misconfiguration)
+      Namespace: AWS/ApiGateway
+      MetricName: 4XXError
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref PivotrMailerApi
+      Statistic: Sum
+      Period: 3600
+      EvaluationPeriods: 1
+      Threshold: 50
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  # Alert on API Gateway 5xx errors (server errors)
+  Api5xxErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: pivotr-api-5xx-errors
+      AlarmDescription: Alert when 5xx errors exceed threshold (server issues)
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref PivotrMailerApi
+      Statistic: Sum
+      Period: 3600
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  # Alert on throttled requests (hitting rate limits)
+  ThrottledRequestsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: pivotr-throttled-requests
+      AlarmDescription: Alert when requests are being throttled
+      Namespace: AWS/Lambda
+      MetricName: Throttles
+      Statistic: Sum
+      Period: 3600
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
 # =============================================================================
 # OUTPUTS
 # =============================================================================
 Outputs:
   ApiEndpoint:
     Description: API Gateway endpoint URL
+    Value: !Sub "https://${PivotrMailerApi}.execute-api.${AWS::Region}.amazonaws.com/${PivotrMailerApi.Stage}"
+
+  ApiEndpointLocal:
+    Description: API Gateway local endpoint URL (SAM local)
     Value: !Sub "http://localhost:3000/${PivotrMailerApi.Stage}"
+
+  ApiId:
+    Description: API Gateway REST API ID
+    Value: !Ref PivotrMailerApi
+
+  ApiKeyId:
+    Description: API Key ID (retrieve value from AWS Console or CLI)
+    Value: !Ref PivotrApiKey
+
+  UsagePlanId:
+    Description: Usage Plan ID
+    Value: !Ref PivotrApiUsagePlan
 
   SendEmailLambdaArn:
     Description: Send Email Lambda ARN
