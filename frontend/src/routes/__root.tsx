@@ -2,7 +2,7 @@ import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import DOMPurify from "dompurify";
+
 import { ThemeProvider } from "../components/theme-provider";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import StoreDevtools from "../lib/demo-store-devtools";
@@ -72,7 +72,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<HeadContent />
 				<script
 					dangerouslySetInnerHTML={{
-						__html: DOMPurify.sanitize(themeScript),
+						__html: themeScript,
 					}}
 				/>
 			</head>

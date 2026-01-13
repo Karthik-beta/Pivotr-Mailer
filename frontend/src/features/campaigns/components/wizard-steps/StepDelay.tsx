@@ -2,6 +2,7 @@
  * StepDelay Component
  *
  * Step 4 of the campaign wizard - Delay configuration with visual Gaussian curve.
+ * Uses TanStack Form for declarative field binding.
  */
 
 import { useMemo } from "react";
@@ -9,13 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import type { CampaignFormData } from "../CampaignWizard";
-
-interface StepDelayProps {
-	data: CampaignFormData;
-	onChange: (data: Partial<CampaignFormData>) => void;
-	errors: Record<string, string>;
-}
+import type { StepProps } from "../../types/formTypes";
 
 /**
  * Format milliseconds to human-readable string
@@ -52,27 +47,18 @@ function generateGaussianBars(minMs: number, maxMs: number, barCount: number = 2
 	return bars;
 }
 
-export function StepDelay({ data, onChange, errors }: StepDelayProps) {
-	const updateDelayConfig = (
-		field: keyof CampaignFormData["delayConfig"],
-		value: number | boolean
-	) => {
-		onChange({
-			delayConfig: {
-				...data.delayConfig,
-				[field]: value,
-			},
-		});
-	};
+export function StepDelay({ form }: StepProps) {
+	// Subscribe to delay config values for display and visualization
+	const delayConfig = form.useStore((state) => state.values.delayConfig);
 
 	const gaussianBars = useMemo(
-		() => generateGaussianBars(data.delayConfig.minDelayMs, data.delayConfig.maxDelayMs),
-		[data.delayConfig.minDelayMs, data.delayConfig.maxDelayMs]
+		() => generateGaussianBars(delayConfig.minDelayMs, delayConfig.maxDelayMs),
+		[delayConfig.minDelayMs, delayConfig.maxDelayMs]
 	);
 
 	// Convert ms to seconds for slider
-	const minSeconds = data.delayConfig.minDelayMs / 1000;
-	const maxSeconds = data.delayConfig.maxDelayMs / 1000;
+	const minSeconds = delayConfig.minDelayMs / 1000;
+	const maxSeconds = delayConfig.maxDelayMs / 1000;
 
 	return (
 		<div className="space-y-6">
@@ -89,16 +75,25 @@ export function StepDelay({ data, onChange, errors }: StepDelayProps) {
 						<div className="flex justify-between">
 							<Label className="font-mono text-sm">Min Delay</Label>
 							<span className="font-mono text-sm font-bold">
-								{formatDelay(data.delayConfig.minDelayMs)}
+								{formatDelay(delayConfig.minDelayMs)}
 							</span>
 						</div>
-						<Slider
-							value={[minSeconds]}
-							onValueChange={([v]) => updateDelayConfig("minDelayMs", v * 1000)}
-							min={5}
-							max={300}
-							step={5}
-						/>
+						<form.Field name="delayConfig.minDelayMs">
+							{(field) => (
+								<>
+									<Slider
+										value={[minSeconds]}
+										onValueChange={([v]) => field.handleChange(v * 1000)}
+										min={5}
+										max={300}
+										step={5}
+									/>
+									{field.state.meta.errors.length > 0 && (
+										<p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
+									)}
+								</>
+							)}
+						</form.Field>
 						<p className="text-xs text-muted-foreground">
 							Minimum time between consecutive emails (5s - 5min)
 						</p>
@@ -109,20 +104,29 @@ export function StepDelay({ data, onChange, errors }: StepDelayProps) {
 						<div className="flex justify-between">
 							<Label className="font-mono text-sm">Max Delay</Label>
 							<span className="font-mono text-sm font-bold">
-								{formatDelay(data.delayConfig.maxDelayMs)}
+								{formatDelay(delayConfig.maxDelayMs)}
 							</span>
 						</div>
-						<Slider
-							value={[maxSeconds]}
-							onValueChange={([v]) => {
-								// Ensure max is always >= min
-								const newMax = Math.max(v * 1000, data.delayConfig.minDelayMs);
-								updateDelayConfig("maxDelayMs", newMax);
-							}}
-							min={10}
-							max={600}
-							step={5}
-						/>
+						<form.Field name="delayConfig.maxDelayMs">
+							{(field) => (
+								<>
+									<Slider
+										value={[maxSeconds]}
+										onValueChange={([v]) => {
+											// Ensure max is always >= min
+											const newMax = Math.max(v * 1000, delayConfig.minDelayMs);
+											field.handleChange(newMax);
+										}}
+										min={10}
+										max={600}
+										step={5}
+									/>
+									{field.state.meta.errors.length > 0 && (
+										<p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
+									)}
+								</>
+							)}
+						</form.Field>
 						<p className="text-xs text-muted-foreground">
 							Maximum time between consecutive emails (10s - 10min)
 						</p>
@@ -140,11 +144,15 @@ export function StepDelay({ data, onChange, errors }: StepDelayProps) {
 						<Label htmlFor="gaussianEnabled" className="text-sm">
 							Enabled
 						</Label>
-						<Switch
-							id="gaussianEnabled"
-							checked={data.delayConfig.gaussianEnabled}
-							onCheckedChange={(checked) => updateDelayConfig("gaussianEnabled", checked)}
-						/>
+						<form.Field name="delayConfig.gaussianEnabled">
+							{(field) => (
+								<Switch
+									id="gaussianEnabled"
+									checked={field.state.value}
+									onCheckedChange={field.handleChange}
+								/>
+							)}
+						</form.Field>
 					</div>
 				</div>
 				<div className="h-32 bg-muted rounded-lg flex items-end justify-center gap-1 p-4">
@@ -157,26 +165,18 @@ export function StepDelay({ data, onChange, errors }: StepDelayProps) {
 					))}
 				</div>
 				<div className="flex justify-between text-xs text-muted-foreground font-mono">
-					<span>{formatDelay(data.delayConfig.minDelayMs)}</span>
+					<span>{formatDelay(delayConfig.minDelayMs)}</span>
 					<span className="text-center">
-						Avg: {formatDelay((data.delayConfig.minDelayMs + data.delayConfig.maxDelayMs) / 2)}
+						Avg: {formatDelay((delayConfig.minDelayMs + delayConfig.maxDelayMs) / 2)}
 					</span>
-					<span>{formatDelay(data.delayConfig.maxDelayMs)}</span>
+					<span>{formatDelay(delayConfig.maxDelayMs)}</span>
 				</div>
 				<p className="text-xs text-muted-foreground text-center">
-					{data.delayConfig.gaussianEnabled
+					{delayConfig.gaussianEnabled
 						? "Most emails will be sent with delays near the center of this range"
 						: "Delays will be uniformly random between min and max"}
 				</p>
 			</div>
-
-			{/* Validation errors */}
-			{errors["delayConfig.minDelayMs"] && (
-				<p className="text-sm text-destructive">{errors["delayConfig.minDelayMs"]}</p>
-			)}
-			{errors["delayConfig.maxDelayMs"] && (
-				<p className="text-sm text-destructive">{errors["delayConfig.maxDelayMs"]}</p>
-			)}
 		</div>
 	);
 }

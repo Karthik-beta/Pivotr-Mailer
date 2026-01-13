@@ -12,17 +12,14 @@ export type LeadType = "HARDWARE" | "SOFTWARE" | "BOTH";
 
 // Working Hours Configuration
 export interface WorkingHours {
-	startHour: number;
-	startMinute: number;
-	endHour: number;
-	endMinute: number;
+	start: string; // HH:MM
+	end: string; // HH:MM
 }
 
 // Peak Hours Configuration
 export interface PeakHours {
-	startHour: number;
-	endHour: number;
-	peakMultiplier: number;
+	start: string; // HH:MM
+	end: string; // HH:MM
 }
 
 // Schedule Configuration
@@ -77,7 +74,7 @@ export interface EmailTemplate {
 // Lead Selection Criteria
 export interface LeadSelection {
 	leadTypes: LeadType[];
-	statuses: string[];
+	leadStatuses: string[];
 	maxLeads?: number;
 }
 
@@ -163,7 +160,7 @@ export interface TestEmailResponse {
 
 export interface LeadPreviewRequest {
 	leadTypes: LeadType[];
-	statuses: string[];
+	leadStatuses: string[];
 	maxLeads?: number;
 }
 
@@ -184,7 +181,7 @@ export interface LeadPreviewResponse {
 
 export interface AssignLeadsRequest {
 	leadTypes: LeadType[];
-	statuses: string[];
+	leadStatuses: string[];
 	maxLeads?: number;
 }
 

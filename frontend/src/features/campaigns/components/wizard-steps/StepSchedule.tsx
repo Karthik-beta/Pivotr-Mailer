@@ -2,6 +2,7 @@
  * StepSchedule Component
  *
  * Step 3 of the campaign wizard - Schedule configuration.
+ * Uses TanStack Form for declarative field binding.
  */
 
 import { Input } from "@/components/ui/input";
@@ -13,14 +14,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import type { CampaignFormData } from "../CampaignWizard";
+import type { StepProps } from "../../types/formTypes";
 import { DatePickerMultiple } from "../DatePickerMultiple";
-
-interface StepScheduleProps {
-	data: CampaignFormData;
-	onChange: (data: Partial<CampaignFormData>) => void;
-	errors: Record<string, string>;
-}
 
 // Generate time options in 30-minute increments
 function generateTimeOptions(): string[] {
@@ -50,53 +45,20 @@ const TIMEZONE_OPTIONS = [
 	{ value: "Australia/Sydney", label: "Sydney (AEST)" },
 ];
 
-export function StepSchedule({ data, onChange, errors }: StepScheduleProps) {
-	const updateSchedule = (field: string, value: unknown) => {
-		onChange({
-			schedule: {
-				...data.schedule,
-				[field]: value,
-			},
-		});
-	};
+// Convert hour:minute to time string
+const getTimeString = (hour: number, minute: number): string => {
+	return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+};
 
-	const updateWorkingHours = (
-		field: "startHour" | "startMinute" | "endHour" | "endMinute",
-		value: number
-	) => {
-		onChange({
-			schedule: {
-				...data.schedule,
-				workingHours: {
-					...data.schedule.workingHours,
-					[field]: value,
-				},
-			},
-		});
-	};
+// Parse time string to hour/minute
+const parseTimeString = (time: string): { hour: number; minute: number } => {
+	const [h, m] = time.split(":").map(Number);
+	return { hour: h, minute: m };
+};
 
-	const updatePeakHours = (field: "startHour" | "endHour", value: number) => {
-		onChange({
-			schedule: {
-				...data.schedule,
-				peakHours: {
-					...data.schedule.peakHours,
-					[field]: value,
-				},
-			},
-		});
-	};
-
-	// Convert hour:minute to time string
-	const getTimeString = (hour: number, minute: number): string => {
-		return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-	};
-
-	// Parse time string to hour/minute
-	const parseTimeString = (time: string): { hour: number; minute: number } => {
-		const [h, m] = time.split(":").map(Number);
-		return { hour: h, minute: m };
-	};
+export function StepSchedule({ form }: StepProps) {
+	// Subscribe to schedule values for display
+	const scheduleValues = form.useStore((state) => state.values.schedule);
 
 	return (
 		<div className="space-y-6">
@@ -112,13 +74,13 @@ export function StepSchedule({ data, onChange, errors }: StepScheduleProps) {
 						</Label>
 						<Select
 							value={getTimeString(
-								data.schedule.workingHours.startHour,
-								data.schedule.workingHours.startMinute
+								scheduleValues.workingHours.startHour,
+								scheduleValues.workingHours.startMinute
 							)}
 							onValueChange={(value) => {
 								const { hour, minute } = parseTimeString(value);
-								updateWorkingHours("startHour", hour);
-								updateWorkingHours("startMinute", minute);
+								form.setFieldValue("schedule.workingHours.startHour", hour);
+								form.setFieldValue("schedule.workingHours.startMinute", minute);
 							}}
 						>
 							<SelectTrigger id="workingStart">
@@ -139,13 +101,13 @@ export function StepSchedule({ data, onChange, errors }: StepScheduleProps) {
 						</Label>
 						<Select
 							value={getTimeString(
-								data.schedule.workingHours.endHour,
-								data.schedule.workingHours.endMinute
+								scheduleValues.workingHours.endHour,
+								scheduleValues.workingHours.endMinute
 							)}
 							onValueChange={(value) => {
 								const { hour, minute } = parseTimeString(value);
-								updateWorkingHours("endHour", hour);
-								updateWorkingHours("endMinute", minute);
+								form.setFieldValue("schedule.workingHours.endHour", hour);
+								form.setFieldValue("schedule.workingHours.endMinute", minute);
 							}}
 						>
 							<SelectTrigger id="workingEnd">
@@ -176,41 +138,49 @@ export function StepSchedule({ data, onChange, errors }: StepScheduleProps) {
 						<Label htmlFor="peakStart" className="text-sm">
 							Start Hour
 						</Label>
-						<Select
-							value={data.schedule.peakHours.startHour.toString()}
-							onValueChange={(value) => updatePeakHours("startHour", parseInt(value, 10))}
-						>
-							<SelectTrigger id="peakStart">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{Array.from({ length: 24 }, (_, i) => (
-									<SelectItem key={i} value={i.toString()}>
-										{i.toString().padStart(2, "0")}:00
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
+						<form.Field name="schedule.peakHours.startHour">
+							{(field) => (
+								<Select
+									value={field.state.value.toString()}
+									onValueChange={(value) => field.handleChange(parseInt(value, 10))}
+								>
+									<SelectTrigger id="peakStart">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{Array.from({ length: 24 }, (_, i) => (
+											<SelectItem key={i} value={i.toString()}>
+												{i.toString().padStart(2, "0")}:00
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							)}
+						</form.Field>
 					</div>
 					<div className="space-y-2">
 						<Label htmlFor="peakEnd" className="text-sm">
 							End Hour
 						</Label>
-						<Select
-							value={data.schedule.peakHours.endHour.toString()}
-							onValueChange={(value) => updatePeakHours("endHour", parseInt(value, 10))}
-						>
-							<SelectTrigger id="peakEnd">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{Array.from({ length: 24 }, (_, i) => (
-									<SelectItem key={i} value={i.toString()}>
-										{i.toString().padStart(2, "0")}:00
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
+						<form.Field name="schedule.peakHours.endHour">
+							{(field) => (
+								<Select
+									value={field.state.value.toString()}
+									onValueChange={(value) => field.handleChange(parseInt(value, 10))}
+								>
+									<SelectTrigger id="peakEnd">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{Array.from({ length: 24 }, (_, i) => (
+											<SelectItem key={i} value={i.toString()}>
+												{i.toString().padStart(2, "0")}:00
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							)}
+						</form.Field>
 					</div>
 				</div>
 				<p className="text-xs text-muted-foreground">
@@ -220,83 +190,106 @@ export function StepSchedule({ data, onChange, errors }: StepScheduleProps) {
 
 			{/* Timezone */}
 			<div className="space-y-2">
-				<Label
-					htmlFor="timezone"
-					className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
-				>
-					Timezone
-				</Label>
-				<Select
-					value={data.schedule.timezone}
-					onValueChange={(value) => updateSchedule("timezone", value)}
-				>
-					<SelectTrigger id="timezone">
-						<SelectValue />
-					</SelectTrigger>
-					<SelectContent>
-						{TIMEZONE_OPTIONS.map((tz) => (
-							<SelectItem key={tz.value} value={tz.value}>
-								{tz.label}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
+				<form.Field name="schedule.timezone">
+					{(field) => (
+						<>
+							<Label
+								htmlFor={field.name}
+								className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
+							>
+								Timezone
+							</Label>
+							<Select value={field.state.value} onValueChange={field.handleChange}>
+								<SelectTrigger id={field.name}>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{TIMEZONE_OPTIONS.map((tz) => (
+										<SelectItem key={tz.value} value={tz.value}>
+											{tz.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</>
+					)}
+				</form.Field>
 			</div>
 
 			{/* Scheduled Dates */}
 			<div className="space-y-2">
-				<Label className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
-					Scheduled Dates *
-				</Label>
-				<DatePickerMultiple
-					selectedDates={data.schedule.scheduledDates}
-					onDatesChange={(dates) => updateSchedule("scheduledDates", dates)}
-					minDate={new Date()}
-					maxDates={30}
-				/>
-				{errors["schedule.scheduledDates"] && (
-					<p className="text-sm text-destructive">{errors["schedule.scheduledDates"]}</p>
-				)}
-				<p className="text-xs text-muted-foreground">
-					Select the dates when the campaign should run. Business days recommended.
-				</p>
+				<form.Field name="schedule.scheduledDates">
+					{(field) => (
+						<>
+							<Label className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+								Scheduled Dates *
+							</Label>
+							<DatePickerMultiple
+								selectedDates={field.state.value}
+								onDatesChange={field.handleChange}
+								minDate={new Date()}
+								maxDates={30}
+							/>
+							{field.state.meta.errors.length > 0 && (
+								<p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
+							)}
+							<p className="text-xs text-muted-foreground">
+								Select the dates when the campaign should run. Business days recommended.
+							</p>
+						</>
+					)}
+				</form.Field>
 			</div>
 
 			{/* Volume Controls */}
 			<div className="grid grid-cols-2 gap-4">
 				<div className="space-y-2">
-					<Label
-						htmlFor="dailyLimit"
-						className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
-					>
-						Daily Limit
-					</Label>
-					<Input
-						id="dailyLimit"
-						type="number"
-						min={1}
-						max={10000}
-						value={data.schedule.dailyLimit}
-						onChange={(e) => updateSchedule("dailyLimit", parseInt(e.target.value, 10) || 500)}
-					/>
-					<p className="text-xs text-muted-foreground">Max emails per day</p>
+					<form.Field name="schedule.dailyLimit">
+						{(field) => (
+							<>
+								<Label
+									htmlFor={field.name}
+									className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
+								>
+									Daily Limit
+								</Label>
+								<Input
+									id={field.name}
+									type="number"
+									min={1}
+									max={10000}
+									value={field.state.value}
+									onChange={(e) => field.handleChange(parseInt(e.target.value, 10) || 500)}
+									onBlur={field.handleBlur}
+								/>
+								<p className="text-xs text-muted-foreground">Max emails per day</p>
+							</>
+						)}
+					</form.Field>
 				</div>
 				<div className="space-y-2">
-					<Label
-						htmlFor="batchSize"
-						className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
-					>
-						Batch Size
-					</Label>
-					<Input
-						id="batchSize"
-						type="number"
-						min={1}
-						max={100}
-						value={data.schedule.batchSize}
-						onChange={(e) => updateSchedule("batchSize", parseInt(e.target.value, 10) || 50)}
-					/>
-					<p className="text-xs text-muted-foreground">Emails per processing cycle</p>
+					<form.Field name="schedule.batchSize">
+						{(field) => (
+							<>
+								<Label
+									htmlFor={field.name}
+									className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
+								>
+									Batch Size
+								</Label>
+								<Input
+									id={field.name}
+									type="number"
+									min={1}
+									max={100}
+									value={field.state.value}
+									onChange={(e) => field.handleChange(parseInt(e.target.value, 10) || 50)}
+									onBlur={field.handleBlur}
+								/>
+								<p className="text-xs text-muted-foreground">Emails per processing cycle</p>
+							</>
+						)}
+					</form.Field>
 				</div>
 			</div>
 		</div>

@@ -2,12 +2,15 @@
  * CampaignWizard Component
  *
  * Multi-step wizard for creating and editing campaigns.
- * Reused for both /campaigns/new and /campaigns/$id/edit routes.
+ * Uses TanStack Form for declarative form state and validation.
+ * Uses TanStack Store for wizard step navigation.
  */
 
+import { useForm } from "@tanstack/react-form";
+import { useStore } from "@tanstack/react-store";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, RefreshCw, Save } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,8 +22,17 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { useCreateCampaign, usePreviewLeads, useUpdateCampaign } from "../hooks/useCampaigns";
-import type { Campaign, CreateCampaignRequest, LeadType, SignOffMedia } from "../types";
-import { validateCampaignStep } from "../utils/campaignValidation";
+import type { Campaign, CreateCampaignRequest } from "../types";
+import {
+	type CampaignFormData,
+	getDefaultFormValues,
+	stepSchemas,
+} from "../schemas/campaignSchema";
+import {
+	WIZARD_STEPS,
+	createWizardStore,
+	wizardActions,
+} from "../stores/wizardStore";
 import { StepIndicator } from "./StepIndicator";
 import { StepBasicInfo } from "./wizard-steps/StepBasicInfo";
 import { StepDelay } from "./wizard-steps/StepDelay";
@@ -29,113 +41,11 @@ import { StepReview } from "./wizard-steps/StepReview";
 import { StepSchedule } from "./wizard-steps/StepSchedule";
 import { StepTemplate } from "./wizard-steps/StepTemplate";
 
-// Wizard steps configuration
-const WIZARD_STEPS = [
-	{ id: "basic", title: "Basic Info" },
-	{ id: "template", title: "Template" },
-	{ id: "schedule", title: "Schedule" },
-	{ id: "delay", title: "Delay" },
-	{ id: "leads", title: "Leads" },
-	{ id: "review", title: "Review" },
-];
+// Re-export types for backwards compatibility
+export type { CampaignFormData } from "../schemas/campaignSchema";
 
-// Social link type
-interface SocialLink {
-	platform: "linkedin" | "twitter" | "website" | "email" | "phone";
-	url: string;
-	label?: string;
-}
-
-// Form data interface
-export interface CampaignFormData {
-	name: string;
-	description: string;
-	template: {
-		subject: string;
-		body: string;
-		senderName: string;
-		senderEmail: string;
-		ccEmail?: string;
-		signOff?: {
-			enabled: boolean;
-			content: string;
-			media?: SignOffMedia[];
-			socialLinks?: SocialLink[];
-		};
-	};
-	schedule: {
-		workingHours: {
-			startHour: number;
-			startMinute: number;
-			endHour: number;
-			endMinute: number;
-		};
-		peakHours: {
-			startHour: number;
-			endHour: number;
-			peakMultiplier: number;
-		};
-		timezone: string;
-		scheduledDates: Date[];
-		dailyLimit: number;
-		batchSize: number;
-	};
-	delayConfig: {
-		minDelayMs: number;
-		maxDelayMs: number;
-		gaussianEnabled: boolean;
-	};
-	leadSelection: {
-		leadTypes: LeadType[];
-		statuses: string[];
-		maxLeads?: number;
-	};
-}
-
-// Default form values
-const getDefaultFormData = (): CampaignFormData => ({
-	name: "",
-	description: "",
-	template: {
-		subject: "",
-		body: "",
-		senderName: "",
-		senderEmail: "",
-		ccEmail: "",
-		signOff: {
-			enabled: false,
-			content: "",
-			media: [],
-			socialLinks: [],
-		},
-	},
-	schedule: {
-		workingHours: {
-			startHour: 9,
-			startMinute: 0,
-			endHour: 18,
-			endMinute: 0,
-		},
-		peakHours: {
-			startHour: 10,
-			endHour: 14,
-			peakMultiplier: 1.5,
-		},
-		timezone: "Asia/Kolkata",
-		scheduledDates: [],
-		dailyLimit: 500,
-		batchSize: 50,
-	},
-	delayConfig: {
-		minDelayMs: 30000,
-		maxDelayMs: 180000,
-		gaussianEnabled: true,
-	},
-	leadSelection: {
-		leadTypes: [],
-		statuses: [],
-	},
-});
+// Helper to pad numbers
+const pad = (num: number) => num.toString().padStart(2, "0");
 
 // Convert Campaign to form data for editing
 const campaignToFormData = (campaign: Campaign): CampaignFormData => ({
@@ -155,15 +65,27 @@ const campaignToFormData = (campaign: Campaign): CampaignFormData => ({
 		},
 	},
 	schedule: {
-		workingHours: campaign.schedule.workingHours,
-		peakHours: campaign.schedule.peakHours,
+		workingHours: {
+			startHour: parseInt(campaign.schedule.workingHours.start.split(":")[0]),
+			startMinute: parseInt(campaign.schedule.workingHours.start.split(":")[1]),
+			endHour: parseInt(campaign.schedule.workingHours.end.split(":")[0]),
+			endMinute: parseInt(campaign.schedule.workingHours.end.split(":")[1]),
+		},
+		peakHours: {
+			startHour: parseInt(campaign.schedule.peakHours.start.split(":")[0]),
+			endHour: parseInt(campaign.schedule.peakHours.end.split(":")[0]),
+			peakMultiplier: 1.5,
+		},
 		timezone: campaign.schedule.timezone,
 		scheduledDates: campaign.schedule.scheduledDates.map((d) => new Date(d)),
 		dailyLimit: campaign.schedule.dailyLimit,
 		batchSize: campaign.schedule.batchSize,
 	},
 	delayConfig: campaign.delayConfig,
-	leadSelection: campaign.leadSelection,
+	leadSelection: {
+		...campaign.leadSelection,
+		leadStatuses: campaign.leadSelection.leadStatuses,
+	},
 });
 
 // Convert form data to API request
@@ -179,16 +101,35 @@ const formDataToRequest = (data: CampaignFormData): CreateCampaignRequest => ({
 		signOff: data.template.signOff?.enabled ? data.template.signOff : undefined,
 	},
 	schedule: {
-		workingHours: data.schedule.workingHours,
-		peakHours: data.schedule.peakHours,
+		workingHours: {
+			start: `${pad(data.schedule.workingHours.startHour)}:${pad(data.schedule.workingHours.startMinute)}`,
+			end: `${pad(data.schedule.workingHours.endHour)}:${pad(data.schedule.workingHours.endMinute)}`,
+		},
+		peakHours: {
+			start: `${pad(data.schedule.peakHours.startHour)}:00`,
+			end: `${pad(data.schedule.peakHours.endHour)}:00`,
+		},
 		timezone: data.schedule.timezone,
 		scheduledDates: data.schedule.scheduledDates.map((d) => d.toISOString().split("T")[0]),
 		dailyLimit: data.schedule.dailyLimit,
 		batchSize: data.schedule.batchSize,
 	},
 	delayConfig: data.delayConfig,
-	leadSelection: data.leadSelection,
+	leadSelection: {
+		...data.leadSelection,
+		leadStatuses: data.leadSelection.leadStatuses,
+	},
 });
+
+// Step validation schemas mapped by index
+const STEP_VALIDATORS = [
+	stepSchemas.basic,
+	stepSchemas.template,
+	stepSchemas.schedule,
+	stepSchemas.delayConfig,
+	stepSchemas.leadSelection,
+	null, // Review step has no validation
+] as const;
 
 interface CampaignWizardProps {
 	campaign?: Campaign;
@@ -201,93 +142,142 @@ export function CampaignWizard({ campaign, mode }: CampaignWizardProps) {
 	const updateMutation = useUpdateCampaign();
 	const previewMutation = usePreviewLeads();
 
-	const [currentStep, setCurrentStep] = useState(0);
-	const [formData, setFormData] = useState<CampaignFormData>(
-		campaign ? campaignToFormData(campaign) : getDefaultFormData()
-	);
-	const [errors, setErrors] = useState<Record<string, string>>({});
+	// Create wizard store for step navigation
+	const wizardStore = useMemo(() => createWizardStore(), []);
+	const currentStep = useStore(wizardStore, (state) => state.currentStep);
+	const isSubmitting = useStore(wizardStore, (state) => state.isSubmitting);
 
-	// Update form data
-	const handleChange = useCallback((data: Partial<CampaignFormData>) => {
-		setFormData((prev) => ({
-			...prev,
-			...data,
-		}));
-		// Clear errors for changed fields
-		const errorKeys = Object.keys(data);
-		setErrors((prev) => {
-			const newErrors = { ...prev };
-			errorKeys.forEach((key) => {
-				delete newErrors[key];
-			});
-			return newErrors;
-		});
-	}, []);
+	// Initialize TanStack Form
+	const form = useForm({
+		defaultValues: campaign ? campaignToFormData(campaign) : getDefaultFormValues(),
+		onSubmit: async ({ value }) => {
+			wizardActions.setSubmitting(wizardStore, true);
+			try {
+				const request = formDataToRequest(value);
 
-	// Validate current step
-	const validateStep = useCallback(
-		(step: number): boolean => {
-			const newErrors = validateCampaignStep(step, formData);
-			setErrors(newErrors);
-			return Object.keys(newErrors).length === 0;
+				if (mode === "create") {
+					const result = await createMutation.mutateAsync(request);
+					toast.success("Campaign created successfully!");
+					navigate({ to: "/campaigns/$id", params: { id: result.data.id } });
+				} else if (campaign) {
+					await updateMutation.mutateAsync({ id: campaign.id, data: request });
+					toast.success("Campaign updated successfully!");
+					navigate({ to: "/campaigns/$id", params: { id: campaign.id } });
+				}
+			} catch (error) {
+				toast.error(error instanceof Error ? error.message : "Failed to save campaign");
+			} finally {
+				wizardActions.setSubmitting(wizardStore, false);
+			}
 		},
-		[formData]
-	);
+	});
+
+	// Validate current step before navigation
+	const validateCurrentStep = async (): Promise<boolean> => {
+		const schema = STEP_VALIDATORS[currentStep];
+		if (!schema) return true; // Review step, no validation
+
+		const formValues = form.state.values;
+
+		// Get the relevant portion of form data for this step
+		let dataToValidate: unknown;
+		switch (currentStep) {
+			case 0:
+				dataToValidate = { name: formValues.name, description: formValues.description };
+				break;
+			case 1:
+				dataToValidate = formValues.template;
+				break;
+			case 2:
+				dataToValidate = formValues.schedule;
+				break;
+			case 3:
+				dataToValidate = formValues.delayConfig;
+				break;
+			case 4:
+				dataToValidate = formValues.leadSelection;
+				break;
+			default:
+				return true;
+		}
+
+		const result = schema.safeParse(dataToValidate);
+		if (!result.success) {
+			// Set field errors on the form
+			for (const issue of result.error.issues) {
+				const path = issue.path.join(".");
+				let fieldName: string;
+
+				// Map the path to the full field name
+				switch (currentStep) {
+					case 0:
+						fieldName = path;
+						break;
+					case 1:
+						fieldName = path ? `template.${path}` : "template";
+						break;
+					case 2:
+						fieldName = path ? `schedule.${path}` : "schedule";
+						break;
+					case 3:
+						fieldName = path ? `delayConfig.${path}` : "delayConfig";
+						break;
+					case 4:
+						fieldName = path ? `leadSelection.${path}` : "leadSelection";
+						break;
+					default:
+						fieldName = path;
+				}
+
+				form.setFieldMeta(fieldName as keyof CampaignFormData, (prev) => ({
+					...prev,
+					errors: [...(prev.errors || []), issue.message],
+					errorMap: { ...prev.errorMap, onChange: issue.message },
+				}));
+			}
+			return false;
+		}
+
+		return true;
+	};
 
 	// Navigation handlers
-	const handleNext = () => {
-		if (validateStep(currentStep)) {
-			setCurrentStep((prev) => Math.min(prev + 1, WIZARD_STEPS.length - 1));
+	const handleNext = async () => {
+		const isValid = await validateCurrentStep();
+		if (isValid) {
+			wizardActions.nextStep(wizardStore);
 		}
 	};
 
 	const handleBack = () => {
-		setCurrentStep((prev) => Math.max(prev - 1, 0));
+		wizardActions.prevStep(wizardStore);
 	};
 
-	// Submit handler
 	const handleSubmit = async () => {
-		if (!validateStep(currentStep)) {
-			return;
-		}
-
-		try {
-			const request = formDataToRequest(formData);
-
-			if (mode === "create") {
-				const result = await createMutation.mutateAsync(request);
-				toast.success("Campaign created successfully!");
-				navigate({ to: "/campaigns/$id", params: { id: result.data.id } });
-			} else if (campaign) {
-				await updateMutation.mutateAsync({ id: campaign.id, data: request });
-				toast.success("Campaign updated successfully!");
-				navigate({ to: "/campaigns/$id", params: { id: campaign.id } });
-			}
-		} catch (error) {
-			toast.error(error instanceof Error ? error.message : "Failed to save campaign");
+		const isValid = await validateCurrentStep();
+		if (isValid) {
+			form.handleSubmit();
 		}
 	};
 
 	// Get matching leads count for review step
 	const matchingLeadsCount = previewMutation.data?.data?.count ?? 0;
 
-	const isSubmitting = createMutation.isPending || updateMutation.isPending;
-
 	// Render current step content
 	const renderStepContent = () => {
 		switch (currentStep) {
 			case 0:
-				return <StepBasicInfo data={formData} onChange={handleChange} errors={errors} />;
+				return <StepBasicInfo form={form} />;
 			case 1:
-				return <StepTemplate data={formData} onChange={handleChange} errors={errors} />;
+				return <StepTemplate form={form} />;
 			case 2:
-				return <StepSchedule data={formData} onChange={handleChange} errors={errors} />;
+				return <StepSchedule form={form} />;
 			case 3:
-				return <StepDelay data={formData} onChange={handleChange} errors={errors} />;
+				return <StepDelay form={form} />;
 			case 4:
-				return <StepLeadSelection data={formData} onChange={handleChange} errors={errors} />;
+				return <StepLeadSelection form={form} />;
 			case 5:
-				return <StepReview data={formData} matchingLeadsCount={matchingLeadsCount} />;
+				return <StepReview form={form} matchingLeadsCount={matchingLeadsCount} />;
 			default:
 				return null;
 		}

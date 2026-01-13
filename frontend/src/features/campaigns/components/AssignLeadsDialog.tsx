@@ -63,7 +63,7 @@ export function AssignLeadsDialog({ open, onOpenChange, campaignId }: AssignLead
 			const timer = setTimeout(() => {
 				previewMutation.mutate({
 					leadTypes,
-					statuses: leadStatuses,
+					leadStatuses: leadStatuses,
 					maxLeads,
 				});
 			}, 300);
@@ -83,7 +83,7 @@ export function AssignLeadsDialog({ open, onOpenChange, campaignId }: AssignLead
 				id: campaignId,
 				data: {
 					leadTypes,
-					statuses: leadStatuses,
+					leadStatuses: leadStatuses,
 					maxLeads,
 				},
 			});

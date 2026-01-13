@@ -2,6 +2,7 @@
  * StepLeadSelection Component
  *
  * Step 5 of the campaign wizard - Lead selection criteria with preview.
+ * Uses TanStack Form for declarative field binding.
  */
 
 import { RefreshCw, Users } from "lucide-react";
@@ -12,13 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { usePreviewLeads } from "../../hooks/useCampaigns";
 import type { LeadType } from "../../types";
-import type { CampaignFormData } from "../CampaignWizard";
-
-interface StepLeadSelectionProps {
-	data: CampaignFormData;
-	onChange: (data: Partial<CampaignFormData>) => void;
-	errors: Record<string, string>;
-}
+import type { StepProps } from "../../types/formTypes";
 
 const LEAD_TYPES: { value: LeadType; label: string }[] = [
 	{ value: "HARDWARE", label: "Hardware" },
@@ -32,48 +27,43 @@ const LEAD_STATUSES = [
 	{ value: "RISKY", label: "Risky" },
 ];
 
-export function StepLeadSelection({ data, onChange, errors }: StepLeadSelectionProps) {
+export function StepLeadSelection({ form }: StepProps) {
 	const previewMutation = usePreviewLeads();
 
-	const toggleLeadType = (type: LeadType, checked: boolean) => {
-		const newTypes = checked
-			? [...data.leadSelection.leadTypes, type]
-			: data.leadSelection.leadTypes.filter((t) => t !== type);
+	// Subscribe to lead selection values for display
+	const leadSelection = form.useStore((state) => state.values.leadSelection);
 
-		onChange({
-			leadSelection: {
-				...data.leadSelection,
-				leadTypes: newTypes,
-			},
-		});
+	const toggleLeadType = (type: LeadType, checked: boolean) => {
+		const currentTypes = leadSelection.leadTypes;
+		const newTypes = checked
+			? [...currentTypes, type]
+			: currentTypes.filter((t) => t !== type);
+
+		form.setFieldValue("leadSelection.leadTypes", newTypes);
 	};
 
 	const toggleStatus = (status: string, checked: boolean) => {
+		const currentStatuses = leadSelection.statuses;
 		const newStatuses = checked
-			? [...data.leadSelection.statuses, status]
-			: data.leadSelection.statuses.filter((s) => s !== status);
+			? [...currentStatuses, status]
+			: currentStatuses.filter((s) => s !== status);
 
-		onChange({
-			leadSelection: {
-				...data.leadSelection,
-				statuses: newStatuses,
-			},
-		});
+		form.setFieldValue("leadSelection.statuses", newStatuses);
 	};
 
 	// Fetch preview count when selection changes
 	const refreshPreview = useCallback(() => {
-		if (data.leadSelection.leadTypes.length > 0 && data.leadSelection.statuses.length > 0) {
+		if (leadSelection.leadTypes.length > 0 && leadSelection.statuses.length > 0) {
 			previewMutation.mutate({
-				leadTypes: data.leadSelection.leadTypes,
-				statuses: data.leadSelection.statuses,
-				maxLeads: data.leadSelection.maxLeads,
+				leadTypes: leadSelection.leadTypes,
+				statuses: leadSelection.statuses,
+				maxLeads: leadSelection.maxLeads,
 			});
 		}
 	}, [
-		data.leadSelection.leadTypes,
-		data.leadSelection.statuses,
-		data.leadSelection.maxLeads,
+		leadSelection.leadTypes,
+		leadSelection.statuses,
+		leadSelection.maxLeads,
 		previewMutation,
 	]);
 
@@ -105,7 +95,7 @@ export function StepLeadSelection({ data, onChange, errors }: StepLeadSelectionP
 						<div key={value} className="flex items-center gap-2">
 							<Checkbox
 								id={`type-${value}`}
-								checked={data.leadSelection.leadTypes.includes(value)}
+								checked={leadSelection.leadTypes.includes(value)}
 								onCheckedChange={(checked) => toggleLeadType(value, checked as boolean)}
 							/>
 							<Label htmlFor={`type-${value}`} className="cursor-pointer">
@@ -114,9 +104,13 @@ export function StepLeadSelection({ data, onChange, errors }: StepLeadSelectionP
 						</div>
 					))}
 				</div>
-				{errors["leadSelection.leadTypes"] && (
-					<p className="text-sm text-destructive">{errors["leadSelection.leadTypes"]}</p>
-				)}
+				<form.Field name="leadSelection.leadTypes">
+					{(field) =>
+						field.state.meta.errors.length > 0 && (
+							<p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
+						)
+					}
+				</form.Field>
 			</div>
 
 			{/* Lead Statuses */}
@@ -129,7 +123,7 @@ export function StepLeadSelection({ data, onChange, errors }: StepLeadSelectionP
 						<div key={value} className="flex items-center gap-2">
 							<Checkbox
 								id={`status-${value}`}
-								checked={data.leadSelection.statuses.includes(value)}
+								checked={leadSelection.statuses.includes(value)}
 								onCheckedChange={(checked) => toggleStatus(value, checked as boolean)}
 							/>
 							<Label htmlFor={`status-${value}`} className="cursor-pointer">
@@ -138,9 +132,13 @@ export function StepLeadSelection({ data, onChange, errors }: StepLeadSelectionP
 						</div>
 					))}
 				</div>
-				{errors["leadSelection.statuses"] && (
-					<p className="text-sm text-destructive">{errors["leadSelection.statuses"]}</p>
-				)}
+				<form.Field name="leadSelection.statuses">
+					{(field) =>
+						field.state.meta.errors.length > 0 && (
+							<p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
+						)
+					}
+				</form.Field>
 			</div>
 
 			{/* Lead Preview */}
@@ -157,8 +155,8 @@ export function StepLeadSelection({ data, onChange, errors }: StepLeadSelectionP
 							<RefreshCw className="h-4 w-4 animate-spin" />
 							<span className="text-sm text-muted-foreground">Counting leads...</span>
 						</div>
-					) : data.leadSelection.leadTypes.length === 0 ||
-						data.leadSelection.statuses.length === 0 ? (
+					) : leadSelection.leadTypes.length === 0 ||
+						leadSelection.statuses.length === 0 ? (
 						<p className="text-sm text-muted-foreground">
 							Select at least one lead type and status to see matching leads
 						</p>
@@ -177,8 +175,8 @@ export function StepLeadSelection({ data, onChange, errors }: StepLeadSelectionP
 						onClick={refreshPreview}
 						disabled={
 							isLoading ||
-							data.leadSelection.leadTypes.length === 0 ||
-							data.leadSelection.statuses.length === 0
+							leadSelection.leadTypes.length === 0 ||
+							leadSelection.statuses.length === 0
 						}
 					>
 						<RefreshCw className={`h-3 w-3 mr-1 ${isLoading ? "animate-spin" : ""}`} />

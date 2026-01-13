@@ -2,16 +2,16 @@
  * StepReview Component
  *
  * Step 6 of the campaign wizard - Final review before creation.
+ * Uses TanStack Form for reading form state.
  */
 
 import { format } from "date-fns";
 import { AlertTriangle, Calendar, Clock, FileText, Mail, Users } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { CampaignFormData } from "../CampaignWizard";
+import type { StepProps } from "../../types/formTypes";
 
-interface StepReviewProps {
-	data: CampaignFormData;
+interface StepReviewProps extends StepProps {
 	matchingLeadsCount: number;
 }
 
@@ -31,7 +31,10 @@ function formatDelay(ms: number): string {
 	return `${minutes}m ${remainingSeconds}s`;
 }
 
-export function StepReview({ data, matchingLeadsCount }: StepReviewProps) {
+export function StepReview({ form, matchingLeadsCount }: StepReviewProps) {
+	// Subscribe to all form values for display
+	const data = form.useStore((state) => state.values);
+
 	// Generate validation warnings
 	const warnings: string[] = [];
 

@@ -2,57 +2,74 @@
  * StepBasicInfo Component
  *
  * Step 1 of the campaign wizard - Basic campaign information.
+ * Uses TanStack Form for declarative field binding.
  */
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { CampaignFormData } from "../CampaignWizard";
+import type { StepProps } from "../../types/formTypes";
 
-interface StepBasicInfoProps {
-	data: CampaignFormData;
-	onChange: (data: Partial<CampaignFormData>) => void;
-	errors: Record<string, string>;
-}
-
-export function StepBasicInfo({ data, onChange, errors }: StepBasicInfoProps) {
+export function StepBasicInfo({ form }: StepProps) {
 	return (
 		<div className="space-y-6">
 			<div className="space-y-2">
-				<Label
-					htmlFor="name"
-					className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
-				>
-					Campaign Name *
-				</Label>
-				<Input
-					id="name"
-					value={data.name}
-					onChange={(e) => onChange({ name: e.target.value })}
-					placeholder="Q1 Hardware Outreach"
-					className="font-medium"
-				/>
-				{errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+				<form.Field name="name">
+					{(field) => (
+						<>
+							<Label
+								htmlFor={field.name}
+								className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
+							>
+								Campaign Name *
+							</Label>
+							<Input
+								id={field.name}
+								value={field.state.value}
+								onChange={(e) => field.handleChange(e.target.value)}
+								onBlur={field.handleBlur}
+								placeholder="Q1 Hardware Outreach"
+								className="font-medium"
+							/>
+							{field.state.meta.errors.length > 0 && (
+								<p className="text-sm text-destructive">
+									{field.state.meta.errors[0]}
+								</p>
+							)}
+						</>
+					)}
+				</form.Field>
 			</div>
 
 			<div className="space-y-2">
-				<Label
-					htmlFor="description"
-					className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
-				>
-					Description (Optional)
-				</Label>
-				<Textarea
-					id="description"
-					value={data.description}
-					onChange={(e) => onChange({ description: e.target.value })}
-					placeholder="Campaign targeting hardware leads in Q1..."
-					rows={3}
-				/>
-				{errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
-				<p className="text-xs text-muted-foreground">
-					A brief description to help you identify this campaign later.
-				</p>
+				<form.Field name="description">
+					{(field) => (
+						<>
+							<Label
+								htmlFor={field.name}
+								className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
+							>
+								Description (Optional)
+							</Label>
+							<Textarea
+								id={field.name}
+								value={field.state.value ?? ""}
+								onChange={(e) => field.handleChange(e.target.value)}
+								onBlur={field.handleBlur}
+								placeholder="Campaign targeting hardware leads in Q1..."
+								rows={3}
+							/>
+							{field.state.meta.errors.length > 0 && (
+								<p className="text-sm text-destructive">
+									{field.state.meta.errors[0]}
+								</p>
+							)}
+							<p className="text-xs text-muted-foreground">
+								A brief description to help you identify this campaign later.
+							</p>
+						</>
+					)}
+				</form.Field>
 			</div>
 		</div>
 	);

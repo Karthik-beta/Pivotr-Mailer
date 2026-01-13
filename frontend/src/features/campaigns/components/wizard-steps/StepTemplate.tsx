@@ -4,9 +4,10 @@
  * Step 2 of the campaign wizard - Email template configuration.
  * Features a two-column layout with editor and live preview.
  * Includes sign-off section with image/GIF support and markdown formatting.
+ * Uses TanStack Form for declarative field binding with array support.
  */
 
-import DOMPurify from "dompurify";
+import { sanitizeHtml } from "@/lib/sanitize";
 import {
 	Bold,
 	ChevronDown,
@@ -47,29 +48,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import type { SignOffMedia } from "../../types";
-import type { CampaignFormData } from "../CampaignWizard";
-
-// Social link type extracted from SignOffConfig for type safety
-type SocialLink = {
-	platform: "linkedin" | "twitter" | "website" | "email" | "phone";
-	url: string;
-	label?: string;
-};
-
-interface StepTemplateProps {
-	data: CampaignFormData;
-	onChange: (data: Partial<CampaignFormData>) => void;
-	errors: Record<string, string>;
-}
-
-// Sample data for preview
-const SAMPLE_LEAD = {
-	firstName: "John",
-	fullName: "John Smith",
-	company: "Acme Corp",
-	email: "john.smith@acme.com",
-};
+import type { StepProps } from "../../types/formTypes";
 
 // Platform icons
 const PLATFORM_ICONS = {
@@ -78,6 +57,14 @@ const PLATFORM_ICONS = {
 	website: Globe,
 	email: Mail,
 	phone: Phone,
+};
+
+// Sample data for preview
+const SAMPLE_LEAD = {
+	firstName: "John",
+	fullName: "John Smith",
+	company: "Acme Corp",
+	email: "john.smith@acme.com",
 };
 
 /**
@@ -117,103 +104,44 @@ function parseMarkdown(text: string): string {
 	});
 
 	const html = marked.parse(text, { async: false }) as string;
-	return DOMPurify.sanitize(html);
+	return sanitizeHtml(html);
 }
 
-export function StepTemplate({ data, onChange, errors }: StepTemplateProps) {
+export function StepTemplate({ form }: StepProps) {
 	const [refreshKey, setRefreshKey] = useState(0);
-	const [signOffExpanded, setSignOffExpanded] = useState(data.template.signOff?.enabled || false);
+	const [signOffExpanded, setSignOffExpanded] = useState(false);
+
+	// Subscribe to form values for preview
+	const templateValues = form.useStore((state) => state.values.template);
 
 	// Resolved preview content
 	const resolvedSubject = useMemo(() => {
-		return replaceVariables(resolveSpintax(data.template.subject, refreshKey > 0));
+		return replaceVariables(resolveSpintax(templateValues.subject, refreshKey > 0));
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [data.template.subject, refreshKey]);
+	}, [templateValues.subject, refreshKey]);
 
 	const resolvedBody = useMemo(() => {
-		const resolved = replaceVariables(resolveSpintax(data.template.body, refreshKey > 0));
+		const resolved = replaceVariables(resolveSpintax(templateValues.body, refreshKey > 0));
 		return parseMarkdown(resolved);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [data.template.body, refreshKey]);
+	}, [templateValues.body, refreshKey]);
 
 	const resolvedSignOff = useMemo(() => {
-		if (!data.template.signOff?.enabled || !data.template.signOff?.content) return "";
+		if (!templateValues.signOff?.enabled || !templateValues.signOff?.content) return "";
 		const resolved = replaceVariables(
-			resolveSpintax(data.template.signOff.content, refreshKey > 0)
+			resolveSpintax(templateValues.signOff.content, refreshKey > 0)
 		);
 		return parseMarkdown(resolved);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [data.template.signOff?.content, data.template.signOff?.enabled, refreshKey]);
+	}, [templateValues.signOff?.content, templateValues.signOff?.enabled, refreshKey]);
 
 	const handleRandomize = () => {
 		setRefreshKey((k) => k + 1);
 	};
 
-	const updateTemplate = (field: keyof CampaignFormData["template"], value: unknown) => {
-		onChange({
-			template: {
-				...data.template,
-				[field]: value,
-			},
-		});
-	};
-
-	const updateSignOff = (
-		updates: Partial<NonNullable<CampaignFormData["template"]["signOff"]>>
-	) => {
-		onChange({
-			template: {
-				...data.template,
-				signOff: {
-					...(data.template.signOff ?? { enabled: false, content: "" }),
-					...updates,
-				},
-			},
-		});
-	};
-
-	const addMedia = () => {
-		const media = data.template.signOff?.media || [];
-		updateSignOff({
-			media: [...media, { type: "image", url: "", alt: "" }],
-		});
-	};
-
-	const updateMedia = (index: number, updates: Partial<SignOffMedia>) => {
-		const media = [...(data.template.signOff?.media || [])];
-		media[index] = { ...media[index], ...updates };
-		updateSignOff({ media });
-	};
-
-	const removeMedia = (index: number) => {
-		const media = data.template.signOff?.media?.filter((_, i) => i !== index) || [];
-		updateSignOff({ media });
-	};
-
-	const addSocialLink = () => {
-		const links = data.template.signOff?.socialLinks || [];
-		updateSignOff({
-			socialLinks: [...links, { platform: "linkedin", url: "" }],
-		});
-	};
-
-	const updateSocialLink = (
-		index: number,
-		updates: Partial<SocialLink>
-	) => {
-		const links = [...(data.template.signOff?.socialLinks || [])];
-		links[index] = { ...links[index], ...updates } as SocialLink;
-		updateSignOff({ socialLinks: links });
-	};
-
-	const removeSocialLink = (index: number) => {
-		const links = data.template.signOff?.socialLinks?.filter((_, i) => i !== index) || [];
-		updateSignOff({ socialLinks: links });
-	};
-
 	// Text formatting helpers for body
 	const insertBodyFormatting = (prefix: string, suffix: string = prefix) => {
-		const textarea = document.getElementById("body") as HTMLTextAreaElement;
+		const textarea = document.getElementById("template.body") as HTMLTextAreaElement;
 		if (!textarea) return;
 
 		const start = textarea.selectionStart;
@@ -221,7 +149,9 @@ export function StepTemplate({ data, onChange, errors }: StepTemplateProps) {
 		const text = textarea.value;
 		const selectedText = text.substring(start, end);
 		const newText = `${text.substring(0, start)}${prefix}${selectedText}${suffix}${text.substring(end)}`;
-		updateTemplate("body", newText);
+
+		form.setFieldValue("template.body", newText);
+
 		// Restore focus after state update
 		setTimeout(() => {
 			textarea.focus();
@@ -231,7 +161,7 @@ export function StepTemplate({ data, onChange, errors }: StepTemplateProps) {
 
 	// Text formatting helpers for sign-off
 	const insertSignOffFormatting = (prefix: string, suffix: string = prefix) => {
-		const textarea = document.getElementById("signoff-content") as HTMLTextAreaElement;
+		const textarea = document.getElementById("template.signOff.content") as HTMLTextAreaElement;
 		if (!textarea) return;
 
 		const start = textarea.selectionStart;
@@ -239,7 +169,9 @@ export function StepTemplate({ data, onChange, errors }: StepTemplateProps) {
 		const text = textarea.value;
 		const selectedText = text.substring(start, end);
 		const newText = `${text.substring(0, start)}${prefix}${selectedText}${suffix}${text.substring(end)}`;
-		updateSignOff({ content: newText });
+
+		form.setFieldValue("template.signOff.content", newText);
+
 		// Restore focus after state update
 		setTimeout(() => {
 			textarea.focus();
@@ -254,84 +186,111 @@ export function StepTemplate({ data, onChange, errors }: StepTemplateProps) {
 				{/* Sender Info */}
 				<div className="grid grid-cols-2 gap-4">
 					<div className="space-y-2">
-						<Label
-							htmlFor="senderName"
-							className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
-						>
-							Sender Name *
-						</Label>
-						<Input
-							id="senderName"
-							value={data.template.senderName}
-							onChange={(e) => updateTemplate("senderName", e.target.value)}
-							placeholder="John Doe"
-						/>
-						{errors["template.senderName"] && (
-							<p className="text-sm text-destructive">{errors["template.senderName"]}</p>
-						)}
+						<form.Field name="template.senderName">
+							{(field) => (
+								<>
+									<Label
+										htmlFor={field.name}
+										className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
+									>
+										Sender Name *
+									</Label>
+									<Input
+										id={field.name}
+										value={field.state.value}
+										onChange={(e) => field.handleChange(e.target.value)}
+										onBlur={field.handleBlur}
+										placeholder="John Doe"
+									/>
+									{field.state.meta.errors.length > 0 && (
+										<p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
+									)}
+								</>
+							)}
+						</form.Field>
 					</div>
 					<div className="space-y-2">
-						<Label
-							htmlFor="senderEmail"
-							className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
-						>
-							Sender Email *
-						</Label>
-						<Input
-							id="senderEmail"
-							type="email"
-							value={data.template.senderEmail}
-							onChange={(e) => updateTemplate("senderEmail", e.target.value)}
-							placeholder="john@company.com"
-						/>
-						{errors["template.senderEmail"] && (
-							<p className="text-sm text-destructive">{errors["template.senderEmail"]}</p>
-						)}
+						<form.Field name="template.senderEmail">
+							{(field) => (
+								<>
+									<Label
+										htmlFor={field.name}
+										className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
+									>
+										Sender Email *
+									</Label>
+									<Input
+										id={field.name}
+										type="email"
+										value={field.state.value}
+										onChange={(e) => field.handleChange(e.target.value)}
+										onBlur={field.handleBlur}
+										placeholder="john@company.com"
+									/>
+									{field.state.meta.errors.length > 0 && (
+										<p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
+									)}
+								</>
+							)}
+						</form.Field>
 					</div>
 				</div>
 
 				{/* Subject with Spintax hint */}
 				<div className="space-y-2">
 					<div className="flex justify-between items-center">
-						<Label
-							htmlFor="subject"
-							className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
-						>
-							Subject *
-						</Label>
-						<TooltipProvider>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button variant="ghost" size="sm" className="h-6 px-2">
-										<Info className="h-3 w-3 mr-1" />
-										<span className="text-xs">Spintax Guide</span>
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent className="max-w-xs">
-									<p className="font-medium mb-1">Spintax Syntax</p>
-									<p className="text-xs">Use {"{Hi|Hello|Hey}"} to randomly select one option.</p>
-									<p className="text-xs mt-1">Use {"{{FirstName}}"} for lead variables.</p>
-								</TooltipContent>
-							</Tooltip>
-						</TooltipProvider>
+						<form.Field name="template.subject">
+							{(field) => (
+								<>
+									<Label
+										htmlFor={field.name}
+										className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
+									>
+										Subject *
+									</Label>
+									<TooltipProvider>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<Button variant="ghost" size="sm" className="h-6 px-2">
+													<Info className="h-3 w-3 mr-1" />
+													<span className="text-xs">Spintax Guide</span>
+												</Button>
+											</TooltipTrigger>
+											<TooltipContent className="max-w-xs">
+												<p className="font-medium mb-1">Spintax Syntax</p>
+												<p className="text-xs">Use {"{Hi|Hello|Hey}"} to randomly select one option.</p>
+												<p className="text-xs mt-1">Use {"{{FirstName}}"} for lead variables.</p>
+											</TooltipContent>
+										</Tooltip>
+									</TooltipProvider>
+								</>
+							)}
+						</form.Field>
 					</div>
-					<Input
-						id="subject"
-						value={data.template.subject}
-						onChange={(e) => updateTemplate("subject", e.target.value)}
-						placeholder="{Hi|Hello} {{FirstName}}, quick question about {{Company}}"
-						className="font-mono text-sm"
-					/>
-					{errors["template.subject"] && (
-						<p className="text-sm text-destructive">{errors["template.subject"]}</p>
-					)}
+					<form.Field name="template.subject">
+						{(field) => (
+							<>
+								<Input
+									id={field.name}
+									value={field.state.value}
+									onChange={(e) => field.handleChange(e.target.value)}
+									onBlur={field.handleBlur}
+									placeholder="{Hi|Hello} {{FirstName}}, quick question about {{Company}}"
+									className="font-mono text-sm"
+								/>
+								{field.state.meta.errors.length > 0 && (
+									<p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
+								)}
+							</>
+						)}
+					</form.Field>
 				</div>
 
 				{/* Body */}
 				<div className="space-y-2">
 					<div className="flex items-center justify-between">
 						<Label
-							htmlFor="body"
+							htmlFor="template.body"
 							className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
 						>
 							Email Body *
@@ -459,11 +418,15 @@ export function StepTemplate({ data, onChange, errors }: StepTemplateProps) {
 							</TooltipProvider>
 						</div>
 					</div>
-					<Textarea
-						id="body"
-						value={data.template.body}
-						onChange={(e) => updateTemplate("body", e.target.value)}
-						placeholder="# Welcome {{FirstName}}!
+					<form.Field name="template.body">
+						{(field) => (
+							<>
+								<Textarea
+									id={field.name}
+									value={field.state.value}
+									onChange={(e) => field.handleChange(e.target.value)}
+									onBlur={field.handleBlur}
+									placeholder={`# Welcome {{FirstName}}!
 
 I hope this email finds you well. I wanted to reach out regarding **{{Company}}**.
 
@@ -477,34 +440,44 @@ I hope this email finds you well. I wanted to reach out regarding **{{Company}}*
 
 Looking forward to hearing from you.
 
-Best regards,"
-						className="font-mono text-sm min-h-[200px]"
-						rows={10}
-					/>
-					{errors["template.body"] && (
-						<p className="text-sm text-destructive">{errors["template.body"]}</p>
-					)}
-					<p className="text-xs text-muted-foreground">
-						Supports Markdown and Spintax. Variables: {"{{FirstName}}"}, {"{{FullName}}"},
-						{"{{Company}}"}, {"{{Email}}"}
-					</p>
+Best regards,`}
+									className="font-mono text-sm min-h-[200px]"
+									rows={10}
+								/>
+								{field.state.meta.errors.length > 0 && (
+									<p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
+								)}
+								<p className="text-xs text-muted-foreground">
+									Supports Markdown and Spintax. Variables: {"{{FirstName}}"}, {"{{FullName}}"},
+									{"{{Company}}"}, {"{{Email}}"}
+								</p>
+							</>
+						)}
+					</form.Field>
 				</div>
 
 				{/* CC Email */}
 				<div className="space-y-2">
-					<Label
-						htmlFor="ccEmail"
-						className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
-					>
-						CC Email (Optional)
-					</Label>
-					<Input
-						id="ccEmail"
-						type="email"
-						value={data.template.ccEmail || ""}
-						onChange={(e) => updateTemplate("ccEmail", e.target.value)}
-						placeholder="team@company.com"
-					/>
+					<form.Field name="template.ccEmail">
+						{(field) => (
+							<>
+								<Label
+									htmlFor={field.name}
+									className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
+								>
+									CC Email (Optional)
+								</Label>
+								<Input
+									id={field.name}
+									type="email"
+									value={field.state.value ?? ""}
+									onChange={(e) => field.handleChange(e.target.value)}
+									onBlur={field.handleBlur}
+									placeholder="team@company.com"
+								/>
+							</>
+						)}
+					</form.Field>
 				</div>
 
 				{/* Sign-off Section */}
@@ -513,22 +486,28 @@ Best regards,"
 						<CardHeader className="pb-2">
 							<div className="flex items-center justify-between">
 								<div className="flex items-center gap-3">
-									<Switch
-										id="signoff-enabled"
-										checked={data.template.signOff?.enabled || false}
-										onCheckedChange={(checked) => {
-											updateSignOff({ enabled: checked });
-											if (checked) setSignOffExpanded(true);
-										}}
-									/>
-									<Label htmlFor="signoff-enabled" className="font-medium cursor-pointer">
-										Email Sign-off
-									</Label>
-									{data.template.signOff?.enabled && (
-										<Badge variant="secondary" className="text-xs">
-											Enabled
-										</Badge>
-									)}
+									<form.Field name="template.signOff.enabled">
+										{(field) => (
+											<>
+												<Switch
+													id={field.name}
+													checked={field.state.value}
+													onCheckedChange={(checked) => {
+														field.handleChange(checked);
+														if (checked) setSignOffExpanded(true);
+													}}
+												/>
+												<Label htmlFor={field.name} className="font-medium cursor-pointer">
+													Email Sign-off
+												</Label>
+												{field.state.value && (
+													<Badge variant="secondary" className="text-xs">
+														Enabled
+													</Badge>
+												)}
+											</>
+										)}
+									</form.Field>
 								</div>
 								<CollapsibleTrigger asChild>
 									<Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -558,7 +537,7 @@ Best regards,"
 															size="sm"
 															className="h-7 w-7 p-0"
 															onClick={() => insertSignOffFormatting("# ", "")}
-															disabled={!data.template.signOff?.enabled}
+															disabled={!templateValues.signOff?.enabled}
 														>
 															<Heading1 className="h-3 w-3" />
 														</Button>
@@ -574,7 +553,7 @@ Best regards,"
 															size="sm"
 															className="h-7 w-7 p-0"
 															onClick={() => insertSignOffFormatting("## ", "")}
-															disabled={!data.template.signOff?.enabled}
+															disabled={!templateValues.signOff?.enabled}
 														>
 															<Heading2 className="h-3 w-3" />
 														</Button>
@@ -590,7 +569,7 @@ Best regards,"
 															size="sm"
 															className="h-7 w-7 p-0"
 															onClick={() => insertSignOffFormatting("**")}
-															disabled={!data.template.signOff?.enabled}
+															disabled={!templateValues.signOff?.enabled}
 														>
 															<Bold className="h-3 w-3" />
 														</Button>
@@ -606,7 +585,7 @@ Best regards,"
 															size="sm"
 															className="h-7 w-7 p-0"
 															onClick={() => insertSignOffFormatting("*")}
-															disabled={!data.template.signOff?.enabled}
+															disabled={!templateValues.signOff?.enabled}
 														>
 															<Italic className="h-3 w-3" />
 														</Button>
@@ -622,7 +601,7 @@ Best regards,"
 															size="sm"
 															className="h-7 w-7 p-0"
 															onClick={() => insertSignOffFormatting("[", "](url)")}
-															disabled={!data.template.signOff?.enabled}
+															disabled={!templateValues.signOff?.enabled}
 														>
 															<LinkIcon className="h-3 w-3" />
 														</Button>
@@ -638,7 +617,7 @@ Best regards,"
 															size="sm"
 															className="h-7 w-7 p-0"
 															onClick={() => insertSignOffFormatting("\n- ", "")}
-															disabled={!data.template.signOff?.enabled}
+															disabled={!templateValues.signOff?.enabled}
 														>
 															<List className="h-3 w-3" />
 														</Button>
@@ -648,11 +627,15 @@ Best regards,"
 											</TooltipProvider>
 										</div>
 									</div>
-									<Textarea
-										id="signoff-content"
-										value={data.template.signOff?.content || ""}
-										onChange={(e) => updateSignOff({ content: e.target.value })}
-										placeholder="**Best regards,**
+									<form.Field name="template.signOff.content">
+										{(field) => (
+											<>
+												<Textarea
+													id={field.name}
+													value={field.state.value}
+													onChange={(e) => field.handleChange(e.target.value)}
+													onBlur={field.handleBlur}
+													placeholder={`**Best regards,**
 
 *John Smith*
 Senior Sales Executive | Acme Corp
@@ -661,174 +644,233 @@ Senior Sales Executive | Acme Corp
 
 ---
 📧 john@acme.com | 📱 +1 234 567 8900
-🌐 [www.acme.com](https://acme.com)"
-										className="font-mono text-sm min-h-[150px]"
-										rows={7}
-										disabled={!data.template.signOff?.enabled}
-									/>
-									<p className="text-xs text-muted-foreground">
-										Full Markdown support: # Heading, **bold**, *italic*, [links](url),
-										![images](url), lists, quotes, and more.
-									</p>
+🌐 [www.acme.com](https://acme.com)`}
+													className="font-mono text-sm min-h-[150px]"
+													rows={7}
+													disabled={!templateValues.signOff?.enabled}
+												/>
+												<p className="text-xs text-muted-foreground">
+													Full Markdown support: # Heading, **bold**, *italic*, [links](url),
+													![images](url), lists, quotes, and more.
+												</p>
+											</>
+										)}
+									</form.Field>
 								</div>
 
-								{/* Media (Images/GIFs) */}
+								{/* Media (Images/GIFs) - Using array mode */}
 								<div className="space-y-2">
 									<div className="flex items-center justify-between">
 										<Label className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
 											Images / GIFs / Logo
 										</Label>
-										<Button
-											variant="outline"
-											size="sm"
-											onClick={addMedia}
-											disabled={!data.template.signOff?.enabled}
-										>
-											<Plus className="h-3 w-3 mr-1" />
-											Add Media
-										</Button>
+										<form.Field name="template.signOff.media" mode="array">
+											{(mediaField) => (
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() =>
+														mediaField.pushValue({ type: "image", url: "", alt: "" })
+													}
+													disabled={!templateValues.signOff?.enabled}
+												>
+													<Plus className="h-3 w-3 mr-1" />
+													Add Media
+												</Button>
+											)}
+										</form.Field>
 									</div>
-									{data.template.signOff?.media?.map((media, index) => (
-										<div key={index} className="flex gap-2 items-start p-3 rounded-lg bg-muted/50">
-											<Select
-												value={media.type}
-												onValueChange={(value: "image" | "gif" | "logo") =>
-													updateMedia(index, { type: value })
-												}
-												disabled={!data.template.signOff?.enabled}
-											>
-												<SelectTrigger className="w-24">
-													<SelectValue />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value="image">Image</SelectItem>
-													<SelectItem value="gif">GIF</SelectItem>
-													<SelectItem value="logo">Logo</SelectItem>
-												</SelectContent>
-											</Select>
-											<div className="flex-1 space-y-2">
-												<Input
-													value={media.url}
-													onChange={(e) => updateMedia(index, { url: e.target.value })}
-													placeholder="https://example.com/image.png"
-													className="font-mono text-xs"
-													disabled={!data.template.signOff?.enabled}
-												/>
-												<div className="grid grid-cols-3 gap-2">
-													<Input
-														value={media.alt || ""}
-														onChange={(e) => updateMedia(index, { alt: e.target.value })}
-														placeholder="Alt text"
-														className="text-xs"
-														disabled={!data.template.signOff?.enabled}
-													/>
-													<Input
-														type="number"
-														value={media.width || ""}
-														onChange={(e) =>
-															updateMedia(index, {
-																width: parseInt(e.target.value, 10) || undefined,
-															})
-														}
-														placeholder="Width"
-														className="text-xs"
-														disabled={!data.template.signOff?.enabled}
-													/>
-													<Input
-														value={media.link || ""}
-														onChange={(e) => updateMedia(index, { link: e.target.value })}
-														placeholder="Link URL"
-														className="text-xs"
-														disabled={!data.template.signOff?.enabled}
-													/>
-												</div>
-											</div>
-											<Button
-												variant="ghost"
-												size="sm"
-												onClick={() => removeMedia(index)}
-												className="h-8 w-8 p-0 text-destructive"
-												disabled={!data.template.signOff?.enabled}
-											>
-												<Trash2 className="h-4 w-4" />
-											</Button>
-										</div>
-									))}
+									<form.Field name="template.signOff.media" mode="array">
+										{(mediaField) => (
+											<>
+												{mediaField.state.value?.map((media, index) => (
+													<div key={index} className="flex gap-2 items-start p-3 rounded-lg bg-muted/50">
+														<form.Field name={`template.signOff.media[${index}].type`}>
+															{(field) => (
+																<Select
+																	value={field.state.value}
+																	onValueChange={(value: "image" | "gif" | "logo") =>
+																		field.handleChange(value)
+																	}
+																	disabled={!templateValues.signOff?.enabled}
+																>
+																	<SelectTrigger className="w-24">
+																		<SelectValue />
+																	</SelectTrigger>
+																	<SelectContent>
+																		<SelectItem value="image">Image</SelectItem>
+																		<SelectItem value="gif">GIF</SelectItem>
+																		<SelectItem value="logo">Logo</SelectItem>
+																	</SelectContent>
+																</Select>
+															)}
+														</form.Field>
+														<div className="flex-1 space-y-2">
+															<form.Field name={`template.signOff.media[${index}].url`}>
+																{(field) => (
+																	<Input
+																		value={field.state.value}
+																		onChange={(e) => field.handleChange(e.target.value)}
+																		placeholder="https://example.com/image.png"
+																		className="font-mono text-xs"
+																		disabled={!templateValues.signOff?.enabled}
+																	/>
+																)}
+															</form.Field>
+															<div className="grid grid-cols-3 gap-2">
+																<form.Field name={`template.signOff.media[${index}].alt`}>
+																	{(field) => (
+																		<Input
+																			value={field.state.value ?? ""}
+																			onChange={(e) => field.handleChange(e.target.value)}
+																			placeholder="Alt text"
+																			className="text-xs"
+																			disabled={!templateValues.signOff?.enabled}
+																		/>
+																	)}
+																</form.Field>
+																<form.Field name={`template.signOff.media[${index}].width`}>
+																	{(field) => (
+																		<Input
+																			type="number"
+																			value={field.state.value ?? ""}
+																			onChange={(e) =>
+																				field.handleChange(
+																					parseInt(e.target.value, 10) || undefined
+																				)
+																			}
+																			placeholder="Width"
+																			className="text-xs"
+																			disabled={!templateValues.signOff?.enabled}
+																		/>
+																	)}
+																</form.Field>
+																<form.Field name={`template.signOff.media[${index}].link`}>
+																	{(field) => (
+																		<Input
+																			value={field.state.value ?? ""}
+																			onChange={(e) => field.handleChange(e.target.value)}
+																			placeholder="Link URL"
+																			className="text-xs"
+																			disabled={!templateValues.signOff?.enabled}
+																		/>
+																	)}
+																</form.Field>
+															</div>
+														</div>
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={() => mediaField.removeValue(index)}
+															className="h-8 w-8 p-0 text-destructive"
+															disabled={!templateValues.signOff?.enabled}
+														>
+															<Trash2 className="h-4 w-4" />
+														</Button>
+													</div>
+												))}
+											</>
+										)}
+									</form.Field>
 								</div>
 
-								{/* Social Links */}
+								{/* Social Links - Using array mode */}
 								<div className="space-y-2">
 									<div className="flex items-center justify-between">
 										<Label className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
 											Social Links
 										</Label>
-										<Button
-											variant="outline"
-											size="sm"
-											onClick={addSocialLink}
-											disabled={!data.template.signOff?.enabled}
-										>
-											<Plus className="h-3 w-3 mr-1" />
-											Add Link
-										</Button>
-									</div>
-									{data.template.signOff?.socialLinks?.map((link, index) => {
-										const Icon = PLATFORM_ICONS[link.platform];
-										return (
-											<div key={index} className="flex gap-2 items-center">
-												<Select
-													value={link.platform}
-													onValueChange={(
-														value: "linkedin" | "twitter" | "website" | "email" | "phone"
-													) => updateSocialLink(index, { platform: value })}
-													disabled={!data.template.signOff?.enabled}
-												>
-													<SelectTrigger className="w-32">
-														<div className="flex items-center gap-2">
-															<Icon className="h-3 w-3" />
-															<SelectValue />
-														</div>
-													</SelectTrigger>
-													<SelectContent>
-														<SelectItem value="linkedin">LinkedIn</SelectItem>
-														<SelectItem value="twitter">Twitter</SelectItem>
-														<SelectItem value="website">Website</SelectItem>
-														<SelectItem value="email">Email</SelectItem>
-														<SelectItem value="phone">Phone</SelectItem>
-													</SelectContent>
-												</Select>
-												<Input
-													value={link.url}
-													onChange={(e) => updateSocialLink(index, { url: e.target.value })}
-													placeholder={
-														link.platform === "email"
-															? "email@example.com"
-															: link.platform === "phone"
-																? "+1 234 567 8900"
-																: "https://..."
-													}
-													className="flex-1 font-mono text-xs"
-													disabled={!data.template.signOff?.enabled}
-												/>
-												<Input
-													value={link.label || ""}
-													onChange={(e) => updateSocialLink(index, { label: e.target.value })}
-													placeholder="Label (optional)"
-													className="w-32 text-xs"
-													disabled={!data.template.signOff?.enabled}
-												/>
+										<form.Field name="template.signOff.socialLinks" mode="array">
+											{(linksField) => (
 												<Button
-													variant="ghost"
+													variant="outline"
 													size="sm"
-													onClick={() => removeSocialLink(index)}
-													className="h-8 w-8 p-0 text-destructive"
-													disabled={!data.template.signOff?.enabled}
+													onClick={() =>
+														linksField.pushValue({ platform: "linkedin", url: "" })
+													}
+													disabled={!templateValues.signOff?.enabled}
 												>
-													<Trash2 className="h-4 w-4" />
+													<Plus className="h-3 w-3 mr-1" />
+													Add Link
 												</Button>
-											</div>
-										);
-									})}
+											)}
+										</form.Field>
+									</div>
+									<form.Field name="template.signOff.socialLinks" mode="array">
+										{(linksField) => (
+											<>
+												{linksField.state.value?.map((link, index) => {
+													const Icon = PLATFORM_ICONS[link.platform];
+													return (
+														<div key={index} className="flex gap-2 items-center">
+															<form.Field name={`template.signOff.socialLinks[${index}].platform`}>
+																{(field) => (
+																	<Select
+																		value={field.state.value}
+																		onValueChange={(
+																			value: "linkedin" | "twitter" | "website" | "email" | "phone"
+																		) => field.handleChange(value)}
+																		disabled={!templateValues.signOff?.enabled}
+																	>
+																		<SelectTrigger className="w-32">
+																			<div className="flex items-center gap-2">
+																				<Icon className="h-3 w-3" />
+																				<SelectValue />
+																			</div>
+																		</SelectTrigger>
+																		<SelectContent>
+																			<SelectItem value="linkedin">LinkedIn</SelectItem>
+																			<SelectItem value="twitter">Twitter</SelectItem>
+																			<SelectItem value="website">Website</SelectItem>
+																			<SelectItem value="email">Email</SelectItem>
+																			<SelectItem value="phone">Phone</SelectItem>
+																		</SelectContent>
+																	</Select>
+																)}
+															</form.Field>
+															<form.Field name={`template.signOff.socialLinks[${index}].url`}>
+																{(field) => (
+																	<Input
+																		value={field.state.value}
+																		onChange={(e) => field.handleChange(e.target.value)}
+																		placeholder={
+																			link.platform === "email"
+																				? "email@example.com"
+																				: link.platform === "phone"
+																					? "+1 234 567 8900"
+																					: "https://..."
+																		}
+																		className="flex-1 font-mono text-xs"
+																		disabled={!templateValues.signOff?.enabled}
+																	/>
+																)}
+															</form.Field>
+															<form.Field name={`template.signOff.socialLinks[${index}].label`}>
+																{(field) => (
+																	<Input
+																		value={field.state.value ?? ""}
+																		onChange={(e) => field.handleChange(e.target.value)}
+																		placeholder="Label (optional)"
+																		className="w-32 text-xs"
+																		disabled={!templateValues.signOff?.enabled}
+																	/>
+																)}
+															</form.Field>
+															<Button
+																variant="ghost"
+																size="sm"
+																onClick={() => linksField.removeValue(index)}
+																className="h-8 w-8 p-0 text-destructive"
+																disabled={!templateValues.signOff?.enabled}
+															>
+																<Trash2 className="h-4 w-4" />
+															</Button>
+														</div>
+													);
+												})}
+											</>
+										)}
+									</form.Field>
 								</div>
 							</CardContent>
 						</CollapsibleContent>
@@ -850,20 +892,20 @@ Senior Sales Executive | Acme Corp
 				<Card className="bg-muted/50">
 					<CardHeader className="pb-2 border-b space-y-1">
 						<div className="font-mono text-xs text-muted-foreground">
-							From: {data.template.senderName || "Sender"} &lt;
-							{data.template.senderEmail || "email@example.com"}&gt;
+							From: {templateValues.senderName || "Sender"} &lt;
+							{templateValues.senderEmail || "email@example.com"}&gt;
 						</div>
 						<div className="font-mono text-xs text-muted-foreground">To: {SAMPLE_LEAD.email}</div>
-						{data.template.ccEmail && (
+						{templateValues.ccEmail && (
 							<div className="font-mono text-xs text-muted-foreground">
-								CC: {data.template.ccEmail}
+								CC: {templateValues.ccEmail}
 							</div>
 						)}
 						<div className="font-semibold pt-2">{resolvedSubject || "Subject preview..."}</div>
 					</CardHeader>
 					<CardContent className="pt-4 space-y-4">
 						{/* Email Body */}
-						{data.template.body ? (
+						{templateValues.body ? (
 							<div
 								className="prose prose-sm max-w-none dark:prose-invert"
 								dangerouslySetInnerHTML={{ __html: resolvedBody }}
@@ -873,7 +915,7 @@ Senior Sales Executive | Acme Corp
 						)}
 
 						{/* Sign-off Preview */}
-						{data.template.signOff?.enabled && (
+						{templateValues.signOff?.enabled && (
 							<div className="border-t pt-4 space-y-3">
 								{/* Markdown Content */}
 								{resolvedSignOff && (
@@ -884,9 +926,9 @@ Senior Sales Executive | Acme Corp
 								)}
 
 								{/* Media Preview */}
-								{data.template.signOff.media && data.template.signOff.media.length > 0 && (
+								{templateValues.signOff.media && templateValues.signOff.media.length > 0 && (
 									<div className="flex flex-wrap gap-3">
-										{data.template.signOff.media.map((media, index) => (
+										{templateValues.signOff.media.map((media, index) => (
 											<div key={index} className="relative">
 												{media.url ? (
 													media.link ? (
@@ -929,10 +971,10 @@ Senior Sales Executive | Acme Corp
 								)}
 
 								{/* Social Links Preview */}
-								{data.template.signOff.socialLinks &&
-									data.template.signOff.socialLinks.length > 0 && (
+								{templateValues.signOff.socialLinks &&
+									templateValues.signOff.socialLinks.length > 0 && (
 										<div className="flex flex-wrap gap-2 pt-2">
-											{data.template.signOff.socialLinks.map((link, index) => {
+											{templateValues.signOff.socialLinks.map((link, index) => {
 												const Icon = PLATFORM_ICONS[link.platform];
 												return (
 													<a
