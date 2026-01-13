@@ -5,7 +5,7 @@
  */
 
 import { RefreshCw, Users } from "lucide-react";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -62,7 +62,7 @@ export function StepLeadSelection({ data, onChange, errors }: StepLeadSelectionP
 	};
 
 	// Fetch preview count when selection changes
-	const refreshPreview = () => {
+	const refreshPreview = useCallback(() => {
 		if (data.leadSelection.leadTypes.length > 0 && data.leadSelection.statuses.length > 0) {
 			previewMutation.mutate({
 				leadTypes: data.leadSelection.leadTypes,
@@ -70,7 +70,12 @@ export function StepLeadSelection({ data, onChange, errors }: StepLeadSelectionP
 				maxLeads: data.leadSelection.maxLeads,
 			});
 		}
-	};
+	}, [
+		data.leadSelection.leadTypes,
+		data.leadSelection.statuses,
+		data.leadSelection.maxLeads,
+		previewMutation,
+	]);
 
 	// Auto-refresh on selection change (debounced)
 	useEffect(() => {
@@ -78,7 +83,6 @@ export function StepLeadSelection({ data, onChange, errors }: StepLeadSelectionP
 			refreshPreview();
 		}, 500);
 		return () => clearTimeout(timer);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [refreshPreview]);
 
 	const previewCount = previewMutation.data?.data?.count ?? 0;

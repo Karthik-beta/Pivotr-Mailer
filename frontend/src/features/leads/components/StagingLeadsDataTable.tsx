@@ -42,7 +42,7 @@ import {
 	Trash2,
 	User,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -153,7 +153,7 @@ export function StagingLeadsDataTable({
 		phoneNumber: "",
 	});
 
-	const handleEditClick = (lead: StagedLead) => {
+	const handleEditClick = useCallback((lead: StagedLead) => {
 		setEditingLead(lead);
 		setEditFormData({
 			fullName: lead.fullName,
@@ -161,7 +161,7 @@ export function StagingLeadsDataTable({
 			companyName: lead.companyName,
 			phoneNumber: lead.phoneNumber || "",
 		});
-	};
+	}, []);
 
 	const handleSaveEdit = () => {
 		if (editingLead && onUpdate) {

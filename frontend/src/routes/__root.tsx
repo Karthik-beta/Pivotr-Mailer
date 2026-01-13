@@ -2,6 +2,7 @@ import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import DOMPurify from "dompurify";
 import { ThemeProvider } from "../components/theme-provider";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import StoreDevtools from "../lib/demo-store-devtools";
@@ -50,13 +51,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-	return (
-		<html lang="en" suppressHydrationWarning>
-			<head>
-				<HeadContent />
-				<script
-					dangerouslySetInnerHTML={{
-						__html: `
+	const themeScript = `
               (function() {
                 try {
                   var config = JSON.parse(localStorage.getItem('pivotr-theme-config') || '{}');
@@ -69,7 +64,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   }
                 } catch (e) {}
               })();
-            `,
+            `;
+
+	return (
+		<html lang="en" suppressHydrationWarning>
+			<head>
+				<HeadContent />
+				<script
+					dangerouslySetInnerHTML={{
+						__html: DOMPurify.sanitize(themeScript),
 					}}
 				/>
 			</head>

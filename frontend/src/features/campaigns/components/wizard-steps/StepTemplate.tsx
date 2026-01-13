@@ -6,6 +6,7 @@
  * Includes sign-off section with image/GIF support and markdown formatting.
  */
 
+import DOMPurify from "dompurify";
 import {
 	Bold,
 	ChevronDown,
@@ -48,6 +49,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { SignOffMedia } from "../../types";
 import type { CampaignFormData } from "../CampaignWizard";
+
+// Social link type extracted from SignOffConfig for type safety
+type SocialLink = {
+	platform: "linkedin" | "twitter" | "website" | "email" | "phone";
+	url: string;
+	label?: string;
+};
 
 interface StepTemplateProps {
 	data: CampaignFormData;
@@ -97,7 +105,7 @@ function replaceVariables(text: string): string {
 }
 
 /**
- * Parse markdown to HTML with full syntax support
+ * Parse markdown to HTML with full syntax support and sanitization
  */
 function parseMarkdown(text: string): string {
 	if (!text) return "";
@@ -108,7 +116,8 @@ function parseMarkdown(text: string): string {
 		gfm: true, // GitHub Flavored Markdown
 	});
 
-	return marked.parse(text, { async: false }) as string;
+	const html = marked.parse(text, { async: false }) as string;
+	return DOMPurify.sanitize(html);
 }
 
 export function StepTemplate({ data, onChange, errors }: StepTemplateProps) {
@@ -156,7 +165,7 @@ export function StepTemplate({ data, onChange, errors }: StepTemplateProps) {
 			template: {
 				...data.template,
 				signOff: {
-					...data.template.signOff!,
+					...(data.template.signOff ?? { enabled: false, content: "" }),
 					...updates,
 				},
 			},
@@ -190,12 +199,10 @@ export function StepTemplate({ data, onChange, errors }: StepTemplateProps) {
 
 	const updateSocialLink = (
 		index: number,
-		updates: Partial<NonNullable<CampaignFormData["template"]["signOff"]>["socialLinks"][0]>
+		updates: Partial<SocialLink>
 	) => {
 		const links = [...(data.template.signOff?.socialLinks || [])];
-		links[index] = { ...links[index], ...updates } as NonNullable<
-			CampaignFormData["template"]["signOff"]
-		>["socialLinks"][0];
+		links[index] = { ...links[index], ...updates } as SocialLink;
 		updateSignOff({ socialLinks: links });
 	};
 

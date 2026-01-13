@@ -4,6 +4,7 @@
  * Display the email template for a campaign including sign-off section.
  */
 
+import DOMPurify from "dompurify";
 import { Globe, Image as ImageIcon, Linkedin, Mail, Phone, Twitter } from "lucide-react";
 import { marked } from "marked";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +25,7 @@ const PLATFORM_ICONS = {
 };
 
 /**
- * Parse markdown to HTML with full syntax support
+ * Parse markdown to HTML with full syntax support and sanitization
  */
 function parseMarkdown(text: string): string {
 	if (!text) return "";
@@ -35,7 +36,8 @@ function parseMarkdown(text: string): string {
 		gfm: true, // GitHub Flavored Markdown
 	});
 
-	return marked.parse(text, { async: false }) as string;
+	const html = marked.parse(text, { async: false }) as string;
+	return DOMPurify.sanitize(html);
 }
 
 export function CampaignTemplatePreview({ template }: CampaignTemplatePreviewProps) {

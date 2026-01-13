@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/card";
 import { useCreateCampaign, usePreviewLeads, useUpdateCampaign } from "../hooks/useCampaigns";
 import type { Campaign, CreateCampaignRequest, LeadType, SignOffMedia } from "../types";
+import { validateCampaignStep } from "../utils/campaignValidation";
 import { StepIndicator } from "./StepIndicator";
 import { StepBasicInfo } from "./wizard-steps/StepBasicInfo";
 import { StepDelay } from "./wizard-steps/StepDelay";
@@ -226,50 +227,7 @@ export function CampaignWizard({ campaign, mode }: CampaignWizardProps) {
 	// Validate current step
 	const validateStep = useCallback(
 		(step: number): boolean => {
-			const newErrors: Record<string, string> = {};
-
-			switch (step) {
-				case 0: // Basic Info
-					if (!formData.name.trim()) {
-						newErrors.name = "Campaign name is required";
-					}
-					break;
-				case 1: // Template
-					if (!formData.template.subject.trim()) {
-						newErrors["template.subject"] = "Subject is required";
-					}
-					if (!formData.template.body.trim()) {
-						newErrors["template.body"] = "Email body is required";
-					}
-					if (!formData.template.senderName.trim()) {
-						newErrors["template.senderName"] = "Sender name is required";
-					}
-					if (!formData.template.senderEmail.trim()) {
-						newErrors["template.senderEmail"] = "Sender email is required";
-					} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.template.senderEmail)) {
-						newErrors["template.senderEmail"] = "Invalid email address";
-					}
-					break;
-				case 2: // Schedule
-					if (formData.schedule.scheduledDates.length === 0) {
-						newErrors["schedule.scheduledDates"] = "Select at least one date";
-					}
-					break;
-				case 3: // Delay
-					if (formData.delayConfig.minDelayMs >= formData.delayConfig.maxDelayMs) {
-						newErrors["delayConfig.minDelayMs"] = "Min delay must be less than max delay";
-					}
-					break;
-				case 4: // Lead Selection
-					if (formData.leadSelection.leadTypes.length === 0) {
-						newErrors["leadSelection.leadTypes"] = "Select at least one lead type";
-					}
-					if (formData.leadSelection.statuses.length === 0) {
-						newErrors["leadSelection.statuses"] = "Select at least one status";
-					}
-					break;
-			}
-
+			const newErrors = validateCampaignStep(step, formData);
 			setErrors(newErrors);
 			return Object.keys(newErrors).length === 0;
 		},

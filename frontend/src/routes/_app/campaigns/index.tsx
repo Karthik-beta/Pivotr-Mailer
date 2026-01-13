@@ -187,9 +187,10 @@ function CampaignsPage() {
 						) : (
 							<div className="space-y-4">
 								{campaigns.map((campaign) => (
-									<div
+									<button
+										type="button"
 										key={campaign.id}
-										className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 cursor-pointer transition-colors"
+										className="w-full flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 cursor-pointer transition-colors text-left"
 										onClick={() => handleCampaignClick(campaign)}
 									>
 										<div className="flex items-center gap-4">
@@ -222,7 +223,7 @@ function CampaignsPage() {
 											)}
 											<CampaignStatusBadge status={campaign.status} />
 										</div>
-									</div>
+									</button>
 								))}
 							</div>
 						)}
