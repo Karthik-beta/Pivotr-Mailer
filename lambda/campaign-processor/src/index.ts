@@ -315,15 +315,29 @@ async function processCampaign(campaign: Campaign): Promise<ProcessingResult> {
 	});
 
 	// 5. Separate leads by verification status
-	const { needsVerification, readyToSend } = categorizeLeads(leads, campaign);
+	const { needsVerification, readyToSend, skipped } = categorizeLeads(leads, campaign);
 
-	// 6. Queue leads for verification if needed
+	// 6. Mark skipped leads with terminal status to prevent Loop of Death
+	if (skipped.length > 0) {
+		await markLeadsAsSkipped(skipped, campaign.id);
+		result.leadsSkipped += skipped.length;
+		logger.info("Marked leads as skipped", {
+			campaignId: campaign.id,
+			count: skipped.length,
+			reasons: skipped.reduce((acc, s) => {
+				acc[s.reason] = (acc[s.reason] || 0) + 1;
+				return acc;
+			}, {} as Record<string, number>),
+		});
+	}
+
+	// 7. Queue leads for verification if needed
 	if (needsVerification.length > 0) {
 		await queueForVerification(needsVerification, campaign);
 		result.leadsProcessed += needsVerification.length;
 	}
 
-	// 7. Schedule verified leads for sending with Gaussian delays
+	// 8. Schedule verified leads for sending with Gaussian delays
 	if (readyToSend.length > 0) {
 		const scheduled = scheduleEmailBatch(
 			readyToSend.map((l) => l.id),
@@ -335,7 +349,7 @@ async function processCampaign(campaign: Campaign): Promise<ProcessingResult> {
 		result.leadsProcessed += readyToSend.length;
 	}
 
-	// 8. Update campaign metrics
+	// 9. Update campaign metrics
 	await updateCampaignProgress(campaign.id, result.leadsProcessed);
 
 	return result;
@@ -367,12 +381,19 @@ async function getQueuedLeads(campaignId: string, limit: number): Promise<Lead[]
 // Categorize Leads by Verification Status
 // =============================================================================
 
+interface CategorizedLeads {
+	needsVerification: Lead[];
+	readyToSend: Lead[];
+	skipped: Array<{ lead: Lead; reason: string }>;
+}
+
 function categorizeLeads(
 	leads: Lead[],
 	campaign: Campaign
-): { needsVerification: Lead[]; readyToSend: Lead[] } {
+): CategorizedLeads {
 	const needsVerification: Lead[] = [];
 	const readyToSend: Lead[] = [];
+	const skipped: Array<{ lead: Lead; reason: string }> = [];
 
 	for (const lead of leads) {
 		const verificationStatus = lead.verificationStatus;
@@ -387,8 +408,9 @@ function categorizeLeads(
 		if (verificationStatus === "catch_all" || verificationStatus === "RISKY") {
 			if (campaign.sendCriteria?.allowCatchAll) {
 				readyToSend.push(lead);
+			} else {
+				skipped.push({ lead, reason: "catch_all_not_allowed" });
 			}
-			// else skip (already counted as skipped)
 			continue;
 		}
 
@@ -396,12 +418,15 @@ function categorizeLeads(
 		if (verificationStatus === "unknown") {
 			if (campaign.sendCriteria?.allowUnknown) {
 				readyToSend.push(lead);
+			} else {
+				skipped.push({ lead, reason: "unknown_not_allowed" });
 			}
 			continue;
 		}
 
-		// Invalid statuses - skip
+		// Invalid statuses - skip permanently
 		if (["invalid", "spamtrap", "disposable", "INVALID"].includes(verificationStatus || "")) {
+			skipped.push({ lead, reason: `invalid_email_${verificationStatus}` });
 			continue;
 		}
 
@@ -415,7 +440,7 @@ function categorizeLeads(
 		needsVerification.push(lead);
 	}
 
-	return { needsVerification, readyToSend };
+	return { needsVerification, readyToSend, skipped };
 }
 
 // =============================================================================
@@ -567,6 +592,41 @@ async function updateLeadsStatus(leads: Lead[], status: string): Promise<void> {
                 })),
             },
         });
+	}
+}
+
+// =============================================================================
+// Mark Leads as Skipped (Terminal State)
+// =============================================================================
+
+/**
+ * Marks leads as SKIPPED to prevent them from being picked up again.
+ * This is critical to avoid the "Loop of Death" where invalid/risky leads
+ * are queried every minute but never processed.
+ */
+async function markLeadsAsSkipped(
+	skippedLeads: Array<{ lead: Lead; reason: string }>,
+	campaignId: string
+): Promise<void> {
+	const now = new Date().toISOString();
+
+	const chunks = chunkArray(skippedLeads, 25);
+	for (const chunk of chunks) {
+		await safeBatchWrite(docClient, {
+			RequestItems: {
+				[LEADS_TABLE]: chunk.map(({ lead, reason }) => ({
+					PutRequest: {
+						Item: {
+							...lead,
+							status: "SKIPPED",
+							skipReason: reason,
+							skippedAt: now,
+							updatedAt: now,
+						},
+					},
+				})),
+			},
+		});
 	}
 }
 
