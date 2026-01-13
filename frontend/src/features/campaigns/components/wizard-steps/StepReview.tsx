@@ -5,6 +5,7 @@
  * Uses TanStack Form for reading form state.
  */
 
+import { useStore } from "@tanstack/react-store";
 import { format } from "date-fns";
 import { AlertTriangle, Calendar, Clock, FileText, Mail, Users } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -33,7 +34,7 @@ function formatDelay(ms: number): string {
 
 export function StepReview({ form, matchingLeadsCount }: StepReviewProps) {
 	// Subscribe to all form values for display
-	const data = form.useStore((state) => state.values);
+	const data = useStore(form.store, (state) => state.values);
 
 	// Generate validation warnings
 	const warnings: string[] = [];

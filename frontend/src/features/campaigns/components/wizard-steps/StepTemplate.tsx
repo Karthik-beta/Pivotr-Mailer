@@ -31,6 +31,7 @@ import {
 	Twitter,
 } from "lucide-react";
 import { marked } from "marked";
+import { useStore } from "@tanstack/react-store";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -112,7 +113,7 @@ export function StepTemplate({ form }: StepProps) {
 	const [signOffExpanded, setSignOffExpanded] = useState(false);
 
 	// Subscribe to form values for preview
-	const templateValues = form.useStore((state) => state.values.template);
+	const templateValues = useStore(form.store, (state) => state.values.template);
 
 	// Resolved preview content
 	const resolvedSubject = useMemo(() => {

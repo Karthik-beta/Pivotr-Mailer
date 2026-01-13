@@ -5,6 +5,7 @@
  * Uses TanStack Form for declarative field binding.
  */
 
+import { useStore } from "@tanstack/react-store";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -58,7 +59,7 @@ const parseTimeString = (time: string): { hour: number; minute: number } => {
 
 export function StepSchedule({ form }: StepProps) {
 	// Subscribe to schedule values for display
-	const scheduleValues = form.useStore((state) => state.values.schedule);
+	const scheduleValues = useStore(form.store, (state) => state.values.schedule);
 
 	return (
 		<div className="space-y-6">

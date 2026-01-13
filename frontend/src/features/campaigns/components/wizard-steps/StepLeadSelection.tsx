@@ -5,6 +5,7 @@
  * Uses TanStack Form for declarative field binding.
  */
 
+import { useStore } from "@tanstack/react-store";
 import { RefreshCw, Users } from "lucide-react";
 import { useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -31,7 +32,7 @@ export function StepLeadSelection({ form }: StepProps) {
 	const previewMutation = usePreviewLeads();
 
 	// Subscribe to lead selection values for display
-	const leadSelection = form.useStore((state) => state.values.leadSelection);
+	const leadSelection = useStore(form.store, (state) => state.values.leadSelection);
 
 	const toggleLeadType = (type: LeadType, checked: boolean) => {
 		const currentTypes = leadSelection.leadTypes;

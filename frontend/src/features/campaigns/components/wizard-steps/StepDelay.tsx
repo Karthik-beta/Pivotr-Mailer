@@ -5,6 +5,7 @@
  * Uses TanStack Form for declarative field binding.
  */
 
+import { useStore } from "@tanstack/react-store";
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -49,7 +50,7 @@ function generateGaussianBars(minMs: number, maxMs: number, barCount: number = 2
 
 export function StepDelay({ form }: StepProps) {
 	// Subscribe to delay config values for display and visualization
-	const delayConfig = form.useStore((state) => state.values.delayConfig);
+	const delayConfig = useStore(form.store, (state) => state.values.delayConfig);
 
 	const gaussianBars = useMemo(
 		() => generateGaussianBars(delayConfig.minDelayMs, delayConfig.maxDelayMs),
