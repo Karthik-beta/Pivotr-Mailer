@@ -5,198 +5,198 @@
  */
 
 // Campaign Status
-export type CampaignStatus = 'DRAFT' | 'QUEUED' | 'RUNNING' | 'PAUSED' | 'COMPLETED' | 'ABORTED';
+export type CampaignStatus = "DRAFT" | "QUEUED" | "RUNNING" | "PAUSED" | "COMPLETED" | "ABORTED";
 
 // Lead Type
-export type LeadType = 'HARDWARE' | 'SOFTWARE' | 'BOTH';
+export type LeadType = "HARDWARE" | "SOFTWARE" | "BOTH";
 
 // Working Hours Configuration
 export interface WorkingHours {
-    startHour: number;
-    startMinute: number;
-    endHour: number;
-    endMinute: number;
+	startHour: number;
+	startMinute: number;
+	endHour: number;
+	endMinute: number;
 }
 
 // Peak Hours Configuration
 export interface PeakHours {
-    startHour: number;
-    endHour: number;
-    peakMultiplier: number;
+	startHour: number;
+	endHour: number;
+	peakMultiplier: number;
 }
 
 // Schedule Configuration
 export interface ScheduleConfig {
-    workingHours: WorkingHours;
-    peakHours: PeakHours;
-    timezone: string;
-    scheduledDates: string[];
-    dailyLimit: number;
-    batchSize: number;
+	workingHours: WorkingHours;
+	peakHours: PeakHours;
+	timezone: string;
+	scheduledDates: string[];
+	dailyLimit: number;
+	batchSize: number;
 }
 
 // Delay Configuration
 export interface DelayConfig {
-    minDelayMs: number;
-    maxDelayMs: number;
-    gaussianEnabled: boolean;
+	minDelayMs: number;
+	maxDelayMs: number;
+	gaussianEnabled: boolean;
 }
 
 // Sign-off Image/Media
 export interface SignOffMedia {
-    type: 'image' | 'gif' | 'logo';
-    url: string;
-    alt?: string;
-    width?: number;
-    height?: number;
-    link?: string;
+	type: "image" | "gif" | "logo";
+	url: string;
+	alt?: string;
+	width?: number;
+	height?: number;
+	link?: string;
 }
 
 // Sign-off Configuration
 export interface SignOffConfig {
-    enabled: boolean;
-    content: string; // Markdown content
-    media?: SignOffMedia[];
-    socialLinks?: Array<{
-        platform: 'linkedin' | 'twitter' | 'website' | 'email' | 'phone';
-        url: string;
-        label?: string;
-    }>;
+	enabled: boolean;
+	content: string; // Markdown content
+	media?: SignOffMedia[];
+	socialLinks?: Array<{
+		platform: "linkedin" | "twitter" | "website" | "email" | "phone";
+		url: string;
+		label?: string;
+	}>;
 }
 
 // Email Template
 export interface EmailTemplate {
-    subject: string;
-    body: string;
-    senderName: string;
-    senderEmail: string;
-    ccEmail?: string;
-    signOff?: SignOffConfig;
+	subject: string;
+	body: string;
+	senderName: string;
+	senderEmail: string;
+	ccEmail?: string;
+	signOff?: SignOffConfig;
 }
 
 // Lead Selection Criteria
 export interface LeadSelection {
-    leadTypes: LeadType[];
-    statuses: string[];
-    maxLeads?: number;
+	leadTypes: LeadType[];
+	statuses: string[];
+	maxLeads?: number;
 }
 
 // Campaign Metrics
 export interface CampaignMetrics {
-    totalLeads: number;
-    verified: number;
-    sent: number;
-    delivered: number;
-    opened: number;
-    clicked: number;
-    bounced: number;
-    complained: number;
-    failed: number;
-    remaining: number;
+	totalLeads: number;
+	verified: number;
+	sent: number;
+	delivered: number;
+	opened: number;
+	clicked: number;
+	bounced: number;
+	complained: number;
+	failed: number;
+	remaining: number;
 }
 
 // Campaign Interface
 export interface Campaign {
-    id: string;
-    name: string;
-    description?: string;
-    status: CampaignStatus;
-    template: EmailTemplate;
-    schedule: ScheduleConfig;
-    delayConfig: DelayConfig;
-    leadSelection: LeadSelection;
-    metrics?: CampaignMetrics;
-    createdAt: string;
-    updatedAt: string;
-    startedAt?: string;
-    completedAt?: string;
-    pausedAt?: string;
-    currentPosition?: number;
+	id: string;
+	name: string;
+	description?: string;
+	status: CampaignStatus;
+	template: EmailTemplate;
+	schedule: ScheduleConfig;
+	delayConfig: DelayConfig;
+	leadSelection: LeadSelection;
+	metrics?: CampaignMetrics;
+	createdAt: string;
+	updatedAt: string;
+	startedAt?: string;
+	completedAt?: string;
+	pausedAt?: string;
+	currentPosition?: number;
 }
 
 // API Response Types
 export interface CampaignsResponse {
-    success: boolean;
-    data: Campaign[];
-    pagination?: {
-        limit: number;
-        lastKey?: string;
-    };
+	success: boolean;
+	data: Campaign[];
+	pagination?: {
+		limit: number;
+		lastKey?: string;
+	};
 }
 
 export interface CampaignResponse {
-    success: boolean;
-    data: Campaign;
+	success: boolean;
+	data: Campaign;
 }
 
 export interface CreateCampaignRequest {
-    name: string;
-    description?: string;
-    template: EmailTemplate;
-    schedule: ScheduleConfig;
-    delayConfig: DelayConfig;
-    leadSelection: LeadSelection;
+	name: string;
+	description?: string;
+	template: EmailTemplate;
+	schedule: ScheduleConfig;
+	delayConfig: DelayConfig;
+	leadSelection: LeadSelection;
 }
 
 export interface UpdateCampaignRequest {
-    name?: string;
-    description?: string;
-    template?: Partial<EmailTemplate>;
-    schedule?: Partial<ScheduleConfig>;
-    delayConfig?: Partial<DelayConfig>;
-    leadSelection?: Partial<LeadSelection>;
+	name?: string;
+	description?: string;
+	template?: Partial<EmailTemplate>;
+	schedule?: Partial<ScheduleConfig>;
+	delayConfig?: Partial<DelayConfig>;
+	leadSelection?: Partial<LeadSelection>;
 }
 
 export interface StatusChangeRequest {
-    status: CampaignStatus;
+	status: CampaignStatus;
 }
 
 export interface TestEmailRequest {
-    recipientEmail: string;
+	recipientEmail: string;
 }
 
 export interface TestEmailResponse {
-    success: boolean;
-    message: string;
-    messageId?: string;
+	success: boolean;
+	message: string;
+	messageId?: string;
 }
 
 export interface LeadPreviewRequest {
-    leadTypes: LeadType[];
-    statuses: string[];
-    maxLeads?: number;
+	leadTypes: LeadType[];
+	statuses: string[];
+	maxLeads?: number;
 }
 
 export interface LeadPreviewResponse {
-    success: boolean;
-    data: {
-        count: number;
-        sample: Array<{
-            id: string;
-            email: string;
-            fullName: string;
-            companyName: string;
-            status: string;
-            type: string;
-        }>;
-    };
+	success: boolean;
+	data: {
+		count: number;
+		sample: Array<{
+			id: string;
+			email: string;
+			fullName: string;
+			companyName: string;
+			status: string;
+			type: string;
+		}>;
+	};
 }
 
 export interface AssignLeadsRequest {
-    leadTypes: LeadType[];
-    statuses: string[];
-    maxLeads?: number;
+	leadTypes: LeadType[];
+	statuses: string[];
+	maxLeads?: number;
 }
 
 export interface AssignLeadsResponse {
-    success: boolean;
-    data: {
-        assignedCount: number;
-        message: string;
-    };
+	success: boolean;
+	data: {
+		assignedCount: number;
+		message: string;
+	};
 }
 
 export interface CampaignMetricsResponse {
-    success: boolean;
-    data: CampaignMetrics;
+	success: boolean;
+	data: CampaignMetrics;
 }

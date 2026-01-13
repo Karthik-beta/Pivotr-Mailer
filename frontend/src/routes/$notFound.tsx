@@ -1,11 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router";
 
-import NotFoundPage from '@/components/NotFoundPage'
+import NotFoundPage from "@/components/NotFoundPage";
 
-export const Route = createFileRoute('/$notFound')({
-  component: RouteComponent,
-})
+export const Route = createFileRoute("/$notFound")({
+	component: RouteComponent,
+});
 
 function RouteComponent() {
-  return <NotFoundPage />
+	return <NotFoundPage />;
 }

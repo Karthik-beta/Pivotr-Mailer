@@ -1,3 +1,3 @@
-export * from "./types"
-export * from "./store"
-export * from "./colors"
+export * from "./colors";
+export * from "./store";
+export * from "./types";

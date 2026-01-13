@@ -1,71 +1,62 @@
-import {
-  HeadContent,
-  Scripts,
-  createRootRouteWithContext,
-} from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
-
-import StoreDevtools from '../lib/demo-store-devtools'
-
-import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
-
-import appCss from '../styles.css?url'
-
-import type { QueryClient } from '@tanstack/react-query'
-
-import { ThemeProvider } from '../components/theme-provider'
+import { TanStackDevtools } from "@tanstack/react-devtools";
+import type { QueryClient } from "@tanstack/react-query";
+import { createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { ThemeProvider } from "../components/theme-provider";
+import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
+import StoreDevtools from "../lib/demo-store-devtools";
+import appCss from "../styles.css?url";
 
 interface MyRouterContext {
-  queryClient: QueryClient
+	queryClient: QueryClient;
 }
 
-import NotFoundPage from '../components/NotFoundPage'
-import { Layout } from '../features/shared/Layout'
+import NotFoundPage from "../components/NotFoundPage";
+import { Layout } from "../features/shared/Layout";
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
-  head: () => ({
-    meta: [
-      {
-        charSet: 'utf-8',
-      },
-      {
-        name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
-      },
-      {
-        title: 'Pivotr Mailer',
-      },
-    ],
-    links: [
-      {
-        rel: 'stylesheet',
-        href: appCss,
-      },
-      {
-        rel: "icon",
-        type: "image/png",
-        href: "/image.png",
-      },
-    ],
-  }),
+	head: () => ({
+		meta: [
+			{
+				charSet: "utf-8",
+			},
+			{
+				name: "viewport",
+				content: "width=device-width, initial-scale=1",
+			},
+			{
+				title: "Pivotr Mailer",
+			},
+		],
+		links: [
+			{
+				rel: "stylesheet",
+				href: appCss,
+			},
+			{
+				rel: "icon",
+				type: "image/png",
+				href: "/image.png",
+			},
+		],
+	}),
 
-  shellComponent: RootDocument,
-  notFoundComponent: () => (
-    <Layout>
-      <NotFoundPage />
-    </Layout>
-  ),
-})
+	shellComponent: RootDocument,
+	notFoundComponent: () => (
+		<Layout>
+			<NotFoundPage />
+		</Layout>
+	),
+});
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <HeadContent />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
+	return (
+		<html lang="en" suppressHydrationWarning>
+			<head>
+				<HeadContent />
+				<script
+					dangerouslySetInnerHTML={{
+						__html: `
               (function() {
                 try {
                   var config = JSON.parse(localStorage.getItem('pivotr-theme-config') || '{}');
@@ -79,28 +70,26 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 } catch (e) {}
               })();
             `,
-          }}
-        />
-      </head>
-      <body>
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
-        <TanStackDevtools
-          config={{
-            position: 'bottom-right',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-            StoreDevtools,
-            TanStackQueryDevtools,
-          ]}
-        />
-        <Scripts />
-      </body>
-    </html>
-  )
+					}}
+				/>
+			</head>
+			<body>
+				<ThemeProvider>{children}</ThemeProvider>
+				<TanStackDevtools
+					config={{
+						position: "bottom-right",
+					}}
+					plugins={[
+						{
+							name: "Tanstack Router",
+							render: <TanStackRouterDevtoolsPanel />,
+						},
+						StoreDevtools,
+						TanStackQueryDevtools,
+					]}
+				/>
+				<Scripts />
+			</body>
+		</html>
+	);
 }

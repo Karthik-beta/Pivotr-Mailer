@@ -89,7 +89,7 @@ export function boxMullerRandom(): number {
  */
 export function gaussianPDF(x: number, mean: number = 0, stdDev: number = 1): number {
 	const coefficient = 1 / (stdDev * Math.sqrt(2 * Math.PI));
-	const exponent = -0.5 * Math.pow((x - mean) / stdDev, 2);
+	const exponent = -0.5 * ((x - mean) / stdDev) ** 2;
 	return coefficient * Math.exp(exponent);
 }
 
@@ -178,10 +178,7 @@ export function parseTimeToMinutes(timeStr: string): number {
  * @param referenceDate - Optional reference date (defaults to now)
  * @returns Minutes since midnight in the specified timezone
  */
-export function getCurrentMinutesInTimezone(
-	timezone: string,
-	referenceDate?: Date
-): number {
+export function getCurrentMinutesInTimezone(timezone: string, referenceDate?: Date): number {
 	const date = referenceDate ?? new Date();
 
 	// Get time in target timezone
@@ -377,10 +374,7 @@ export function scheduleEmailBatch(
 		// Note: If cumulative delay exceeds 15 min, we cap at 900.
 		// To avoid bursting, batch size should be limited so cumulative
 		// delay stays under 900 seconds.
-		const delaySeconds = Math.min(
-			Math.floor(cumulativeDelayMs / 1000),
-			MAX_SQS_DELAY_SECONDS
-		);
+		const delaySeconds = Math.min(Math.floor(cumulativeDelayMs / 1000), MAX_SQS_DELAY_SECONDS);
 
 		// Calculate absolute scheduled time
 		const scheduledAt = new Date(now.getTime() + cumulativeDelayMs);
@@ -440,7 +434,7 @@ export function calculateDelayStats(delays: number[]): {
 	const sum = delays.reduce((a, b) => a + b, 0);
 	const mean = sum / count;
 
-	const squaredDiffs = delays.map((d) => Math.pow(d - mean, 2));
+	const squaredDiffs = delays.map((d) => (d - mean) ** 2);
 	const variance = squaredDiffs.reduce((a, b) => a + b, 0) / count;
 	const stdDev = Math.sqrt(variance);
 

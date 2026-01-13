@@ -169,12 +169,7 @@ export const LeadTypeFilterSchema = z.enum(["HARDWARE", "SOFTWARE", "BOTH", "ALL
 /**
  * Lead status filter options (eligible statuses for campaigns)
  */
-export const LeadStatusFilterSchema = z.enum([
-	"PENDING_IMPORT",
-	"VERIFIED",
-	"RISKY",
-	"ALL",
-]);
+export const LeadStatusFilterSchema = z.enum(["PENDING_IMPORT", "VERIFIED", "RISKY", "ALL"]);
 
 /**
  * Lead selection criteria for campaign targeting
@@ -344,10 +339,7 @@ export const VALID_STATUS_TRANSITIONS: Record<CampaignStatus, CampaignStatus[]> 
 /**
  * Validates if a status transition is allowed
  */
-export function isValidStatusTransition(
-	from: CampaignStatus,
-	to: CampaignStatus
-): boolean {
+export function isValidStatusTransition(from: CampaignStatus, to: CampaignStatus): boolean {
 	return VALID_STATUS_TRANSITIONS[from]?.includes(to) ?? false;
 }
 
@@ -371,10 +363,7 @@ export const TestEmailRequestSchema = z.object({
 	/** Email address to send test to */
 	testEmail: z.string().email("Invalid test email"),
 	/** Optional variable overrides for preview */
-	variableOverrides: z
-		.record(z.string(), z.string())
-		.optional()
-		.default({}),
+	variableOverrides: z.record(z.string(), z.string()).optional().default({}),
 });
 
 export type TestEmailRequest = z.infer<typeof TestEmailRequestSchema>;

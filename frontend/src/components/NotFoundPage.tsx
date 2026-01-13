@@ -1,5 +1,5 @@
-import { Compass, ArrowLeft } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { ArrowLeft, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function NotFoundPage() {
@@ -15,15 +15,10 @@ export default function NotFoundPage() {
 
 			{/* 404 text */}
 			<div className="space-y-3 mb-8">
-				<h1 className="text-8xl font-bold tracking-tighter text-foreground/10 select-none">
-					404
-				</h1>
-				<h2 className="text-2xl font-semibold tracking-tight -mt-14 relative">
-					Page not found
-				</h2>
+				<h1 className="text-8xl font-bold tracking-tighter text-foreground/10 select-none">404</h1>
+				<h2 className="text-2xl font-semibold tracking-tight -mt-14 relative">Page not found</h2>
 				<p className="text-muted-foreground max-w-md mx-auto">
-					The page you're looking for doesn't exist or has been moved.
-					Let's get you back on track.
+					The page you're looking for doesn't exist or has been moved. Let's get you back on track.
 				</p>
 			</div>
 
