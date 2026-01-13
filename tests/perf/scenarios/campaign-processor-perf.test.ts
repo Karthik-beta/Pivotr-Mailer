@@ -4,21 +4,23 @@ import { DynamoSpy } from '../utils/dynamo-spy.js';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 
 // Define mockSend first and hoist it
-const { mockSend, fakeClient } = vi.hoisted(() => {
+const { mockSend, fakeClient, mockSqsSend } = vi.hoisted(() => {
     const mock = vi.fn().mockImplementation(async (command: any) => {
         if (command.constructor.name === 'ScanCommand') {
             return { Items: [] };
         }
         return {};
     });
-    
+
     const client = {
         send: mock,
         config: {},
         middlewareStack: { add: () => {}, remove: () => {} }
     };
-    
-    return { mockSend: mock, fakeClient: client };
+
+    const sqsMock = vi.fn().mockResolvedValue({});
+
+    return { mockSend: mock, fakeClient: client, mockSqsSend: sqsMock };
 });
 
 // Spy instance to track calls
@@ -37,6 +39,18 @@ vi.mock('@aws-sdk/client-dynamodb', () => {
     };
 });
 
+// Mock SQS Client
+vi.mock('@aws-sdk/client-sqs', () => {
+    return {
+        SQSClient: class MockSQSClient {
+            constructor() {}
+            send = mockSqsSend;
+        },
+        SendMessageBatchCommand: class {},
+        GetQueueAttributesCommand: class {},
+    };
+});
+
 vi.mock('@aws-sdk/lib-dynamodb', async () => {
     const actual = await vi.importActual('@aws-sdk/lib-dynamodb');
     return {
@@ -51,6 +65,16 @@ vi.mock('@aws-sdk/lib-dynamodb', async () => {
         BatchWriteCommand: (actual as any).BatchWriteCommand,
     };
 });
+
+// Mock logger to reduce noise
+vi.mock('@aws-lambda-powertools/logger', () => ({
+    Logger: class {
+        info() {}
+        error() {}
+        warn() {}
+        debug() {}
+    }
+}));
 
 // Set Environment Variables BEFORE importing lambda
 process.env.SQS_SENDING_QUEUE_URL = 'https://sqs.us-east-1.amazonaws.com/123/sending-queue';

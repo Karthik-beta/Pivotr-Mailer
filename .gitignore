@@ -63,6 +63,7 @@ tests/localstack/volume/state/
 .cache/
 *.tmp
 *.temp
+tmpclaude-*
 
 # Credentials
 credentials/

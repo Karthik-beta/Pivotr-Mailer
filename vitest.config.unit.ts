@@ -22,6 +22,8 @@ export default mergeConfig(baseConfig, defineConfig({
             'tests/integration/**',
             'tests/lambda/**',
             'tests/e2e/**',
+            'tests/perf/**',
+            'tests/performance/**',
         ],
         // Unit tests should be fast
         testTimeout: 5000,

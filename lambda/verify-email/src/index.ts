@@ -1,12 +1,17 @@
 /**
  * Verify Email Lambda
- * 
+ *
  * Verifies email addresses using MyEmailVerifier (MEV) API.
  * Triggered by SQS.
- * 
- * SAFETY:
- * - Updates lead status to 'VERIFIED', 'INVALID', or 'SKIPPED'
- * - Does not block other processes, just updates status.
+ *
+ * STATE MACHINE:
+ * - Lead arrives with status = 'VERIFYING' (set by campaign-processor)
+ * - After verification, lead returns to status = 'QUEUED' with verificationStatus populated
+ * - This allows campaign-processor to pick up the lead again and route it correctly
+ *
+ * IMPORTANT: Verification is a TEMPORARY DETOUR, not a terminal state.
+ * The verificationStatus field stores the verification result (ok, invalid, catch_all, unknown).
+ * The status field represents workflow position only.
  */
 
 import type { SQSEvent, SQSHandler, SQSRecord } from 'aws-lambda';
@@ -70,10 +75,10 @@ async function processRecord(record: SQSRecord) {
         return;
     }
 
-    if (lead.status !== 'QUEUED_FOR_VERIFICATION') {
-        // Maybe checking status is not strictly required if we trust the queue, 
-        // but good for safety.
-        logger.info('Lead not in verification state', { leadId, status: lead.status });
+    if (lead.status !== 'VERIFYING') {
+        // Lead might have been processed already or rolled back
+        // Log for observability but proceed anyway - the verification result is still valuable
+        logger.info('Lead not in expected VERIFYING state', { leadId, status: lead.status });
         // Proceeding anyway if debug force? No, safer to skip.
         // return; 
     }
@@ -81,14 +86,12 @@ async function processRecord(record: SQSRecord) {
     // 2. Call MEV API
     const verificationResult = await verifyWithErrorHandling(lead.email);
 
-    // 3. Update Status
-    const newStatus = mapMevStatusToLeadStatus(verificationResult.Status);
+    // 3. Update verification result and return lead to QUEUED
+    const verificationStatus = mapMevStatusToVerificationStatus(verificationResult.Status);
 
-    await updateLeadStatus(leadId, newStatus, {
-        verificationResult: verificationResult
-    });
+    await updateLeadWithVerificationResult(leadId, verificationStatus, verificationResult);
 
-    logger.info('Lead verification complete', { leadId, status: newStatus });
+    logger.info('Lead verification complete', { leadId, verificationStatus });
 }
 
 async function getLead(id: string) {
@@ -99,35 +102,57 @@ async function getLead(id: string) {
     return res.Item;
 }
 
-async function updateLeadStatus(id: string, status: string, meta: any) {
-    const updateParts = ['#s = :s', '#meta = :meta'];
+/**
+ * Updates lead with verification result and returns it to QUEUED status.
+ *
+ * KEY DESIGN DECISION: We set status back to 'QUEUED' so the campaign-processor
+ * can pick up the lead again. The verificationStatus field stores the actual
+ * verification result, which categorizeLeads() uses to route the lead appropriately.
+ */
+async function updateLeadWithVerificationResult(id: string, verificationStatus: string, verificationData: any) {
     await docClient.send(new UpdateCommand({
         TableName: LEADS_TABLE,
         Key: { id },
-        UpdateExpression: 'SET #s = :s, verification_data = :meta',
-        ExpressionAttributeNames: { '#s': 'status', '#meta': 'verificationResult' },
-        ExpressionAttributeValues: { ':s': status, ':meta': meta }
+        UpdateExpression: 'SET #status = :queued, #verificationStatus = :verificationStatus, #verificationResult = :verificationData, #updatedAt = :now',
+        ExpressionAttributeNames: {
+            '#status': 'status',
+            '#verificationStatus': 'verificationStatus',
+            '#verificationResult': 'verificationResult'
+        },
+        ExpressionAttributeValues: {
+            ':queued': 'QUEUED',  // Return to workflow queue for campaign-processor pickup
+            ':verificationStatus': verificationStatus,
+            ':verificationData': verificationData,
+            ':now': new Date().toISOString()
+        }
     }));
 }
 
 /**
- * Maps MEV status code to our Lead status.
- * MEV Codes: 
+ * Maps MEV status code to verificationStatus field value.
+ *
+ * NOTE: These values are stored in the verificationStatus field, NOT the status field.
+ * The status field is reserved for workflow position (QUEUED, VERIFYING, SENDING, etc.)
+ *
+ * MEV Codes:
  * 1 (Valid), 2 (Invalid), 3 (Catch-All), 4 (Unknown), etc.
- * 
- * We treat Valid as VERIFIED.
- * Invalid, Spamtrap, Complainer, Disposable -> INVALID
- * Others -> SKIPPED (unsafe to send)
+ *
+ * Return values match what campaign-processor's categorizeLeads() expects:
+ * - 'ok' or 'VERIFIED' → ready to send
+ * - 'catch_all' or 'RISKY' → depends on campaign.sendCriteria.allowCatchAll
+ * - 'unknown' → depends on campaign.sendCriteria.allowUnknown
+ * - 'invalid' → skip (don't send)
  */
-function mapMevStatusToLeadStatus(mevStatus: string): string {
-    // Normalize string just in case
+function mapMevStatusToVerificationStatus(mevStatus: string): string {
     const status = String(mevStatus).toLowerCase();
 
-    if (status === 'valid') return 'VERIFIED';
-    if (status === 'invalid' || status === 'spam_trap' || status === 'complainer' || status === 'disposable') return 'INVALID';
-    if (status === 'catch_all' || status === 'unknown') return 'SKIPPED_RISKY';
+    if (status === 'valid') return 'ok';
+    if (status === 'invalid' || status === 'spam_trap' || status === 'complainer' || status === 'disposable') return 'invalid';
+    if (status === 'catch_all') return 'catch_all';
+    if (status === 'unknown') return 'unknown';
 
-    return 'SKIPPED_UNKNOWN';
+    // Fallback for any unrecognized status
+    return 'unknown';
 }
 
 async function verifyWithErrorHandling(email: string): Promise<any> {

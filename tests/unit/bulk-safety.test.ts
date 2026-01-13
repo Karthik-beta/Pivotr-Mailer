@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-// Remove aws-sdk-client-mock import
-import { DynamoDBDocumentClient, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
-// Mock logger
+
+// Create a mock send function
+const mockSend = vi.fn();
+
+// Mock logger FIRST (before any imports that might use it)
 vi.mock('@aws-lambda-powertools/logger', () => ({
     Logger: class {
         info() { }
@@ -11,8 +13,12 @@ vi.mock('@aws-lambda-powertools/logger', () => ({
     }
 }));
 
-// Create a mock send function
-const mockSend = vi.fn();
+// Mock @aws-sdk/client-dynamodb - this must come before lib-dynamodb
+vi.mock('@aws-sdk/client-dynamodb', () => ({
+    DynamoDBClient: class {
+        constructor() { }
+    }
+}));
 
 // Mock DynamoDBDocumentClient
 vi.mock('@aws-sdk/lib-dynamodb', async () => {

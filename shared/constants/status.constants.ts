@@ -1,20 +1,37 @@
 /**
  * Lead Status Constants
  *
- * Represents the lifecycle state of a lead in the email automation pipeline.
+ * Represents the WORKFLOW POSITION of a lead in the email automation pipeline.
  * Each status maps to a specific stage in the finite state machine.
+ *
+ * IMPORTANT DESIGN PRINCIPLE:
+ * The status field represents WHERE the lead is in the workflow (workflow position).
+ * The verificationStatus field represents the DATA QUALITY of the email address.
+ * These are intentionally separate concerns to prevent state machine bugs.
  */
 export const LeadStatus = {
 	/** Initial state after data ingestion via CSV/manual import */
 	PENDING_IMPORT: "PENDING_IMPORT",
 
-	/** Lead has been assigned to a campaign queue */
+	/**
+	 * Lead is in the campaign queue, ready for processing.
+	 * campaign-processor picks up QUEUED leads and routes them based on verificationStatus.
+	 */
 	QUEUED: "QUEUED",
 
-	/** Currently undergoing email verification via MyEmailVerifier */
+	/**
+	 * Currently undergoing email verification via MyEmailVerifier.
+	 * This is a TRANSIENT state - after verification completes,
+	 * the lead returns to QUEUED with verificationStatus populated.
+	 */
 	VERIFYING: "VERIFYING",
 
-	/** Passed verification, awaiting send slot in Gaussian timer */
+	/**
+	 * @deprecated Leads should not remain in VERIFIED status.
+	 * This was a bug where verification result was stored in status field.
+	 * Use verificationStatus field to check if email is verified.
+	 * After verification, leads should return to QUEUED status.
+	 */
 	VERIFIED: "VERIFIED",
 
 	/** Catch-all domain detected - requires campaign.allowCatchAll flag */
