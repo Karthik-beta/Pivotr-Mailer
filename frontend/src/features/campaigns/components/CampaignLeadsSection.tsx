@@ -51,10 +51,10 @@ export function CampaignLeadsSection({ campaign, metrics }: CampaignLeadsSection
 								<div className="space-y-2">
 									<p className="text-xs font-mono uppercase text-muted-foreground">Lead Statuses</p>
 									<div className="flex flex-wrap gap-2">
-										{campaign.leadSelection.statuses.length === 0 ? (
+										{campaign.leadSelection.leadStatuses.length === 0 ? (
 											<span className="text-muted-foreground">None selected</span>
 										) : (
-											campaign.leadSelection.statuses.map((status) => (
+											campaign.leadSelection.leadStatuses.map((status) => (
 												<Badge key={status} variant="secondary">
 													{status.replace(/_/g, " ")}
 												</Badge>

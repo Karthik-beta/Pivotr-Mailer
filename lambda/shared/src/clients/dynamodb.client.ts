@@ -16,8 +16,10 @@ let documentClient: DynamoDBDocumentClient | null = null;
  */
 export function getDynamoDbClient(): DynamoDBDocumentClient {
     if (!documentClient) {
+        const endpoint = process.env.AWS_ENDPOINT_URL;
         const client = new DynamoDBClient({
             region: process.env.AWS_REGION || 'ap-south-1',
+            ...(endpoint && { endpoint }),
         });
 
         documentClient = DynamoDBDocumentClient.from(client, {

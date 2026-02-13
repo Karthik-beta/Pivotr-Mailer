@@ -41,6 +41,7 @@ nul
 logs/
 *.log
 npm-debug.log*
+.pm2/
 
 # Bun
 bun.lockb

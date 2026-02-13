@@ -330,3 +330,96 @@ export function useDownloadTemplate() {
 		},
 	});
 }
+
+// =============================================================================
+// Bulk Operations
+// =============================================================================
+
+export interface BulkDeleteResponse {
+	success: boolean;
+	data: {
+		deleted: number;
+		failed: number;
+		details: Array<{
+			id: string;
+			status: string;
+			message: string;
+		}>;
+	};
+}
+
+export function useBulkDeleteLeads() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (ids: string[]): Promise<BulkDeleteResponse> => {
+			const response = await fetch(`${API_BASE}/leads/bulk-delete`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ ids }),
+			});
+			if (!response.ok) throw new Error("Failed to delete leads");
+			return response.json();
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["leads"] });
+		},
+	});
+}
+
+export interface BulkUpdateStatusResponse {
+	success: boolean;
+	data: {
+		updated: number;
+		failed: number;
+		details: Array<{
+			id: string;
+			status: string;
+			message: string;
+		}>;
+	};
+}
+
+export function useBulkUpdateLeads() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (params: {
+			ids: string[];
+			updates: Partial<Pick<Lead, "status" | "campaignId">>;
+		}): Promise<BulkUpdateStatusResponse> => {
+			const response = await fetch(`${API_BASE}/leads/bulk-update`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(params),
+			});
+			if (!response.ok) throw new Error("Failed to update leads");
+			return response.json();
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["leads"] });
+		},
+	});
+}
+
+export function useExportSelectedLeads() {
+	return useMutation({
+		mutationFn: async (ids: string[]) => {
+			const response = await fetch(`${API_BASE}/leads/export-selected`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ ids }),
+			});
+			if (!response.ok) throw new Error("Failed to export selected leads");
+			const result = await response.json();
+
+			// Trigger download
+			const link = document.createElement("a");
+			link.href = `data:${result.contentType};base64,${result.data}`;
+			link.download = result.filename;
+			link.click();
+
+			return result;
+		},
+	});
+}

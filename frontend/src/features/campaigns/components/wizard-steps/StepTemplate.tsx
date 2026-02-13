@@ -7,7 +7,7 @@
  * Uses TanStack Form for declarative field binding with array support.
  */
 
-import { sanitizeHtml } from "@/lib/sanitize";
+import { useStore } from "@tanstack/react-store";
 import {
 	Bold,
 	ChevronDown,
@@ -31,7 +31,6 @@ import {
 	Twitter,
 } from "lucide-react";
 import { marked } from "marked";
-import { useStore } from "@tanstack/react-store";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,6 +48,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { sanitizeHtml } from "@/lib/sanitize";
 import type { StepProps } from "../../types/formTypes";
 
 // Platform icons
@@ -259,7 +259,9 @@ export function StepTemplate({ form }: StepProps) {
 											</TooltipTrigger>
 											<TooltipContent className="max-w-xs">
 												<p className="font-medium mb-1">Spintax Syntax</p>
-												<p className="text-xs">Use {"{Hi|Hello|Hey}"} to randomly select one option.</p>
+												<p className="text-xs">
+													Use {"{Hi|Hello|Hey}"} to randomly select one option.
+												</p>
 												<p className="text-xs mt-1">Use {"{{FirstName}}"} for lead variables.</p>
 											</TooltipContent>
 										</Tooltip>
@@ -670,9 +672,7 @@ Senior Sales Executive | Acme Corp
 												<Button
 													variant="outline"
 													size="sm"
-													onClick={() =>
-														mediaField.pushValue({ type: "image", url: "", alt: "" })
-													}
+													onClick={() => mediaField.pushValue({ type: "image", url: "", alt: "" })}
 													disabled={!templateValues.signOff?.enabled}
 												>
 													<Plus className="h-3 w-3 mr-1" />
@@ -684,8 +684,11 @@ Senior Sales Executive | Acme Corp
 									<form.Field name="template.signOff.media" mode="array">
 										{(mediaField) => (
 											<>
-												{mediaField.state.value?.map((media, index) => (
-													<div key={index} className="flex gap-2 items-start p-3 rounded-lg bg-muted/50">
+												{mediaField.state.value?.map((_media, index) => (
+													<div
+														key={index}
+														className="flex gap-2 items-start p-3 rounded-lg bg-muted/50"
+													>
 														<form.Field name={`template.signOff.media[${index}].type`}>
 															{(field) => (
 																<Select
@@ -786,9 +789,7 @@ Senior Sales Executive | Acme Corp
 												<Button
 													variant="outline"
 													size="sm"
-													onClick={() =>
-														linksField.pushValue({ platform: "linkedin", url: "" })
-													}
+													onClick={() => linksField.pushValue({ platform: "linkedin", url: "" })}
 													disabled={!templateValues.signOff?.enabled}
 												>
 													<Plus className="h-3 w-3 mr-1" />

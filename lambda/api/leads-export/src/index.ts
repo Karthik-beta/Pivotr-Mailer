@@ -612,11 +612,95 @@ async function generateTemplate(): Promise<APIGatewayProxyResult> {
     });
 
     // ==========================================================================
-    // Data Rows with validation and zebra striping
+    // Sample Data Rows (rows 11-13) - Examples for users
     // ==========================================================================
 
-    for (let rowNum = 11; rowNum <= 510; rowNum++) {
-        const isEvenRow = (rowNum - 11) % 2 === 0;
+    const sampleData = [
+        {
+            fullName: 'Rahul Sharma',
+            email: 'rahul.sharma@techsolutions.com',
+            companyName: 'Tech Solutions Pvt Ltd',
+            phoneNumber: '+91 98765 43210',
+            leadType: 'SOFTWARE',
+        },
+        {
+            fullName: 'Priya Patel',
+            email: 'priya.p@innovate.co.in',
+            companyName: 'Innovate Industries',
+            phoneNumber: '+91 87654 32109',
+            leadType: 'HARDWARE',
+        },
+        {
+            fullName: 'Amit Kumar',
+            email: 'amit.kumar@globaltech.com',
+            companyName: 'Global Tech Enterprises',
+            phoneNumber: '+91 76543 21098',
+            leadType: 'BOTH',
+        },
+    ];
+
+    sampleData.forEach((sample, idx) => {
+        const rowNum = 11 + idx;
+        const row = worksheet.getRow(rowNum);
+        row.height = 24;
+
+        // Full Name
+        const nameCell = row.getCell(1);
+        nameCell.value = sample.fullName;
+        nameCell.font = { name: 'Segoe UI', size: 10, color: { argb: '374151' }, italic: true };
+        nameCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E0F2FE' } };
+        nameCell.border = { bottom: { style: 'hair', color: { argb: COLORS.border } } };
+        nameCell.alignment = { vertical: 'middle', indent: 1 };
+
+        // Email
+        const emailCell = row.getCell(2);
+        emailCell.value = sample.email;
+        emailCell.font = { name: 'Segoe UI', size: 10, color: { argb: '374151' }, italic: true };
+        emailCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E0F2FE' } };
+        emailCell.border = { bottom: { style: 'hair', color: { argb: COLORS.border } } };
+        emailCell.alignment = { vertical: 'middle', indent: 1 };
+
+        // Company Name
+        const companyCell = row.getCell(3);
+        companyCell.value = sample.companyName;
+        companyCell.font = { name: 'Segoe UI', size: 10, color: { argb: '374151' }, italic: true };
+        companyCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E0F2FE' } };
+        companyCell.border = { bottom: { style: 'hair', color: { argb: COLORS.border } } };
+        companyCell.alignment = { vertical: 'middle', indent: 1 };
+
+        // Phone Number
+        const phoneCell = row.getCell(4);
+        phoneCell.value = sample.phoneNumber;
+        phoneCell.font = { name: 'Segoe UI', size: 10, color: { argb: '374151' }, italic: true };
+        phoneCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E0F2FE' } };
+        phoneCell.border = { bottom: { style: 'hair', color: { argb: COLORS.border } } };
+        phoneCell.alignment = { vertical: 'middle', indent: 1 };
+
+        // Lead Type
+        const typeCell = row.getCell(5);
+        typeCell.value = sample.leadType;
+        typeCell.font = { name: 'Segoe UI', size: 10, color: { argb: '374151' }, italic: true };
+        typeCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E0F2FE' } };
+        typeCell.border = { bottom: { style: 'hair', color: { argb: COLORS.border } } };
+        typeCell.alignment = { vertical: 'middle', indent: 1 };
+
+        // Lead Type dropdown validation for sample rows
+        typeCell.dataValidation = {
+            type: 'list',
+            allowBlank: true,
+            formulae: ['"HARDWARE,SOFTWARE,BOTH"'],
+            error: 'Please select a valid lead type',
+            errorTitle: 'Invalid Selection',
+            showErrorMessage: true,
+        };
+    });
+
+    // ==========================================================================
+    // Empty Data Rows with validation and zebra striping (rows 14-510)
+    // ==========================================================================
+
+    for (let rowNum = 14; rowNum <= 510; rowNum++) {
+        const isEvenRow = (rowNum - 14) % 2 === 0;
         const zebraColor = isEvenRow ? COLORS.zebraLight : COLORS.zebraDark;
 
         for (let col = 1; col <= 5; col++) {

@@ -4,11 +4,15 @@
 #
 # Professional-grade LocalStack setup for local AWS service emulation.
 # Provides high-fidelity testing of DynamoDB, SQS, SNS, SES, S3, CloudWatch, and Lambda.
+# Includes Mailpit for email preview UI.
 #
 # Usage:
-#   docker compose up -d                    # Start LocalStack
+#   docker compose up -d                    # Start LocalStack + Mailpit
 #   docker compose logs -f localstack       # View logs
 #   docker compose down -v                  # Stop and clean up
+#
+# Email UI:
+#   http://localhost:8025                   # Mailpit web interface
 #
 # Bootstrap:
 #   After starting, run: bun run localstack:bootstrap
@@ -45,8 +49,9 @@ services:
       - LAMBDA_DOCKER_NETWORK=pivotr-localstack-network
       - LAMBDA_REMOVE_CONTAINERS=true
 
-      # SES Configuration
-      - SMTP_HOST=localhost
+      # SES Configuration - relay to Mailpit
+      - SMTP_HOST=mailpit
+      - SMTP_PORT=1025
       - SES_SKIP_CERTIFICATE_VERIFICATION=1
 
       # Logging
@@ -67,6 +72,9 @@ services:
       retries: 5
       start_period: 30s
 
+    depends_on:
+      - mailpit
+
     # Resource limits
     deploy:
       resources:
@@ -74,3 +82,44 @@ services:
           memory: 4G
         reservations:
           memory: 1G
+
+  # =========================================================================
+  # Mailpit - Email Testing UI
+  # =========================================================================
+  # Captures all emails sent via LocalStack SES and provides a web UI
+  # for viewing, searching, and debugging email content.
+  #
+  # Web UI: http://localhost:8025
+  # SMTP:   localhost:1025 (used by LocalStack)
+  # =========================================================================
+  mailpit:
+    container_name: pivotr-mailpit
+    image: axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:8025:8025"    # Web UI
+      - "127.0.0.1:1025:1025"    # SMTP
+    networks:
+      - pivotr-localstack-network
+    environment:
+      # Storage settings
+      - MP_DATABASE=/data/mailpit.db
+      - MP_MAX_MESSAGES=5000
+
+      # UI settings
+      - MP_UI_AUTH_FILE=
+      - MP_SMTP_AUTH_ACCEPT_ANY=true
+      - MP_SMTP_AUTH_ALLOW_INSECURE=true
+
+      # Logging
+      - MP_VERBOSE=false
+    volumes:
+      - mailpit-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8025/api/v1/info"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  mailpit-data:

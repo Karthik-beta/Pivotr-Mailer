@@ -30,12 +30,21 @@ const statusConfig: Record<CampaignStatus, { label: string; className: string }>
 		label: "Paused",
 		className: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
 	},
+	ABORTING: {
+		label: "Aborting",
+		className:
+			"bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 animate-pulse",
+	},
+	ABORTED: {
+		label: "Aborted",
+		className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+	},
 	COMPLETED: {
 		label: "Completed",
 		className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
 	},
-	ABORTED: {
-		label: "Aborted",
+	ERROR: {
+		label: "Error",
 		className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
 	},
 };

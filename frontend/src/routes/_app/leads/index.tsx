@@ -16,7 +16,7 @@ import {
 	Upload,
 	Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { z } from "zod";
 import {
 	BreadcrumbItem,
@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BulkActionsToolbar } from "@/features/leads/components/BulkActionsToolbar";
 import { LeadsDataTable } from "@/features/leads/components/LeadsDataTable";
 import { useDownloadTemplate, useExportLeads, useLeads } from "@/features/leads/hooks/useLeads";
 import type { Lead } from "@/features/leads/types";
@@ -46,7 +47,8 @@ export const Route = createFileRoute("/_app/leads/")({
 function LeadsPage() {
 	const navigate = useNavigate();
 	const { status, page, pageSize } = Route.useSearch();
-	const [, setSelectedIds] = useState<string[]>([]);
+	const [selectedIds, setSelectedIds] = useState<string[]>([]);
+	const clearSelectionRef = useRef<(() => void) | null>(null);
 	const { data, isLoading, error, refetch, isRefetching } = useLeads({ limit: 100 });
 	const exportMutation = useExportLeads();
 	const templateMutation = useDownloadTemplate();
@@ -86,6 +88,13 @@ function LeadsPage() {
 
 	const handleRowClick = (lead: Lead) => {
 		console.log("Lead clicked:", lead);
+	};
+
+	const handleClearSelection = () => {
+		setSelectedIds([]);
+		if (clearSelectionRef.current) {
+			clearSelectionRef.current();
+		}
 	};
 
 	return (
@@ -216,10 +225,18 @@ function LeadsPage() {
 							onPageSizeChange={handlePageSizeChange}
 							pageIndex={page}
 							onPageIndexChange={handlePageIndexChange}
+							clearSelectionRef={clearSelectionRef}
 						/>
 					</CardContent>
 				</Card>
 			</div>
+
+			{/* Bulk Actions Toolbar */}
+			<BulkActionsToolbar
+				selectedIds={selectedIds}
+				onClearSelection={handleClearSelection}
+				onActionComplete={() => refetch()}
+			/>
 		</Layout>
 	);
 }

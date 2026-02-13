@@ -32,9 +32,7 @@ export function StepBasicInfo({ form }: StepProps) {
 								className="font-medium"
 							/>
 							{field.state.meta.errors.length > 0 && (
-								<p className="text-sm text-destructive">
-									{field.state.meta.errors[0]}
-								</p>
+								<p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
 							)}
 						</>
 					)}
@@ -60,9 +58,7 @@ export function StepBasicInfo({ form }: StepProps) {
 								rows={3}
 							/>
 							{field.state.meta.errors.length > 0 && (
-								<p className="text-sm text-destructive">
-									{field.state.meta.errors[0]}
-								</p>
+								<p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
 							)}
 							<p className="text-xs text-muted-foreground">
 								A brief description to help you identify this campaign later.

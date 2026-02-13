@@ -13,7 +13,7 @@ export type GradientColor = "slate" | "emerald" | "green" | "blue" | "amber" | "
 
 interface MetricCardProps {
 	title: string;
-	value: number;
+	value?: number;
 	icon: LucideIcon;
 	gradient?: GradientColor;
 	size?: "default" | "sm";
@@ -59,7 +59,7 @@ const valueColorClasses: Record<GradientColor, string> = {
 
 export function MetricCard({
 	title,
-	value,
+	value = 0,
 	icon: Icon,
 	gradient = "slate",
 	size = "default",

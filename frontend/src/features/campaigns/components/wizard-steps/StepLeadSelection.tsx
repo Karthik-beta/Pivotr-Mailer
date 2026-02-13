@@ -36,9 +36,7 @@ export function StepLeadSelection({ form }: StepProps) {
 
 	const toggleLeadType = (type: LeadType, checked: boolean) => {
 		const currentTypes = leadSelection.leadTypes;
-		const newTypes = checked
-			? [...currentTypes, type]
-			: currentTypes.filter((t) => t !== type);
+		const newTypes = checked ? [...currentTypes, type] : currentTypes.filter((t) => t !== type);
 
 		form.setFieldValue("leadSelection.leadTypes", newTypes);
 	};
@@ -61,12 +59,7 @@ export function StepLeadSelection({ form }: StepProps) {
 				maxLeads: leadSelection.maxLeads,
 			});
 		}
-	}, [
-		leadSelection.leadTypes,
-		leadSelection.statuses,
-		leadSelection.maxLeads,
-		previewMutation,
-	]);
+	}, [leadSelection.leadTypes, leadSelection.statuses, leadSelection.maxLeads, previewMutation]);
 
 	// Auto-refresh on selection change (debounced)
 	useEffect(() => {
@@ -156,8 +149,7 @@ export function StepLeadSelection({ form }: StepProps) {
 							<RefreshCw className="h-4 w-4 animate-spin" />
 							<span className="text-sm text-muted-foreground">Counting leads...</span>
 						</div>
-					) : leadSelection.leadTypes.length === 0 ||
-						leadSelection.statuses.length === 0 ? (
+					) : leadSelection.leadTypes.length === 0 || leadSelection.statuses.length === 0 ? (
 						<p className="text-sm text-muted-foreground">
 							Select at least one lead type and status to see matching leads
 						</p>

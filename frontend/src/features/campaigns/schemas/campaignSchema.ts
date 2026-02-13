@@ -41,10 +41,7 @@ export const templateSchema = z.object({
 	subject: z.string().min(1, "Subject is required"),
 	body: z.string().min(1, "Email body is required"),
 	senderName: z.string().min(1, "Sender name is required"),
-	senderEmail: z
-		.string()
-		.min(1, "Sender email is required")
-		.email("Invalid email address"),
+	senderEmail: z.string().min(1, "Sender email is required").email("Invalid email address"),
 	ccEmail: z.string().email("Invalid CC email address").optional().or(z.literal("")),
 	signOff: signOffConfigSchema.optional(),
 });

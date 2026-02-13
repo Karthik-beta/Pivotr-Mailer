@@ -4,11 +4,11 @@
  * Display the email template for a campaign including sign-off section.
  */
 
-import { sanitizeHtml } from "@/lib/sanitize";
 import { Globe, Image as ImageIcon, Linkedin, Mail, Phone, Twitter } from "lucide-react";
 import { marked } from "marked";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { sanitizeHtml } from "@/lib/sanitize";
 import type { EmailTemplate } from "../types";
 
 interface CampaignTemplatePreviewProps {

@@ -156,6 +156,9 @@ export function useDeleteCampaign() {
 
 	return useMutation({
 		mutationFn: async (id: string): Promise<{ success: boolean }> => {
+			// Cancel in-flight campaign queries to avoid SAM CLI concurrency issues
+			await queryClient.cancelQueries({ queryKey: ["campaigns", id] });
+
 			const response = await fetchWithTimeout(`${API_BASE}/campaigns/${id}`, {
 				method: "DELETE",
 			});
@@ -165,6 +168,8 @@ export function useDeleteCampaign() {
 			}
 			return response.json();
 		},
+		retry: 2,
+		retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["campaigns"] });
 		},
@@ -182,6 +187,9 @@ export function useChangeCampaignStatus() {
 			id: string;
 			status: StatusChangeRequest["status"];
 		}): Promise<CampaignResponse> => {
+			// Cancel in-flight campaign queries to avoid SAM CLI concurrency issues
+			await queryClient.cancelQueries({ queryKey: ["campaigns", id] });
+
 			const response = await fetchWithTimeout(`${API_BASE}/campaigns/${id}/status`, {
 				method: "PUT",
 				headers: { "Content-Type": "application/json" },
@@ -193,6 +201,8 @@ export function useChangeCampaignStatus() {
 			}
 			return response.json();
 		},
+		retry: 2,
+		retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
 		onSuccess: (_, { id }) => {
 			queryClient.invalidateQueries({ queryKey: ["campaigns"] });
 			queryClient.invalidateQueries({ queryKey: ["campaigns", id] });

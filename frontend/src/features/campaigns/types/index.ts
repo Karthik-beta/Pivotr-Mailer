@@ -5,7 +5,15 @@
  */
 
 // Campaign Status
-export type CampaignStatus = "DRAFT" | "QUEUED" | "RUNNING" | "PAUSED" | "COMPLETED" | "ABORTED";
+export type CampaignStatus =
+	| "DRAFT"
+	| "QUEUED"
+	| "RUNNING"
+	| "PAUSED"
+	| "ABORTING"
+	| "ABORTED"
+	| "COMPLETED"
+	| "ERROR";
 
 // Lead Type
 export type LeadType = "HARDWARE" | "SOFTWARE" | "BOTH";

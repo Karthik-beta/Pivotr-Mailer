@@ -15,7 +15,7 @@
  * - GET /campaigns/{id}/metrics - Get campaign metrics
  * - POST /campaigns - Create new campaign
  * - POST /campaigns/{id}/assign-leads - Assign leads to campaign
- * - POST /campaigns/{id}/status - Transition campaign status
+ * - PUT /campaigns/{id}/status - Transition campaign status
  * - POST /campaigns/{id}/test-email - Send test email
  * - POST /campaigns/preview-leads - Preview leads matching criteria
  * - PUT /campaigns/{id} - Update campaign
@@ -110,6 +110,7 @@ function response(statusCode: number, body: unknown): APIGatewayProxyResult {
 		headers: {
 			"Content-Type": "application/json",
 			"Access-Control-Allow-Origin": "*",
+			"Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
 			"Access-Control-Allow-Headers": "Content-Type",
 		},
 		body: JSON.stringify(body),
@@ -151,8 +152,8 @@ export const handler: Handler<
 			return await assignLeadsToCampaign(id, body);
 		}
 
-		// POST /campaigns/{id}/status
-		if (httpMethod === "POST" && path.includes("/status") && id) {
+		// PUT /campaigns/{id}/status
+		if (httpMethod === "PUT" && path.includes("/status") && id) {
 			return await transitionStatus(id, body);
 		}
 
@@ -730,11 +731,9 @@ async function fetchLeadsMatchingCriteria(
 	// No existing campaign assignment
 	filterParts.push("attribute_not_exists(campaignId)");
 
-	// Exclude bounced, complained, unsubscribed
-	names["#status"] = "status";
-
 	// Status filter
 	if (!criteria.leadStatuses.includes("ALL")) {
+		names["#status"] = "status";
 		const statusList = criteria.leadStatuses.filter((s) => s !== "ALL");
 		const statusPlaceholders = statusList.map((_, i) => `:eligStatus${i}`);
 		filterParts.push(`#status IN (${statusPlaceholders.join(", ")})`);
@@ -809,8 +808,8 @@ async function transitionStatus(
 		});
 	}
 
-	// Additional validation for specific transitions
-	if (targetStatus === "QUEUED" || targetStatus === "RUNNING") {
+	// Additional validation for specific transitions (skip when resuming from PAUSED)
+	if ((targetStatus === "QUEUED" || targetStatus === "RUNNING") && currentStatus !== "PAUSED") {
 		// Must have template
 		if (!campaign.template?.subject || !campaign.template?.body) {
 			return response(400, {

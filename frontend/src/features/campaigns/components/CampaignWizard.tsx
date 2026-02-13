@@ -7,8 +7,8 @@
  */
 
 import { useForm } from "@tanstack/react-form";
-import { useStore } from "@tanstack/react-store";
 import { useNavigate } from "@tanstack/react-router";
+import { useStore } from "@tanstack/react-store";
 import { ChevronLeft, ChevronRight, RefreshCw, Save } from "lucide-react";
 import { useMemo } from "react";
 import { toast } from "sonner";
@@ -22,17 +22,13 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { useCreateCampaign, usePreviewLeads, useUpdateCampaign } from "../hooks/useCampaigns";
-import type { Campaign, CreateCampaignRequest } from "../types";
 import {
 	type CampaignFormData,
 	getDefaultFormValues,
 	stepSchemas,
 } from "../schemas/campaignSchema";
-import {
-	WIZARD_STEPS,
-	createWizardStore,
-	wizardActions,
-} from "../stores/wizardStore";
+import { createWizardStore, WIZARD_STEPS, wizardActions } from "../stores/wizardStore";
+import type { Campaign, CreateCampaignRequest } from "../types";
 import { StepIndicator } from "./StepIndicator";
 import { StepBasicInfo } from "./wizard-steps/StepBasicInfo";
 import { StepDelay } from "./wizard-steps/StepDelay";
@@ -66,14 +62,14 @@ const campaignToFormData = (campaign: Campaign): CampaignFormData => ({
 	},
 	schedule: {
 		workingHours: {
-			startHour: parseInt(campaign.schedule.workingHours.start.split(":")[0]),
-			startMinute: parseInt(campaign.schedule.workingHours.start.split(":")[1]),
-			endHour: parseInt(campaign.schedule.workingHours.end.split(":")[0]),
-			endMinute: parseInt(campaign.schedule.workingHours.end.split(":")[1]),
+			startHour: parseInt(campaign.schedule.workingHours.start.split(":")[0], 10),
+			startMinute: parseInt(campaign.schedule.workingHours.start.split(":")[1], 10),
+			endHour: parseInt(campaign.schedule.workingHours.end.split(":")[0], 10),
+			endMinute: parseInt(campaign.schedule.workingHours.end.split(":")[1], 10),
 		},
 		peakHours: {
-			startHour: parseInt(campaign.schedule.peakHours.start.split(":")[0]),
-			endHour: parseInt(campaign.schedule.peakHours.end.split(":")[0]),
+			startHour: parseInt(campaign.schedule.peakHours.start.split(":")[0], 10),
+			endHour: parseInt(campaign.schedule.peakHours.end.split(":")[0], 10),
 			peakMultiplier: 1.5,
 		},
 		timezone: campaign.schedule.timezone,

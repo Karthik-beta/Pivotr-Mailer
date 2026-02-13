@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { ThemeMode } from "@/lib/theme";
 import { setThemeMode, useThemeMode } from "@/lib/theme";
-import { useResolvedTheme } from "./theme-provider";
 
 const modeOptions: { value: ThemeMode; label: string; icon: typeof Sun }[] = [
 	{ value: "light", label: "Light", icon: Sun },
@@ -18,7 +17,7 @@ const modeOptions: { value: ThemeMode; label: string; icon: typeof Sun }[] = [
 
 export function ThemeToggle() {
 	const mode = useThemeMode();
-	const resolvedTheme = useResolvedTheme();
+
 	const _isDark = resolvedTheme === "dark";
 
 	return (

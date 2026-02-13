@@ -90,9 +90,11 @@ export function ConfirmStatusDialog({
 						)}
 						{config.title}
 					</DialogTitle>
-					<DialogDescription className="space-y-2">
-						<p>{config.description}</p>
-						<p className="font-medium text-foreground">Campaign: {campaignName}</p>
+					<DialogDescription className="space-y-2" asChild>
+						<div className="text-sm text-muted-foreground">
+							<p>{config.description}</p>
+							<p className="font-medium text-foreground">Campaign: {campaignName}</p>
+						</div>
 					</DialogDescription>
 				</DialogHeader>
 

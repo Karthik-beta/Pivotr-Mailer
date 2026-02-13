@@ -81,6 +81,8 @@ interface LeadsDataTableProps {
 	onPageSizeChange?: (size: number) => void;
 	pageIndex?: number;
 	onPageIndexChange?: (index: number) => void;
+	// Ref for clearing selection from parent
+	clearSelectionRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 export function LeadsDataTable({
@@ -96,11 +98,17 @@ export function LeadsDataTable({
 	onPageSizeChange,
 	pageIndex = 0,
 	onPageIndexChange,
+	clearSelectionRef,
 }: LeadsDataTableProps) {
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 	const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 	const [globalFilter, setGlobalFilter] = useState("");
+
+	// Expose clear selection function via ref
+	if (clearSelectionRef) {
+		clearSelectionRef.current = () => setRowSelection({});
+	}
 
 	// Sync status filter from URL to table column filter
 	const effectiveColumnFilters = useMemo(() => {

@@ -17,8 +17,10 @@ let sesClient: SESClient | null = null;
 export function getSesClient(): SESClient {
     if (!sesClient) {
         const config = getSesConfig();
+        const endpoint = process.env.AWS_ENDPOINT_URL;
         sesClient = new SESClient({
             region: config.region,
+            ...(endpoint && { endpoint }),
         });
     }
     return sesClient;

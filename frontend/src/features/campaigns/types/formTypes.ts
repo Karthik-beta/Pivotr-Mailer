@@ -8,7 +8,19 @@ import type { FormApi } from "@tanstack/react-form";
 import type { CampaignFormData } from "../schemas/campaignSchema";
 
 // Type for the form instance passed to step components
-export type CampaignForm = FormApi<CampaignFormData, undefined>;
+export type CampaignForm = FormApi<
+	CampaignFormData,
+	undefined,
+	undefined,
+	undefined,
+	undefined,
+	undefined,
+	undefined,
+	undefined,
+	undefined,
+	undefined,
+	undefined
+>;
 
 // Props interface for step components
 export interface StepProps {

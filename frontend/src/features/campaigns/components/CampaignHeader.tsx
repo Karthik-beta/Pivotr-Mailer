@@ -21,16 +21,17 @@ interface CampaignHeaderProps {
 }
 
 // Determine available actions based on status
+// Flow: RUNNING → Pause → Abort → Delete
 function getAvailableActions(status: CampaignStatus) {
 	return {
 		canEdit: status === "DRAFT",
 		canStart: status === "DRAFT" || status === "QUEUED",
 		canPause: status === "RUNNING",
 		canResume: status === "PAUSED",
-		canAbort: ["DRAFT", "QUEUED", "RUNNING", "PAUSED"].includes(status),
-		canDelete: ["DRAFT", "COMPLETED", "ABORTED"].includes(status),
+		canAbort: ["QUEUED", "PAUSED"].includes(status),
+		canDelete: ["DRAFT", "COMPLETED", "ABORTED", "ERROR"].includes(status),
 		canAssignLeads: ["DRAFT", "QUEUED"].includes(status),
-		canTestEmail: !["ABORTED", "COMPLETED"].includes(status),
+		canTestEmail: !["ABORTED", "ABORTING", "COMPLETED", "ERROR"].includes(status),
 	};
 }
 
@@ -63,6 +64,7 @@ export function CampaignHeader({ campaign }: CampaignHeaderProps) {
 		try {
 			await deleteMutation.mutateAsync(campaign.id);
 			toast.success("Campaign deleted successfully!");
+			setConfirmAction(null);
 			navigate({ to: "/campaigns", search: { status: "all" } });
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : "Failed to delete campaign");
@@ -105,8 +107,14 @@ export function CampaignHeader({ campaign }: CampaignHeaderProps) {
 						</div>
 						<p className="text-muted-foreground mt-1">{campaign.description || "No description"}</p>
 						<p className="text-xs text-muted-foreground font-mono mt-2">
-							Created {format(new Date(campaign.createdAt), "MMM d, yyyy HH:mm")} | Updated{" "}
-							{format(new Date(campaign.updatedAt), "MMM d, yyyy HH:mm")}
+							Created{" "}
+							{campaign.createdAt && !Number.isNaN(new Date(campaign.createdAt).getTime())
+								? format(new Date(campaign.createdAt), "MMM d, yyyy HH:mm")
+								: "N/A"}{" "}
+							| Updated{" "}
+							{campaign.updatedAt && !Number.isNaN(new Date(campaign.updatedAt).getTime())
+								? format(new Date(campaign.updatedAt), "MMM d, yyyy HH:mm")
+								: "N/A"}
 						</p>
 					</div>
 				</div>
@@ -152,7 +160,7 @@ export function CampaignHeader({ campaign }: CampaignHeaderProps) {
 					)}
 
 					{/* Abort Button */}
-					{actions.canAbort && campaign.status !== "DRAFT" && (
+					{actions.canAbort && (
 						<Button
 							variant="destructive"
 							size="sm"

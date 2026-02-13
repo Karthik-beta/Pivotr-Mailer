@@ -15,10 +15,12 @@ interface CampaignScheduleInfoProps {
 }
 
 /**
- * Format time from hour/minute to display string
+ * Parse time string (HH:MM) to get formatted display
  */
-function formatTime(hour: number, minute: number): string {
-	return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+function parseTimeString(time: string | undefined): string {
+	if (!time) return "00:00";
+	// Already in HH:MM format, just return as-is
+	return time;
 }
 
 export function CampaignScheduleInfo({ schedule }: CampaignScheduleInfoProps) {
@@ -36,8 +38,8 @@ export function CampaignScheduleInfo({ schedule }: CampaignScheduleInfoProps) {
 					</CardHeader>
 					<CardContent>
 						<p className="text-2xl font-bold font-mono">
-							{formatTime(schedule.workingHours.startHour, schedule.workingHours.startMinute)} -{" "}
-							{formatTime(schedule.workingHours.endHour, schedule.workingHours.endMinute)}
+							{parseTimeString(schedule.workingHours?.start)} -{" "}
+							{parseTimeString(schedule.workingHours?.end)}
 						</p>
 						<p className="text-xs text-muted-foreground mt-1">
 							Emails sent only during these hours
@@ -55,12 +57,10 @@ export function CampaignScheduleInfo({ schedule }: CampaignScheduleInfoProps) {
 					</CardHeader>
 					<CardContent>
 						<p className="text-2xl font-bold font-mono">
-							{schedule.peakHours.startHour.toString().padStart(2, "0")}:00 -{" "}
-							{schedule.peakHours.endHour.toString().padStart(2, "0")}:00
+							{parseTimeString(schedule.peakHours?.start)} -{" "}
+							{parseTimeString(schedule.peakHours?.end)}
 						</p>
-						<p className="text-xs text-muted-foreground mt-1">
-							Higher send rate ({schedule.peakHours.peakMultiplier}x)
-						</p>
+						<p className="text-xs text-muted-foreground mt-1">Higher send rate</p>
 					</CardContent>
 				</Card>
 
@@ -73,7 +73,7 @@ export function CampaignScheduleInfo({ schedule }: CampaignScheduleInfoProps) {
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<p className="text-lg font-medium">{schedule.timezone}</p>
+						<p className="text-lg font-medium">{schedule.timezone || "UTC"}</p>
 						<p className="text-xs text-muted-foreground mt-1">All times in this timezone</p>
 					</CardContent>
 				</Card>
@@ -86,7 +86,7 @@ export function CampaignScheduleInfo({ schedule }: CampaignScheduleInfoProps) {
 						<CardTitle className="text-sm font-mono uppercase">Daily Limit</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<p className="text-2xl font-bold font-mono">{schedule.dailyLimit}</p>
+						<p className="text-2xl font-bold font-mono">{schedule.dailyLimit ?? 0}</p>
 						<p className="text-xs text-muted-foreground mt-1">Maximum emails per day</p>
 					</CardContent>
 				</Card>
@@ -96,7 +96,7 @@ export function CampaignScheduleInfo({ schedule }: CampaignScheduleInfoProps) {
 						<CardTitle className="text-sm font-mono uppercase">Batch Size</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<p className="text-2xl font-bold font-mono">{schedule.batchSize}</p>
+						<p className="text-2xl font-bold font-mono">{schedule.batchSize ?? 0}</p>
 						<p className="text-xs text-muted-foreground mt-1">Emails per processing cycle</p>
 					</CardContent>
 				</Card>
@@ -107,11 +107,11 @@ export function CampaignScheduleInfo({ schedule }: CampaignScheduleInfoProps) {
 				<CardHeader className="pb-2">
 					<CardTitle className="text-sm font-mono uppercase flex items-center gap-2">
 						<Calendar className="h-4 w-4" />
-						Scheduled Dates ({schedule.scheduledDates.length})
+						Scheduled Dates ({schedule.scheduledDates?.length ?? 0})
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
-					{schedule.scheduledDates.length === 0 ? (
+					{!schedule.scheduledDates || schedule.scheduledDates.length === 0 ? (
 						<p className="text-muted-foreground">No dates scheduled</p>
 					) : (
 						<div className="flex flex-wrap gap-2">
