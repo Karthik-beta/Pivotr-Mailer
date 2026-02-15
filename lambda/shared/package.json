@@ -1,27 +1,41 @@
 {
-    "name": "@pivotr-mailer/lambda-shared",
+    "name": "@pivotr/shared",
     "version": "1.0.0",
     "description": "Shared utilities for Pivotr Mailer Lambda functions",
     "type": "module",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
+    "exports": {
+        ".": "./src/index.ts",
+        "./logger": "./src/utils/logger.ts",
+        "./clients": "./src/clients/index.ts",
+        "./config": "./src/config/index.ts",
+        "./utils": "./src/utils/index.ts",
+        "./errors": "./src/errors/errors.ts",
+        "./validation": "./src/validation/index.ts",
+        "./gaussian": "./src/utils/gaussian.ts",
+        "./campaign-schema": "./src/validation/campaign.schema.ts",
+        "./types": "./src/types/index.ts",
+        "./types/lead": "./src/types/lead.types.ts"
+    },
     "scripts": {
         "build": "tsc",
         "clean": "rm -rf dist"
     },
     "dependencies": {
-        "@aws-sdk/client-dynamodb": "latest",
-        "@aws-sdk/lib-dynamodb": "latest",
-        "@aws-sdk/client-ses": "latest",
-        "@aws-sdk/client-sqs": "latest",
-        "@aws-sdk/client-secrets-manager": "latest",
-        "@aws-lambda-powertools/logger": "latest",
-        "@aws-lambda-powertools/metrics": "latest",
-        "@aws-lambda-powertools/tracer": "latest"
+        "@aws-sdk/client-dynamodb": "*",
+        "@aws-sdk/lib-dynamodb": "*",
+        "@aws-sdk/client-ses": "*",
+        "@aws-sdk/client-sqs": "*",
+        "@aws-sdk/client-secrets-manager": "*",
+        "@aws-lambda-powertools/logger": "*",
+        "@aws-lambda-powertools/metrics": "*",
+        "@aws-lambda-powertools/tracer": "*",
+        "zod": "*"
     },
     "devDependencies": {
-        "@types/aws-lambda": "latest",
-        "@types/node": "latest",
-        "typescript": "latest"
+        "@types/aws-lambda": "*",
+        "@types/node": "*",
+        "typescript": "*"
     }
 }

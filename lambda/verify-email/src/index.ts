@@ -18,7 +18,7 @@ import type { SQSEvent, SQSHandler, SQSRecord } from 'aws-lambda';
 import { Logger } from '@aws-lambda-powertools/logger';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { getSecret } from '../../shared/src/config/environment.config';
+import { getSecret } from '../../shared/src/index.js';
 
 // logger
 const logger = new Logger({

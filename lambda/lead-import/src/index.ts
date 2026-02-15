@@ -16,7 +16,7 @@ import { Logger } from '@aws-lambda-powertools/logger';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, BatchWriteCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import * as ExcelJS from 'exceljs';
-import { parseIndianName } from '../../shared/src/utils/name-parser';
+import { parseIndianName } from '/opt/nodejs/shared/utils/name-parser';
 import { Readable } from 'stream';
 
 // Logger

@@ -32,6 +32,7 @@ const ACTION_CONFIG: Record<
 		title: string;
 		description: string;
 		confirmLabel: string;
+		loadingLabel: string;
 		variant: "default" | "destructive";
 	}
 > = {
@@ -40,18 +41,21 @@ const ACTION_CONFIG: Record<
 		description:
 			"This will begin sending emails to the assigned leads. Make sure your email template is ready.",
 		confirmLabel: "Start Campaign",
+		loadingLabel: "Starting...",
 		variant: "default",
 	},
 	pause: {
 		title: "Pause Campaign",
 		description: "This will temporarily stop sending emails. You can resume the campaign later.",
 		confirmLabel: "Pause Campaign",
+		loadingLabel: "Pausing...",
 		variant: "default",
 	},
 	resume: {
 		title: "Resume Campaign",
 		description: "This will continue sending emails from where the campaign was paused.",
 		confirmLabel: "Resume Campaign",
+		loadingLabel: "Resuming...",
 		variant: "default",
 	},
 	abort: {
@@ -59,6 +63,7 @@ const ACTION_CONFIG: Record<
 		description:
 			"This will permanently stop the campaign. This action cannot be undone and any remaining leads will not be sent.",
 		confirmLabel: "Abort Campaign",
+		loadingLabel: "Aborting...",
 		variant: "destructive",
 	},
 	delete: {
@@ -66,6 +71,7 @@ const ACTION_CONFIG: Record<
 		description:
 			"This will permanently delete the campaign and all its data. This action cannot be undone.",
 		confirmLabel: "Delete Campaign",
+		loadingLabel: "Deleting...",
 		variant: "destructive",
 	},
 };
@@ -104,7 +110,7 @@ export function ConfirmStatusDialog({
 					</Button>
 					<Button variant={config.variant} onClick={onConfirm} disabled={isLoading}>
 						{isLoading && <RefreshCw className="animate-spin mr-2 h-4 w-4" />}
-						{config.confirmLabel}
+						{isLoading ? config.loadingLabel : config.confirmLabel}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

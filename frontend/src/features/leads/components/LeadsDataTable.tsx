@@ -70,6 +70,7 @@ const fuzzyFilter: FilterFn<Lead> = (row, columnId, value, addMeta) => {
 interface LeadsDataTableProps {
 	data: Lead[];
 	isLoading?: boolean;
+	isPending?: boolean;
 	error?: Error | null;
 	onRetry?: () => void;
 	onRowClick?: (lead: Lead) => void;
@@ -88,6 +89,7 @@ interface LeadsDataTableProps {
 export function LeadsDataTable({
 	data,
 	isLoading,
+	isPending,
 	error,
 	onRetry,
 	onRowClick,
@@ -133,7 +135,7 @@ export function LeadsDataTable({
 						}
 						onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
 						aria-label="Select all"
-						className="translate-y-[2px]"
+						className="translate-y-0.5"
 					/>
 				),
 				cell: ({ row }) => (
@@ -141,7 +143,7 @@ export function LeadsDataTable({
 						checked={row.getIsSelected()}
 						onCheckedChange={(value) => row.toggleSelected(!!value)}
 						aria-label="Select row"
-						className="translate-y-[2px]"
+						className="translate-y-0.5"
 						onClick={(e) => e.stopPropagation()}
 					/>
 				),
@@ -339,7 +341,7 @@ export function LeadsDataTable({
 		<div className="space-y-4">
 			{/* Filters */}
 			<div className="flex flex-wrap items-center gap-4">
-				<div className="relative flex-1 min-w-[250px] max-w-sm">
+				<div className="relative flex-1 min-w-62.5 max-w-sm">
 					<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 					<Input
 						placeholder="Search leads..."
@@ -355,7 +357,7 @@ export function LeadsDataTable({
 						onStatusFilterChange?.(value);
 					}}
 				>
-					<SelectTrigger className="w-[180px]">
+					<SelectTrigger className="w-45">
 						<SelectValue placeholder="Filter by status" />
 					</SelectTrigger>
 					<SelectContent>
@@ -462,7 +464,7 @@ export function LeadsDataTable({
 							defaultValue="10"
 							onValueChange={(value) => table.setPageSize(Number(value))}
 						>
-							<SelectTrigger className="h-8 w-[70px]">
+							<SelectTrigger className="h-8 w-17.5">
 								<SelectValue placeholder="10" />
 							</SelectTrigger>
 							<SelectContent side="top">
@@ -474,7 +476,7 @@ export function LeadsDataTable({
 							</SelectContent>
 						</Select>
 					</div>
-					<div className="flex w-[100px] items-center justify-center text-sm font-medium">
+					<div className="flex w-25 items-center justify-center text-sm font-medium">
 						Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
 					</div>
 					<div className="flex items-center space-x-2">
@@ -482,7 +484,7 @@ export function LeadsDataTable({
 							variant="outline"
 							className="hidden h-8 w-8 p-0 lg:flex"
 							onClick={() => table.setPageIndex(0)}
-							disabled={!table.getCanPreviousPage()}
+							disabled={isPending || !table.getCanPreviousPage()}
 						>
 							<span className="sr-only">Go to first page</span>
 							<ChevronsLeft className="h-4 w-4" />
@@ -491,7 +493,7 @@ export function LeadsDataTable({
 							variant="outline"
 							className="h-8 w-8 p-0"
 							onClick={() => table.previousPage()}
-							disabled={!table.getCanPreviousPage()}
+							disabled={isPending || !table.getCanPreviousPage()}
 						>
 							<span className="sr-only">Go to previous page</span>
 							<ChevronLeft className="h-4 w-4" />
@@ -500,7 +502,7 @@ export function LeadsDataTable({
 							variant="outline"
 							className="h-8 w-8 p-0"
 							onClick={() => table.nextPage()}
-							disabled={!table.getCanNextPage()}
+							disabled={isPending || !table.getCanNextPage()}
 						>
 							<span className="sr-only">Go to next page</span>
 							<ChevronRight className="h-4 w-4" />
@@ -509,7 +511,7 @@ export function LeadsDataTable({
 							variant="outline"
 							className="hidden h-8 w-8 p-0 lg:flex"
 							onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-							disabled={!table.getCanNextPage()}
+							disabled={isPending || !table.getCanNextPage()}
 						>
 							<span className="sr-only">Go to last page</span>
 							<ChevronsRight className="h-4 w-4" />

@@ -39,6 +39,7 @@ import {
 	DeleteCommand,
 	QueryCommand,
 	BatchWriteCommand,
+	type ScanCommandInput,
 } from "@aws-sdk/lib-dynamodb";
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import { z } from "zod";
@@ -49,11 +50,14 @@ import {
 	isValidStatusTransition,
 	TestEmailRequestSchema,
 	LeadSelectionSchema,
+	LeadTypeFilterSchema,
+	LeadStatusFilterSchema,
 	type Campaign,
 	type CampaignStatus,
 	type CampaignMetrics,
-} from "../../../../shared/validation/campaign.schema";
-import { resolveSpintax, injectVariables } from "../../../shared/src/utils/spintax";
+	type LeadSelection,
+} from "../../../shared/src/validation/campaign.schema.js";
+import { resolveSpintax, injectVariables } from "../../../shared/src/utils/spintax.js";
 
 // =============================================================================
 // Configuration
@@ -212,7 +216,7 @@ async function listCampaigns(
 	const statusFilter = event.queryStringParameters?.status;
 	const lastKey = event.queryStringParameters?.lastKey;
 
-	const scanParams: any = {
+	const scanParams: ScanCommandInput = {
 		TableName: CAMPAIGNS_TABLE,
 		Limit: Math.min(limit, 100),
 	};
@@ -578,9 +582,9 @@ async function previewLeads(
 
 	// Status filter
 	if (!criteria.leadStatuses.includes("ALL")) {
-		const statusConditions = eligibleStatuses.map((s, i) => `:status${i}`);
+		const statusConditions = eligibleStatuses.map((s: string, i: number) => `:status${i}`);
 		filterParts.push(`#status IN (${statusConditions.join(", ")})`);
-		eligibleStatuses.forEach((s, i) => {
+		eligibleStatuses.forEach((s: string, i: number) => {
 			values[`:status${i}`] = s;
 		});
 	}
@@ -588,9 +592,9 @@ async function previewLeads(
 	// Lead type filter
 	if (!criteria.leadTypes.includes("ALL")) {
 		names["#leadType"] = "leadType";
-		const typeConditions = criteria.leadTypes.map((t, i) => `:type${i}`);
+		const typeConditions = criteria.leadTypes.map((t: string, i: number) => `:type${i}`);
 		filterParts.push(`#leadType IN (${typeConditions.join(", ")})`);
-		criteria.leadTypes.forEach((t, i) => {
+		criteria.leadTypes.forEach((t: string, i: number) => {
 			values[`:type${i}`] = t;
 		});
 	}
@@ -665,6 +669,7 @@ async function assignLeadsToCampaign(
 	const now = new Date().toISOString();
 	const chunks = chunkArray(leads, 25); // DynamoDB batch limit
 	let assignedCount = 0;
+	let failedCount = 0;
 
 	for (const chunk of chunks) {
 		const writeRequests = chunk.map((lead) => ({
@@ -688,11 +693,12 @@ async function assignLeadsToCampaign(
 			);
 			assignedCount += chunk.length;
 		} catch (err) {
-			logger.error("Batch write failed", { error: err });
+			logger.error("Batch write failed", { error: err, chunkSize: chunk.length });
+			failedCount += chunk.length;
 		}
 	}
 
-	// Update campaign metrics
+	// Update campaign metrics (only count successfully assigned leads)
 	await docClient.send(
 		new UpdateCommand({
 			TableName: CAMPAIGNS_TABLE,
@@ -711,16 +717,21 @@ async function assignLeadsToCampaign(
 		})
 	);
 
-	logger.info("Leads assigned to campaign", { campaignId, assignedCount });
+	logger.info("Leads assigned to campaign", { campaignId, assignedCount, failedCount });
 
 	return response(200, {
-		success: true,
-		data: { assignedCount, campaignId },
+		success: failedCount === 0,
+		data: { 
+			assignedCount, 
+			failedCount,
+			totalRequested: leads.length,
+			campaignId 
+		},
 	});
 }
 
 async function fetchLeadsMatchingCriteria(
-	criteria: z.infer<typeof LeadSelectionSchema>,
+	criteria: LeadSelection,
 	limit: number
 ): Promise<Lead[]> {
 	// Build filter expression
@@ -734,10 +745,10 @@ async function fetchLeadsMatchingCriteria(
 	// Status filter
 	if (!criteria.leadStatuses.includes("ALL")) {
 		names["#status"] = "status";
-		const statusList = criteria.leadStatuses.filter((s) => s !== "ALL");
-		const statusPlaceholders = statusList.map((_, i) => `:eligStatus${i}`);
+		const statusList = criteria.leadStatuses.filter((s: string) => s !== "ALL");
+		const statusPlaceholders = statusList.map((_: string, i: number) => `:eligStatus${i}`);
 		filterParts.push(`#status IN (${statusPlaceholders.join(", ")})`);
-		statusList.forEach((s, i) => {
+		statusList.forEach((s: string, i: number) => {
 			values[`:eligStatus${i}`] = s;
 		});
 	}
@@ -745,10 +756,10 @@ async function fetchLeadsMatchingCriteria(
 	// Lead type filter
 	if (!criteria.leadTypes.includes("ALL")) {
 		names["#leadType"] = "leadType";
-		const typeList = criteria.leadTypes.filter((t) => t !== "ALL");
-		const typePlaceholders = typeList.map((_, i) => `:type${i}`);
+		const typeList = criteria.leadTypes.filter((t: string) => t !== "ALL");
+		const typePlaceholders = typeList.map((_: string, i: number) => `:type${i}`);
 		filterParts.push(`#leadType IN (${typePlaceholders.join(", ")})`);
-		typeList.forEach((t, i) => {
+		typeList.forEach((t: string, i: number) => {
 			values[`:type${i}`] = t;
 		});
 	}

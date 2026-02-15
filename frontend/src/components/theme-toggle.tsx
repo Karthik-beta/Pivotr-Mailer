@@ -18,8 +18,6 @@ const modeOptions: { value: ThemeMode; label: string; icon: typeof Sun }[] = [
 export function ThemeToggle() {
 	const mode = useThemeMode();
 
-	const _isDark = resolvedTheme === "dark";
-
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
@@ -34,7 +32,7 @@ export function ThemeToggle() {
 					<span className="sr-only">Toggle theme</span>
 				</Button>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent align="end" className="min-w-[140px]">
+			<DropdownMenuContent align="end" className="min-w-35">
 				{modeOptions.map((option) => (
 					<DropdownMenuItem
 						key={option.value}

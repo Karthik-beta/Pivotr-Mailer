@@ -11,7 +11,7 @@
  * - Phone numbers (Indian format)
  */
 
-import { validateIndianName, type NameValidationResult } from './indian-name-validator';
+import { validateIndianName, type NameValidationResult } from './indian-name-validator.js';
 
 // =============================================================================
 // Types
@@ -340,11 +340,11 @@ export function validateStagedLead(lead: StagedLead): LeadValidationResult {
     // Validate name
     const nameValidation = validateIndianName(lead.fullName);
     if (!nameValidation.valid) {
-        nameValidation.errors.forEach(err => {
+        nameValidation.errors.forEach((err: string) => {
             allErrors.push({ field: 'fullName', code: 'INVALID_NAME', message: err });
         });
     }
-    nameValidation.warnings.forEach(warn => {
+    nameValidation.warnings.forEach((warn: string) => {
         allWarnings.push({ field: 'fullName', code: 'NAME_WARNING', message: warn });
     });
 

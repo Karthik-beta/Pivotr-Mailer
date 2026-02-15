@@ -18,7 +18,7 @@ import {
     HONORIFIC_SUFFIXES,
     COMMON_SURNAMES,
     POSITION_DEPENDENT_NAMES,
-} from '../utils/name-parser-data';
+} from '../utils/name-parser-data.js';
 
 // =============================================================================
 // Types

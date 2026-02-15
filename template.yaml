@@ -57,26 +57,28 @@ Parameters:
     Description: AWS region for LocalStack
 
   # CORS Configuration
-  CorsAllowedOrigins:
+  # Note: For local development, use '*' to allow all origins
+  # In production, this should be set to the specific frontend domain
+  CorsAllowedOrigin:
     Type: String
-    Default: "http://localhost:5173,http://localhost:3000"
-    Description: Comma-separated list of allowed CORS origins
+    Default: "*"
+    Description: Allowed CORS origin (use '*' for development, specific domain for production)
 
   # Throttling Configuration (Conservative for 2 users)
   ThrottlingBurstLimit:
     Type: Number
-    Default: 5
+    Default: "5"
     Description: API Gateway throttling burst limit (requests per second)
 
   ThrottlingRateLimit:
     Type: Number
-    Default: 2
+    Default: "2"
     Description: API Gateway throttling steady-state rate limit (requests per second)
 
   # Usage Plan Configuration (Conservative for 2 users)
   UsagePlanQuotaLimit:
     Type: Number
-    Default: 1000
+    Default: "1000"
     Description: Monthly quota limit for API usage (conservative for 2 users)
 
   UsagePlanQuotaPeriod:
@@ -144,6 +146,25 @@ Parameters:
 Resources:
 
   # ===========================================================================
+  # Shared Utils Layer
+  # ===========================================================================
+  # This layer provides shared utilities (logger, clients, config, errors)
+  # to all Lambda functions. Changes to lambda/shared/ trigger layer rebuild.
+  # Using nodejs20.x BuildMethod for proper hot reload support per AWS SAM docs.
+  SharedUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: pivotr-shared-utils
+      Description: Shared utilities for Pivotr Mailer Lambda functions
+      ContentUri: lambda/shared/
+      CompatibleRuntimes:
+        - nodejs20.x
+      RetentionPolicy: Retain
+    Metadata:
+      BuildMethod: nodejs20.x
+      BuildArchitecture: x86_64
+
+  # ===========================================================================
   # API Gateway
   # ===========================================================================
   PivotrMailerApi:
@@ -162,12 +183,13 @@ Resources:
           DataTraceEnabled: false
           MetricsEnabled: true
 
-      # CORS Configuration - Stricter than wildcard
+      # CORS Configuration - Allow all origins for development
+      # Note: For AWS::Serverless::Api, Cors values should NOT have embedded quotes
       Cors:
-        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
-        AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-        AllowOrigin: !Sub "'${CorsAllowedOrigins}'"
-        MaxAge: "'86400'"
+        AllowMethods: "GET,POST,PUT,DELETE,OPTIONS"
+        AllowHeaders: "Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token"
+        AllowOrigin: !Ref CorsAllowedOrigin
+        MaxAge: "86400"
 
       # Request Models for Validation
       Models:
@@ -295,7 +317,7 @@ Resources:
         DEFAULT_4XX:
           ResponseParameters:
             Headers:
-              Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigins}'"
+              Access-Control-Allow-Origin: !Ref CorsAllowedOrigin
               Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key'"
           ResponseTemplates:
             application/json: '{"message": "$context.error.messageString", "errorCode": "CLIENT_ERROR", "requestId": "$context.requestId"}'
@@ -303,7 +325,7 @@ Resources:
         DEFAULT_5XX:
           ResponseParameters:
             Headers:
-              Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigins}'"
+              Access-Control-Allow-Origin: !Ref CorsAllowedOrigin
               Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key'"
           ResponseTemplates:
             application/json: '{"message": "Internal server error", "errorCode": "SERVER_ERROR", "requestId": "$context.requestId"}'
@@ -312,7 +334,7 @@ Resources:
           StatusCode: 400
           ResponseParameters:
             Headers:
-              Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigins}'"
+              Access-Control-Allow-Origin: !Ref CorsAllowedOrigin
           ResponseTemplates:
             application/json: '{"message": "Invalid request body", "errorCode": "VALIDATION_ERROR", "requestId": "$context.requestId"}'
 
@@ -320,7 +342,7 @@ Resources:
           StatusCode: 429
           ResponseParameters:
             Headers:
-              Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigins}'"
+              Access-Control-Allow-Origin: !Ref CorsAllowedOrigin
               Retry-After: "'60'"
           ResponseTemplates:
             application/json: '{"message": "Rate limit exceeded. Please retry after 60 seconds.", "errorCode": "RATE_LIMIT_EXCEEDED", "requestId": "$context.requestId"}'
@@ -329,7 +351,7 @@ Resources:
           StatusCode: 429
           ResponseParameters:
             Headers:
-              Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigins}'"
+              Access-Control-Allow-Origin: !Ref CorsAllowedOrigin
           ResponseTemplates:
             application/json: '{"message": "API quota exceeded", "errorCode": "QUOTA_EXCEEDED", "requestId": "$context.requestId"}'
 
@@ -337,7 +359,7 @@ Resources:
           StatusCode: 403
           ResponseParameters:
             Headers:
-              Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigins}'"
+              Access-Control-Allow-Origin: !Ref CorsAllowedOrigin
           ResponseTemplates:
             application/json: '{"message": "Missing or invalid API key", "errorCode": "MISSING_API_KEY", "requestId": "$context.requestId"}'
 
@@ -345,7 +367,7 @@ Resources:
           StatusCode: 403
           ResponseParameters:
             Headers:
-              Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigins}'"
+              Access-Control-Allow-Origin: !Ref CorsAllowedOrigin
           ResponseTemplates:
             application/json: '{"message": "Invalid API key", "errorCode": "INVALID_API_KEY", "requestId": "$context.requestId"}'
 
@@ -353,7 +375,7 @@ Resources:
           StatusCode: 404
           ResponseParameters:
             Headers:
-              Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigins}'"
+              Access-Control-Allow-Origin: !Ref CorsAllowedOrigin
           ResponseTemplates:
             application/json: '{"message": "Resource not found", "errorCode": "NOT_FOUND", "requestId": "$context.requestId"}'
 
@@ -403,7 +425,9 @@ Resources:
     Properties:
       FunctionName: pivotr-api-leads
       Handler: index.handler
-      CodeUri: lambda/api/leads/dist/
+      CodeUri: lambda/api/leads/
+      Layers:
+        - !Ref SharedUtilsLayer
       Timeout: 10
       MemorySize: 256
       ReservedConcurrentExecutions: 2
@@ -455,13 +479,39 @@ Resources:
             RequestParameters:
               - method.request.path.id:
                   Required: true
+        BulkDeleteLeads:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads/bulk-delete
+            Method: POST
+        BulkUpdateLeads:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads/bulk-update
+            Method: POST
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Sourcemap: true
+        Minify: false
+        Target: es2022
+        External:
+          - "@aws-sdk/*"
+          - "@aws-lambda-powertools/*"
+        Format: esm
+        OutExtension:
+          - .js=.mjs
 
   ApiCampaignsLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: pivotr-api-campaigns
       Handler: index.handler
-      CodeUri: lambda/api/campaigns/dist/
+      CodeUri: lambda/api/campaigns/
+      Layers:
+        - !Ref SharedUtilsLayer
       Timeout: 10
       MemorySize: 256
       ReservedConcurrentExecutions: 2
@@ -581,13 +631,27 @@ Resources:
             RequestParameters:
               - method.request.path.id:
                   Required: true
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Sourcemap: true
+        Minify: false
+        Target: es2022
+        External:
+          - "@aws-sdk/*"
+          - "@aws-lambda-powertools/*"
+        Format: esm
+        OutExtension:
+          - .js=.mjs
 
   ApiMetricsLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: pivotr-api-metrics
       Handler: index.handler
-      CodeUri: lambda/api/metrics/dist/
+      CodeUri: lambda/api/metrics/
+      Layers:
+        - !Ref SharedUtilsLayer
       Timeout: 10
       MemorySize: 256
       ReservedConcurrentExecutions: 2
@@ -598,13 +662,27 @@ Resources:
             RestApiId: !Ref PivotrMailerApi
             Path: /metrics
             Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Sourcemap: true
+        Minify: false
+        Target: es2022
+        External:
+          - "@aws-sdk/*"
+          - "@aws-lambda-powertools/*"
+        Format: esm
+        OutExtension:
+          - .js=.mjs
 
   ApiLeadsExportLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: pivotr-api-leads-export
       Handler: index.handler
-      CodeUri: lambda/api/leads-export/dist/
+      CodeUri: lambda/api/leads-export/
+      Layers:
+        - !Ref SharedUtilsLayer
       Timeout: 20
       MemorySize: 1024
       ReservedConcurrentExecutions: 1
@@ -615,19 +693,39 @@ Resources:
             RestApiId: !Ref PivotrMailerApi
             Path: /leads/export
             Method: POST
+        ExportSelectedLeads:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads/export-selected
+            Method: POST
         GetTemplate:
           Type: Api
           Properties:
             RestApiId: !Ref PivotrMailerApi
             Path: /leads/template
             Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Sourcemap: true
+        Minify: false
+        Target: es2022
+        External:
+          - "@aws-sdk/*"
+          - "@aws-lambda-powertools/*"
+        Format: esm
+        OutExtension:
+          - .js=.mjs
 
   LeadImportLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: pivotr-lead-import
       Handler: index.handler
-      CodeUri: lambda/lead-import/dist/
+      CodeUri: lambda/lead-import/
+      Layers:
+        - !Ref SharedUtilsLayer
       Timeout: 60
       MemorySize: 512
       ReservedConcurrentExecutions: 1
@@ -642,6 +740,18 @@ Resources:
               Model: ImportLeadsModel
               Required: true
               ValidateBody: true
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Sourcemap: true
+        Minify: false
+        Target: es2022
+        External:
+          - "@aws-sdk/*"
+          - "@aws-lambda-powertools/*"
+        Format: esm
+        OutExtension:
+          - .js=.mjs
 
   # ===========================================================================
   # SQS-Triggered Lambda Functions
@@ -652,7 +762,9 @@ Resources:
     Properties:
       FunctionName: pivotr-send-email
       Handler: index.handler
-      CodeUri: lambda/send-email/dist/
+      CodeUri: lambda/send-email/
+      Layers:
+        - !Ref SharedUtilsLayer
       Timeout: 30
       MemorySize: 256
       ReservedConcurrentExecutions: 2
@@ -662,26 +774,66 @@ Resources:
           SES_CONFIGURATION_SET: PivotrLocalConfigSet
       # Note: SQS event source requires actual queue ARN in production
       # For local testing, we invoke directly or use LocalStack triggers
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Sourcemap: true
+        Minify: false
+        Target: es2022
+        External:
+          - "@aws-sdk/*"
+          - "@aws-lambda-powertools/*"
+        Format: esm
+        OutExtension:
+          - .js=.mjs
 
   VerifyEmailLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: pivotr-verify-email
       Handler: index.handler
-      CodeUri: lambda/verify-email/dist/
+      CodeUri: lambda/verify-email/
+      Layers:
+        - !Ref SharedUtilsLayer
       Timeout: 15
       MemorySize: 256
       ReservedConcurrentExecutions: 2
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Sourcemap: true
+        Minify: false
+        Target: es2022
+        External:
+          - "@aws-sdk/*"
+          - "@aws-lambda-powertools/*"
+        Format: esm
+        OutExtension:
+          - .js=.mjs
 
   ProcessFeedbackLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: pivotr-process-feedback
       Handler: index.handler
-      CodeUri: lambda/process-feedback/dist/
+      CodeUri: lambda/process-feedback/
+      Layers:
+        - !Ref SharedUtilsLayer
       Timeout: 10
       MemorySize: 128
       ReservedConcurrentExecutions: 2
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Sourcemap: true
+        Minify: false
+        Target: es2022
+        External:
+          - "@aws-sdk/*"
+          - "@aws-lambda-powertools/*"
+        Format: esm
+        OutExtension:
+          - .js=.mjs
 
   # ===========================================================================
   # Campaign Orchestration Lambda Functions
@@ -692,7 +844,9 @@ Resources:
     Properties:
       FunctionName: pivotr-campaign-processor
       Handler: index.handler
-      CodeUri: lambda/campaign-processor/dist/
+      CodeUri: lambda/campaign-processor/
+      Layers:
+        - !Ref SharedUtilsLayer
       Timeout: 55
       MemorySize: 256
       ReservedConcurrentExecutions: 1
@@ -702,13 +856,27 @@ Resources:
           SQS_SENDING_QUEUE_URL: !Ref SendingQueueUrl
       # Note: In production, triggered by EventBridge every minute
       # For local testing, invoke directly with: sam local invoke CampaignProcessorLambda
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Sourcemap: true
+        Minify: false
+        Target: es2022
+        External:
+          - "@aws-sdk/*"
+          - "@aws-lambda-powertools/*"
+        Format: esm
+        OutExtension:
+          - .js=.mjs
 
   BulkVerifyLambda:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: pivotr-bulk-verify
       Handler: index.handler
-      CodeUri: lambda/bulk-verify/dist/
+      CodeUri: lambda/bulk-verify/
+      Layers:
+        - !Ref SharedUtilsLayer
       Timeout: 30
       MemorySize: 256
       ReservedConcurrentExecutions: 1
@@ -722,6 +890,18 @@ Resources:
             RestApiId: !Ref PivotrMailerApi
             Path: /campaigns/{id}/verify
             Method: POST
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Sourcemap: true
+        Minify: false
+        Target: es2022
+        External:
+          - "@aws-sdk/*"
+          - "@aws-lambda-powertools/*"
+        Format: esm
+        OutExtension:
+          - .js=.mjs
 
   # ===========================================================================
   # CloudWatch Alarms - Cost & Usage Monitoring (Conservative for 2 users)

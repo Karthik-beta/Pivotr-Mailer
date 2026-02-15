@@ -44,4 +44,4 @@ for (let i = 0; i < MAX_RETRIES; i++) {
 
 await $`bun run scripts/build-lambdas.ts`;
 await $`sam build`;
-await $`sam local start-api --port 3001 --docker-network pivotr-localstack-network --env-vars tests/env/sam-local.json --parameter-overrides CorsAllowedOrigins="*"`;
+await $`sam local start-api --port 3001 --docker-network pivotr-localstack-network --env-vars tests/env/sam-local.json --parameter-overrides CorsAllowedOrigin="*"`;

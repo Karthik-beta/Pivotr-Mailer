@@ -12,7 +12,7 @@
 
 import { Logger } from '@aws-lambda-powertools/logger';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, QueryCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, QueryCommand, ScanCommand, BatchGetCommand } from '@aws-sdk/lib-dynamodb';
 import type { APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda';
 import ExcelJS from 'exceljs';
 
@@ -150,6 +150,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             return generateTemplate();
         }
 
+        // Handle Export Selected Leads
+        if (event.path.endsWith('/export-selected') && event.httpMethod === 'POST') {
+            return await exportSelectedLeads(event.body);
+        }
+
         // Parse request body
         let request: ExportRequest = {};
         if (event.body) {
@@ -242,6 +247,86 @@ async function fetchLeads(campaignId?: string, status?: string): Promise<Lead[]>
     }
 
     return items as unknown as Lead[];
+}
+
+/**
+ * Export selected leads by IDs.
+ */
+async function exportSelectedLeads(body: string | null): Promise<APIGatewayProxyResult> {
+    if (!body) {
+        return createResponse(400, { success: false, message: 'Request body required' });
+    }
+
+    let request: { ids?: string[] };
+    try {
+        request = JSON.parse(body) as { ids?: string[] };
+    } catch {
+        return createResponse(400, { success: false, message: 'Invalid JSON body' });
+    }
+
+    const { ids } = request;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return createResponse(400, { success: false, message: 'ids array is required' });
+    }
+
+    // Limit batch size for safety
+    if (ids.length > MAX_EXPORT_ROWS) {
+        return createResponse(400, { success: false, message: `Maximum ${MAX_EXPORT_ROWS} leads can be exported at once` });
+    }
+
+    logger.info('Processing export-selected', { count: ids.length });
+
+    // Fetch leads by IDs
+    const leads = await fetchLeadsByIds(ids);
+    logger.info('Fetched leads by IDs', { count: leads.length });
+
+    // Generate styled Excel
+    const buffer = await generatePremiumExcel(leads);
+
+    return {
+        statusCode: 200,
+        headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({
+            data: buffer.toString('base64'),
+            filename: `pivotr-leads-export-selected-${formatDateForFilename(new Date())}.xlsx`,
+            contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            recordCount: leads.length,
+        }),
+    };
+}
+
+/**
+ * Fetch leads by IDs using BatchGet.
+ */
+async function fetchLeadsByIds(ids: string[]): Promise<Lead[]> {
+    if (ids.length === 0) return [];
+
+    // DynamoDB BatchGet supports up to 100 items per request
+    const batchSize = 100;
+    const allItems: Lead[] = [];
+
+    for (let i = 0; i < ids.length; i += batchSize) {
+        const batch = ids.slice(i, i + batchSize);
+        const keys = batch.map(id => ({ id }));
+
+        const command = new BatchGetCommand({
+            RequestItems: {
+                [LEADS_TABLE]: {
+                    Keys: keys,
+                },
+            },
+        });
+
+        const result = await docClient.send(command);
+        const items = result.Responses?.[LEADS_TABLE] ?? [];
+        allItems.push(...(items as Lead[]));
+    }
+
+    return allItems;
 }
 
 // =============================================================================

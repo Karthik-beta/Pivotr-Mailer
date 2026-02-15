@@ -37,9 +37,19 @@ const logger = new Logger({
     logLevel: (process.env.LOG_LEVEL as LogLevel) || 'INFO',
 });
 
+// LocalStack support
+const awsEndpoint = process.env.AWS_ENDPOINT_URL;
+const awsRegion = process.env.AWS_REGION || 'ap-south-1';
+
+const clientConfig = awsEndpoint
+    ? { region: awsRegion, endpoint: awsEndpoint }
+    : { region: awsRegion };
+
 // Initialize DynamoDB client (reused across warm invocations)
-const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION || 'ap-south-1' });
-const docClient = DynamoDBDocumentClient.from(dynamoClient);
+const dynamoClient = new DynamoDBClient(clientConfig);
+const docClient = DynamoDBDocumentClient.from(dynamoClient, {
+    marshallOptions: { removeUndefinedValues: true },
+});
 
 const LEADS_TABLE = process.env.DYNAMODB_TABLE_LEADS || '';
 
@@ -103,6 +113,16 @@ export const handler: Handler<APIGatewayProxyEvent, APIGatewayProxyResult> = asy
 
         if (httpMethod === 'GET' && pathParameters?.id) {
             return await getLead(pathParameters.id);
+        }
+
+        // Handle bulk-delete route
+        if (httpMethod === 'POST' && path.endsWith('/bulk-delete')) {
+            return await bulkDeleteLeads(body);
+        }
+
+        // Handle bulk-update route
+        if (httpMethod === 'POST' && path.endsWith('/bulk-update')) {
+            return await bulkUpdateLeads(body);
         }
 
         if (httpMethod === 'POST') {
@@ -272,4 +292,136 @@ async function deleteLead(id: string): Promise<APIGatewayProxyResult> {
     logger.info('Lead deleted', { id });
 
     return response(200, { success: true, message: 'Lead deleted' });
+}
+
+/**
+ * Bulk delete leads by IDs.
+ */
+async function bulkDeleteLeads(body: string | null): Promise<APIGatewayProxyResult> {
+    if (!body) {
+        return response(400, { success: false, message: 'Request body required' });
+    }
+
+    const data = JSON.parse(body);
+    const { ids } = data;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return response(400, { success: false, message: 'ids array is required' });
+    }
+
+    // Limit batch size for safety
+    if (ids.length > 100) {
+        return response(400, { success: false, message: 'Maximum 100 leads can be deleted at once' });
+    }
+
+    // Delete leads in parallel using Promise.all
+    const deletePromises = ids.map((id: string) =>
+        docClient.send(new DeleteCommand({
+            TableName: LEADS_TABLE,
+            Key: { id },
+        })).catch(err => {
+            logger.warn('Failed to delete lead', { id, error: err.message });
+            return { failed: true, id, error: err.message };
+        })
+    );
+
+    const results = await Promise.all(deletePromises);
+    const failed = results.filter(r => r && 'failed' in r);
+    const deletedCount = ids.length - failed.length;
+
+    logger.info('Bulk delete completed', { deletedCount, failedCount: failed.length });
+
+    return response(200, {
+        success: true,
+        data: {
+            deletedCount,
+            failedCount: failed.length,
+            failed: failed.length > 0 ? failed : undefined,
+        },
+    });
+}
+
+/**
+ * Bulk update leads by IDs.
+ */
+async function bulkUpdateLeads(body: string | null): Promise<APIGatewayProxyResult> {
+    if (!body) {
+        return response(400, { success: false, message: 'Request body required' });
+    }
+
+    const data = JSON.parse(body);
+    const { ids, updates } = data;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return response(400, { success: false, message: 'ids array is required' });
+    }
+
+    if (!updates || typeof updates !== 'object') {
+        return response(400, { success: false, message: 'updates object is required' });
+    }
+
+    // Limit batch size for safety
+    if (ids.length > 100) {
+        return response(400, { success: false, message: 'Maximum 100 leads can be updated at once' });
+    }
+
+    // Validate allowed update fields
+    const allowedUpdateFields = ['status', 'campaignId'];
+    const invalidFields = Object.keys(updates).filter(key => !allowedUpdateFields.includes(key));
+    if (invalidFields.length > 0) {
+        return response(400, { success: false, message: `Invalid update fields: ${invalidFields.join(', ')}` });
+    }
+
+    // Validate status if provided
+    const validStatuses = ['PENDING_IMPORT', 'QUEUED', 'VERIFIED', 'SENT', 'DELIVERED', 'BOUNCED', 'COMPLAINED', 'SKIPPED'];
+    if (updates.status && !validStatuses.includes(updates.status)) {
+        return response(400, { success: false, message: `Invalid status. Valid values: ${validStatuses.join(', ')}` });
+    }
+
+    const now = new Date().toISOString();
+    const results: Array<{ id: string; success: boolean; error?: string }> = [];
+
+    // Update leads in parallel
+    const updatePromises = ids.map((id: string) => {
+        // Build update expression
+        const updateParts: string[] = ['#updatedAt = :updatedAt'];
+        const names: Record<string, string> = { '#updatedAt': 'updatedAt' };
+        const values: Record<string, unknown> = { ':updatedAt': now };
+
+        for (const field of allowedUpdateFields) {
+            if (updates[field] !== undefined) {
+                updateParts.push(`#${field} = :${field}`);
+                names[`#${field}`] = field;
+                values[`:${field}`] = updates[field];
+            }
+        }
+
+        return docClient.send(new UpdateCommand({
+            TableName: LEADS_TABLE,
+            Key: { id },
+            UpdateExpression: `SET ${updateParts.join(', ')}`,
+            ExpressionAttributeNames: names,
+            ExpressionAttributeValues: values,
+            ConditionExpression: 'attribute_exists(id)',
+        })).then(() => ({ id, success: true }))
+          .catch(err => {
+            logger.warn('Failed to update lead', { id, error: err.message });
+            return { id, success: false, error: err.message };
+          });
+    });
+
+    const updateResults = await Promise.all(updatePromises);
+    const succeeded = updateResults.filter(r => r.success);
+    const failed = updateResults.filter(r => !r.success);
+
+    logger.info('Bulk update completed', { updatedCount: succeeded.length, failedCount: failed.length });
+
+    return response(200, {
+        success: true,
+        data: {
+            updatedCount: succeeded.length,
+            failedCount: failed.length,
+            details: updateResults,
+        },
+    });
 }

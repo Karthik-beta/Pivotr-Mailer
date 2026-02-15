@@ -41,8 +41,8 @@ import {
     type StagedLead,
     type LeadValidationResult,
     type BatchLeadValidationResult,
-} from '../../../shared/src/validation/staging-lead-validator';
-import { parseIndianName } from '../../../shared/src/utils/name-parser';
+} from '../../../shared/src/validation/staging-lead-validator.js';
+import { parseIndianName } from '../../../shared/src/utils/name-parser.js';
 
 // =============================================================================
 // Configuration

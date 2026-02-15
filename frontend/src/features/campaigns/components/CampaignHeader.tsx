@@ -47,47 +47,54 @@ export function CampaignHeader({ campaign }: CampaignHeaderProps) {
 
 	const actions = getAvailableActions(campaign.status);
 
-	const handleStatusChange = async (newStatus: CampaignStatus) => {
+	const handleStatusChange = async (newStatus: CampaignStatus): Promise<boolean> => {
 		try {
 			await changeStatusMutation.mutateAsync({
 				id: campaign.id,
 				status: newStatus,
 			});
 			toast.success(`Campaign ${newStatus.toLowerCase()} successfully!`);
-			setConfirmAction(null);
+			return true;
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : "Failed to change status");
+			return false;
 		}
 	};
 
-	const handleDelete = async () => {
+	const handleDelete = async (): Promise<boolean> => {
 		try {
 			await deleteMutation.mutateAsync(campaign.id);
 			toast.success("Campaign deleted successfully!");
-			setConfirmAction(null);
 			navigate({ to: "/campaigns", search: { status: "all" } });
+			return true;
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : "Failed to delete campaign");
+			return false;
 		}
 	};
 
-	const handleConfirmAction = () => {
+	const handleConfirmAction = async () => {
+		let success = false;
 		switch (confirmAction) {
 			case "start":
-				handleStatusChange("QUEUED");
+				success = await handleStatusChange("QUEUED");
 				break;
 			case "pause":
-				handleStatusChange("PAUSED");
+				success = await handleStatusChange("PAUSED");
 				break;
 			case "resume":
-				handleStatusChange("RUNNING");
+				success = await handleStatusChange("RUNNING");
 				break;
 			case "abort":
-				handleStatusChange("ABORTED");
+				success = await handleStatusChange("ABORTED");
 				break;
 			case "delete":
-				handleDelete();
+				success = await handleDelete();
 				break;
+		}
+		// Only close dialog on success
+		if (success) {
+			setConfirmAction(null);
 		}
 	};
 
@@ -205,7 +212,12 @@ export function CampaignHeader({ campaign }: CampaignHeaderProps) {
 			{confirmAction && (
 				<ConfirmStatusDialog
 					open={!!confirmAction}
-					onOpenChange={(open) => !open && setConfirmAction(null)}
+					onOpenChange={(open) => {
+						// Prevent closing while operation is in progress
+						if (!open && !isLoading) {
+							setConfirmAction(null);
+						}
+					}}
 					action={confirmAction}
 					campaignName={campaign.name}
 					onConfirm={handleConfirmAction}

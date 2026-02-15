@@ -29,6 +29,8 @@ port = 3000
 host = "127.0.0.1"
 skip_pull_image = true
 warm_containers = "EAGER"
+watch = true
+watch_exclude_file = ".aws-sam/watch-exclude.txt"
 
 [default.local_start_lambda.parameters]
 docker_network = "pivotr-localstack-network"
@@ -52,3 +54,70 @@ use_container = false
 docker_network = "pivotr-localstack-network"
 env_vars = "tests/env/sam-local.json"
 skip_pull_image = false
+
+# Local development environment (with watch mode)
+[local]
+[local.global.parameters]
+stack_name = "pivotr-mailer-local"
+
+[local.build.parameters]
+cached = true
+parallel = true
+use_container = false
+
+[local.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = false
+
+[local.local_invoke.parameters]
+docker_network = "pivotr-localstack-network"
+env_vars = "tests/env/sam-local.json"
+skip_pull_image = true
+
+[local.local_start_api.parameters]
+docker_network = "pivotr-localstack-network"
+env_vars = "tests/env/sam-local.json"
+port = 3000
+host = "127.0.0.1"
+skip_pull_image = true
+warm_containers = "EAGER"
+watch = true
+watch_exclude_file = ".aws-sam/watch-exclude.txt"
+
+[local.local_start_lambda.parameters]
+docker_network = "pivotr-localstack-network"
+env_vars = "tests/env/sam-local.json"
+port = 3001
+host = "127.0.0.1"
+skip_pull_image = true
+warm_containers = "EAGER"
+
+# Development environment (deploys to AWS dev account)
+[dev]
+[dev.global.parameters]
+stack_name = "pivotr-mailer-dev"
+
+[dev.build.parameters]
+cached = true
+parallel = true
+use_container = false
+
+[dev.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = false
+parameter_overrides = ["Environment=dev"]
+
+# Production environment (deploys to AWS prod account)
+[prod]
+[prod.global.parameters]
+stack_name = "pivotr-mailer-prod"
+
+[prod.build.parameters]
+cached = false
+parallel = true
+use_container = false
+
+[prod.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+parameter_overrides = ["Environment=prod"]

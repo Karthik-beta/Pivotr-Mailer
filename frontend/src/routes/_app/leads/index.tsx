@@ -5,7 +5,7 @@
  * Uses URL-driven state for table filtering and pagination.
  */
 
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import {
 	AlertTriangle,
 	CheckCircle2,
@@ -45,11 +45,11 @@ export const Route = createFileRoute("/_app/leads/")({
 });
 
 function LeadsPage() {
-	const navigate = useNavigate();
+	const navigate = Route.useNavigate();
 	const { status, page, pageSize } = Route.useSearch();
 	const [selectedIds, setSelectedIds] = useState<string[]>([]);
 	const clearSelectionRef = useRef<(() => void) | null>(null);
-	const { data, isLoading, error, refetch, isRefetching } = useLeads({ limit: 100 });
+	const { data, isLoading, isPending, error, refetch, isRefetching } = useLeads({ limit: 100 });
 	const exportMutation = useExportLeads();
 	const templateMutation = useDownloadTemplate();
 
@@ -152,7 +152,7 @@ function LeadsPage() {
 
 				{/* Stats Cards */}
 				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-					<Card className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-slate-200 dark:border-slate-700">
+					<Card className="bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-slate-200 dark:border-slate-700">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium">Total Leads</CardTitle>
 							<Users className="h-4 w-4 text-slate-600" />
@@ -163,7 +163,7 @@ function LeadsPage() {
 						</CardContent>
 					</Card>
 
-					<Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 border-emerald-200 dark:border-emerald-800">
+					<Card className="bg-linear-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 border-emerald-200 dark:border-emerald-800">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium">Delivered</CardTitle>
 							<CheckCircle2 className="h-4 w-4 text-emerald-600" />
@@ -176,7 +176,7 @@ function LeadsPage() {
 						</CardContent>
 					</Card>
 
-					<Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-800">
+					<Card className="bg-linear-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-800">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium">Pending</CardTitle>
 							<TrendingUp className="h-4 w-4 text-amber-600" />
@@ -189,7 +189,7 @@ function LeadsPage() {
 						</CardContent>
 					</Card>
 
-					<Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-800">
+					<Card className="bg-linear-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-800">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium">Failed</CardTitle>
 							<AlertTriangle className="h-4 w-4 text-red-600" />
@@ -215,6 +215,7 @@ function LeadsPage() {
 						<LeadsDataTable
 							data={leads}
 							isLoading={isLoading}
+							isPending={isPending}
 							error={error}
 							onRetry={() => refetch()}
 							onRowClick={handleRowClick}
