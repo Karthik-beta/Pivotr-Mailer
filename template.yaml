@@ -177,8 +177,8 @@ Resources:
       MethodSettings:
         - ResourcePath: "/*"
           HttpMethod: "*"
-          ThrottlingBurstLimit: !Ref ThrottlingBurstLimit
-          ThrottlingRateLimit: !Ref ThrottlingRateLimit
+          ThrottlingBurstLimit: 5
+          ThrottlingRateLimit: 2
           LoggingLevel: INFO
           DataTraceEnabled: false
           MetricsEnabled: true
@@ -1022,11 +1022,11 @@ Resources:
         - ApiId: !Ref PivotrMailerApi
           Stage: v1
       Quota:
-        Limit: !Ref UsagePlanQuotaLimit
+        Limit: 1000
         Period: !Ref UsagePlanQuotaPeriod
       Throttle:
-        BurstLimit: !Ref ThrottlingBurstLimit
-        RateLimit: !Ref ThrottlingRateLimit
+        BurstLimit: 5
+        RateLimit: 2
 
   PivotrApiKey:
     Type: AWS::ApiGateway::ApiKey
