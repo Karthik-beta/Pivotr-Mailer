@@ -10,8 +10,12 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "resolveJsonModule": true,
-        "noEmit": true
+        "noEmit": true,
+        "baseUrl": ".",
+        "paths": {
+            "/opt/nodejs/src/*": ["../../shared/src/*"]
+        }
     },
-    "include": ["src/**/*", "../../../lambda/shared/src/**/*"],
+    "include": ["src/**/*", "../../shared/src/**/*"],
     "exclude": ["node_modules", "dist"]
 }

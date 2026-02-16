@@ -13,8 +13,12 @@
         "declaration": true,
         "declarationMap": true,
         "sourceMap": true,
-        "noEmit": true
+        "noEmit": true,
+        "baseUrl": ".",
+        "paths": {
+            "/opt/nodejs/src/*": ["../../shared/src/*"]
+        }
     },
-    "include": ["src/**/*"],
+    "include": ["src/**/*", "../../shared/src/**/*"],
     "exclude": ["node_modules", "dist"]
 }
