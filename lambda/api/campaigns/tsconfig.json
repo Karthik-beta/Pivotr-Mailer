@@ -5,7 +5,7 @@
         "moduleResolution": "NodeNext",
         "lib": ["ES2022"],
         "outDir": "./dist",
-        "rootDirs": ["./src", "../../lambda/shared/src"],
+        "rootDirs": ["./src"],
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
@@ -15,6 +15,6 @@
         "sourceMap": true,
         "noEmit": true
     },
-    "include": ["src/**/*", "../../lambda/shared/src/**/*"],
+    "include": ["src/**/*"],
     "exclude": ["node_modules", "dist"]
 }

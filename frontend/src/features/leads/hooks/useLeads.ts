@@ -17,7 +17,8 @@ import type {
 } from "../types";
 
 // API Base URL - configure based on environment
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+// SAM local does NOT use stage prefix; deployed AWS API Gateway uses /v1
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 // Default timeout for API requests (10 seconds)
 const DEFAULT_TIMEOUT = 10000;

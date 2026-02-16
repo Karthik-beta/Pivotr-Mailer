@@ -3,39 +3,39 @@
     "version": "1.0.0",
     "description": "Shared utilities for Pivotr Mailer Lambda functions",
     "type": "module",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
+    "main": "src/index.js",
+    "types": "src/index.ts",
     "exports": {
-        ".": "./src/index.ts",
-        "./logger": "./src/utils/logger.ts",
-        "./clients": "./src/clients/index.ts",
-        "./config": "./src/config/index.ts",
-        "./utils": "./src/utils/index.ts",
-        "./errors": "./src/errors/errors.ts",
-        "./validation": "./src/validation/index.ts",
-        "./gaussian": "./src/utils/gaussian.ts",
-        "./campaign-schema": "./src/validation/campaign.schema.ts",
-        "./types": "./src/types/index.ts",
-        "./types/lead": "./src/types/lead.types.ts"
+        ".": "./src/index.js",
+        "./logger": "./src/utils/logger.js",
+        "./clients": "./src/clients/index.js",
+        "./config": "./src/config/index.js",
+        "./utils": "./src/utils/index.js",
+        "./errors": "./src/errors/errors.js",
+        "./validation": "./src/validation/index.js",
+        "./gaussian": "./src/utils/gaussian.js",
+        "./campaign-schema": "./src/validation/campaign.schema.js",
+        "./types": "./src/types/index.js",
+        "./types/lead": "./src/types/lead.types.js"
     },
     "scripts": {
         "build": "tsc",
         "clean": "rm -rf dist"
     },
     "dependencies": {
-        "@aws-sdk/client-dynamodb": "*",
-        "@aws-sdk/lib-dynamodb": "*",
-        "@aws-sdk/client-ses": "*",
-        "@aws-sdk/client-sqs": "*",
-        "@aws-sdk/client-secrets-manager": "*",
-        "@aws-lambda-powertools/logger": "*",
-        "@aws-lambda-powertools/metrics": "*",
-        "@aws-lambda-powertools/tracer": "*",
-        "zod": "*"
+        "@aws-sdk/client-dynamodb": "^3.400.0",
+        "@aws-sdk/lib-dynamodb": "^3.400.0",
+        "@aws-sdk/client-ses": "^3.400.0",
+        "@aws-sdk/client-sqs": "^3.400.0",
+        "@aws-sdk/client-secrets-manager": "^3.400.0",
+        "@aws-lambda-powertools/logger": "^2.0.0",
+        "@aws-lambda-powertools/metrics": "^2.0.0",
+        "@aws-lambda-powertools/tracer": "^2.0.0",
+        "zod": "^3.22.0"
     },
     "devDependencies": {
-        "@types/aws-lambda": "*",
-        "@types/node": "*",
-        "typescript": "*"
+        "@types/aws-lambda": "^8.10.130",
+        "@types/node": "^20.10.0",
+        "typescript": "^5.3.0"
     }
 }

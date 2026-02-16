@@ -14,8 +14,8 @@ import { Logger } from '@aws-lambda-powertools/logger';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
-import { resolveSpintax, injectVariables } from '/opt/nodejs/shared/utils/spintax';
-import { DAILY_SENDING_CAP } from '/opt/nodejs/shared/config/safety.config';
+import { resolveSpintax, injectVariables } from '/opt/nodejs/src/utils/spintax.js';
+import { DAILY_SENDING_CAP } from '/opt/nodejs/src/config/safety.config.js';
 
 // Initialize Logging
 const logger = new Logger({

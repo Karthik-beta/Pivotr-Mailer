@@ -56,8 +56,8 @@ import {
 	type CampaignStatus,
 	type CampaignMetrics,
 	type LeadSelection,
-} from "../../../shared/src/validation/campaign.schema.js";
-import { resolveSpintax, injectVariables } from "../../../shared/src/utils/spintax.js";
+} from "/opt/nodejs/src/validation/index.js";
+import { resolveSpintax, injectVariables } from "/opt/nodejs/src/utils/index.js";
 
 // =============================================================================
 // Configuration

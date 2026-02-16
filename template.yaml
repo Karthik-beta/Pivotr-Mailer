@@ -150,7 +150,7 @@ Resources:
   # ===========================================================================
   # This layer provides shared utilities (logger, clients, config, errors)
   # to all Lambda functions. Changes to lambda/shared/ trigger layer rebuild.
-  # Using nodejs20.x BuildMethod for proper hot reload support per AWS SAM docs.
+  # Using native Node.js build method (nodejs20.x) for SAM CLI.
   SharedUtilsLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
@@ -184,12 +184,642 @@ Resources:
           MetricsEnabled: true
 
       # CORS Configuration - Allow all origins for development
-      # Note: For AWS::Serverless::Api, Cors values should NOT have embedded quotes
+      # Note: For AWS::Serverless::Api with SAM CLI, Cors values MUST have embedded single quotes
       Cors:
-        AllowMethods: "GET,POST,PUT,DELETE,OPTIONS"
-        AllowHeaders: "Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token"
-        AllowOrigin: !Ref CorsAllowedOrigin
-        MaxAge: "86400"
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: !Sub "'${CorsAllowedOrigin}'"
+        MaxAge: "'86400'"
+
+      # OpenAPI Definition with explicit OPTIONS methods using Mock Integration
+      # This ensures API Gateway handles CORS preflight without invoking Lambda
+      DefinitionBody:
+        openapi: "3.0.1"
+        info:
+          title: !Ref AWS::StackName
+          version: "1.0"
+        paths:
+          # =========================================================================
+          # LEADS ENDPOINTS - OPTIONS with Mock Integration
+          # =========================================================================
+          /leads:
+            options:
+              summary: CORS preflight for /leads
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /leads/{id}:
+            options:
+              summary: CORS preflight for /leads/{id}
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /leads/bulk-delete:
+            options:
+              summary: CORS preflight for /leads/bulk-delete
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /leads/bulk-update:
+            options:
+              summary: CORS preflight for /leads/bulk-update
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /leads/export:
+            options:
+              summary: CORS preflight for /leads/export
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /leads/export-selected:
+            options:
+              summary: CORS preflight for /leads/export-selected
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /leads/template:
+            options:
+              summary: CORS preflight for /leads/template
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /leads/import:
+            options:
+              summary: CORS preflight for /leads/import
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          # =========================================================================
+          # CAMPAIGNS ENDPOINTS - OPTIONS with Mock Integration
+          # =========================================================================
+          /campaigns:
+            options:
+              summary: CORS preflight for /campaigns
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /campaigns/preview-leads:
+            options:
+              summary: CORS preflight for /campaigns/preview-leads
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /campaigns/{id}:
+            options:
+              summary: CORS preflight for /campaigns/{id}
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /campaigns/{id}/leads:
+            options:
+              summary: CORS preflight for /campaigns/{id}/leads
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /campaigns/{id}/assign-leads:
+            options:
+              summary: CORS preflight for /campaigns/{id}/assign-leads
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /campaigns/{id}/status:
+            options:
+              summary: CORS preflight for /campaigns/{id}/status
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /campaigns/{id}/test-email:
+            options:
+              summary: CORS preflight for /campaigns/{id}/test-email
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /campaigns/{id}/metrics:
+            options:
+              summary: CORS preflight for /campaigns/{id}/metrics
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /campaigns/{id}/verify:
+            options:
+              summary: CORS preflight for /campaigns/{id}/verify
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          # =========================================================================
+          # METRICS ENDPOINT - OPTIONS with Mock Integration
+          # =========================================================================
+          /metrics:
+            options:
+              summary: CORS preflight for /metrics
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
 
       # Request Models for Validation
       Models:
@@ -494,6 +1124,8 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        EntryPoints:
+          - src/index.ts
         Sourcemap: true
         Minify: false
         Target: es2022
@@ -504,6 +1136,11 @@ Resources:
         OutExtension:
           - .js=.mjs
 
+  # ===========================================================================
+  # API Campaigns Lambda
+  # ===========================================================================
+  # Uses SharedUtilsLayer for shared utilities (validation, logging, clients)
+  # Layer path: /opt/nodejs/src/
   ApiCampaignsLambda:
     Type: AWS::Serverless::Function
     Properties:
@@ -634,12 +1271,15 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        EntryPoints:
+          - src/index.ts
         Sourcemap: true
         Minify: false
         Target: es2022
         External:
           - "@aws-sdk/*"
           - "@aws-lambda-powertools/*"
+          - "/opt/nodejs/src/*"
         Format: esm
         OutExtension:
           - .js=.mjs
@@ -665,12 +1305,15 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        EntryPoints:
+          - src/index.ts
         Sourcemap: true
         Minify: false
         Target: es2022
         External:
           - "@aws-sdk/*"
           - "@aws-lambda-powertools/*"
+          - "/opt/nodejs/src/*"
         Format: esm
         OutExtension:
           - .js=.mjs
@@ -708,12 +1351,15 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        EntryPoints:
+          - src/index.ts
         Sourcemap: true
         Minify: false
         Target: es2022
         External:
           - "@aws-sdk/*"
           - "@aws-lambda-powertools/*"
+          - "/opt/nodejs/src/*"
         Format: esm
         OutExtension:
           - .js=.mjs
@@ -743,12 +1389,15 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        EntryPoints:
+          - src/index.ts
         Sourcemap: true
         Minify: false
         Target: es2022
         External:
           - "@aws-sdk/*"
           - "@aws-lambda-powertools/*"
+          - "/opt/nodejs/src/*"
         Format: esm
         OutExtension:
           - .js=.mjs
@@ -777,12 +1426,15 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        EntryPoints:
+          - src/index.ts
         Sourcemap: true
         Minify: false
         Target: es2022
         External:
           - "@aws-sdk/*"
           - "@aws-lambda-powertools/*"
+          - "/opt/nodejs/src/*"
         Format: esm
         OutExtension:
           - .js=.mjs
@@ -801,12 +1453,15 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        EntryPoints:
+          - src/index.ts
         Sourcemap: true
         Minify: false
         Target: es2022
         External:
           - "@aws-sdk/*"
           - "@aws-lambda-powertools/*"
+          - "/opt/nodejs/src/*"
         Format: esm
         OutExtension:
           - .js=.mjs
@@ -825,12 +1480,15 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        EntryPoints:
+          - src/index.ts
         Sourcemap: true
         Minify: false
         Target: es2022
         External:
           - "@aws-sdk/*"
           - "@aws-lambda-powertools/*"
+          - "/opt/nodejs/src/*"
         Format: esm
         OutExtension:
           - .js=.mjs
@@ -859,12 +1517,15 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        EntryPoints:
+          - src/index.ts
         Sourcemap: true
         Minify: false
         Target: es2022
         External:
           - "@aws-sdk/*"
           - "@aws-lambda-powertools/*"
+          - "/opt/nodejs/src/*"
         Format: esm
         OutExtension:
           - .js=.mjs
@@ -893,12 +1554,15 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        EntryPoints:
+          - src/index.ts
         Sourcemap: true
         Minify: false
         Target: es2022
         External:
           - "@aws-sdk/*"
           - "@aws-lambda-powertools/*"
+          - "/opt/nodejs/src/*"
         Format: esm
         OutExtension:
           - .js=.mjs

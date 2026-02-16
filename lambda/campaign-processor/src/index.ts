@@ -48,8 +48,8 @@ import {
 	isCampaignScheduledToday,
 	getTodayInTimezone,
 	type GaussianConfig,
-} from '@shared/utils/gaussian';
-import type { Campaign } from '@shared/validation/campaign.schema';
+} from '/opt/nodejs/src/utils/gaussian.js';
+import type { Campaign } from '/opt/nodejs/src/validation/campaign.schema.js';
 import { safeBatchWrite } from "./utils/dynamo";
 
 
