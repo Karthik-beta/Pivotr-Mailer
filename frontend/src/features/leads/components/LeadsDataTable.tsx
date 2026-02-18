@@ -31,7 +31,9 @@ import {
 	ChevronRight,
 	ChevronsLeft,
 	ChevronsRight,
+	Edit,
 	Mail,
+	MoreHorizontal,
 	Phone,
 	RefreshCw,
 	Search,
@@ -40,6 +42,12 @@ import {
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -74,6 +82,7 @@ interface LeadsDataTableProps {
 	error?: Error | null;
 	onRetry?: () => void;
 	onRowClick?: (lead: Lead) => void;
+	onEditLead?: (lead: Lead) => void;
 	onSelectionChange?: (selectedIds: string[]) => void;
 	// URL-driven state
 	statusFilter?: string;
@@ -89,10 +98,11 @@ interface LeadsDataTableProps {
 export function LeadsDataTable({
 	data,
 	isLoading,
-	isPending,
+	isPending = false,
 	error,
 	onRetry,
 	onRowClick,
+	onEditLead,
 	onSelectionChange,
 	statusFilter = "all",
 	onStatusFilterChange,
@@ -269,8 +279,41 @@ export function LeadsDataTable({
 					);
 				},
 			},
+			{
+				id: "actions",
+				header: "",
+				size: 50,
+				cell: ({ row }) => (
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-8 w-8"
+								onClick={(e) => e.stopPropagation()}
+							>
+								<MoreHorizontal className="h-4 w-4" />
+								<span className="sr-only">Open menu</span>
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end">
+							<DropdownMenuItem
+								onClick={(e) => {
+									e.stopPropagation();
+									onEditLead?.(row.original);
+								}}
+							>
+								<Edit className="mr-2 h-4 w-4" />
+								Edit
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
+				),
+				enableSorting: false,
+				enableHiding: false,
+			},
 		],
-		[]
+		[onEditLead]
 	);
 
 	// Derive pagination state from URL params

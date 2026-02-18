@@ -1,0 +1,15 @@
+{
+  "httpMethod": "GET",
+  "path": "/campaigns",
+  "queryStringParameters": {
+    "limit": "100"
+  },
+  "headers": {
+    "Accept": "application/json",
+    "Content-Type": "application/json"
+  },
+  "requestContext": {
+    "stage": "v1",
+    "requestId": "test-request-id"
+  }
+}

@@ -16,11 +16,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { CampaignDetailSkeleton } from "@/features/campaigns/components/CampaignDetailSkeleton";
 import { CampaignWizard } from "@/features/campaigns/components/CampaignWizard";
-import { useCampaign } from "@/features/campaigns/hooks/useCampaigns";
+import { campaignQueryOptions, useCampaign } from "@/features/campaigns/hooks/useCampaigns";
 import { Layout } from "@/features/shared/Layout";
 
 export const Route = createFileRoute("/_app/campaigns/$id/edit")({
 	component: EditCampaignPage,
+	loader: async ({ context, params }) => {
+		await context.queryClient.ensureQueryData(campaignQueryOptions(params.id));
+	},
 });
 
 function EditCampaignPage() {

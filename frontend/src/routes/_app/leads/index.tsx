@@ -11,6 +11,8 @@ import {
 	CheckCircle2,
 	Download,
 	FileSpreadsheet,
+	Loader2,
+	Plus,
 	RefreshCw,
 	TrendingUp,
 	Upload,
@@ -27,8 +29,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BulkActionsToolbar } from "@/features/leads/components/BulkActionsToolbar";
+import { LeadFormDialog } from "@/features/leads/components/LeadFormDialog";
 import { LeadsDataTable } from "@/features/leads/components/LeadsDataTable";
-import { useDownloadTemplate, useExportLeads, useLeads } from "@/features/leads/hooks/useLeads";
+import {
+	leadsQueryOptions,
+	useDownloadTemplate,
+	useExportLeads,
+	useLeads,
+} from "@/features/leads/hooks/useLeads";
 import type { Lead } from "@/features/leads/types";
 import { Layout } from "@/features/shared/Layout";
 
@@ -42,6 +50,9 @@ const leadsSearchSchema = z.object({
 export const Route = createFileRoute("/_app/leads/")({
 	component: LeadsPage,
 	validateSearch: leadsSearchSchema,
+	loader: async ({ context }) => {
+		await context.queryClient.ensureQueryData(leadsQueryOptions({ limit: 100 }));
+	},
 });
 
 function LeadsPage() {
@@ -52,6 +63,11 @@ function LeadsPage() {
 	const { data, isLoading, isPending, error, refetch, isRefetching } = useLeads({ limit: 100 });
 	const exportMutation = useExportLeads();
 	const templateMutation = useDownloadTemplate();
+
+	// Lead form dialog state
+	const [dialogOpen, setDialogOpen] = useState(false);
+	const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
+	const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
 	// URL state update handlers
 	const handleStatusFilterChange = (newStatus: string) => {
@@ -88,6 +104,19 @@ function LeadsPage() {
 
 	const handleRowClick = (lead: Lead) => {
 		console.log("Lead clicked:", lead);
+	};
+
+	// Dialog handlers
+	const handleAddLead = () => {
+		setSelectedLead(null);
+		setDialogMode("add");
+		setDialogOpen(true);
+	};
+
+	const handleEditLead = (lead: Lead) => {
+		setSelectedLead(lead);
+		setDialogMode("edit");
+		setDialogOpen(true);
 	};
 
 	const handleClearSelection = () => {
@@ -129,7 +158,11 @@ function LeadsPage() {
 							onClick={() => templateMutation.mutate()}
 							disabled={templateMutation.isPending}
 						>
-							<FileSpreadsheet className="mr-2 h-4 w-4" />
+							{templateMutation.isPending ? (
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+							) : (
+								<FileSpreadsheet className="mr-2 h-4 w-4" />
+							)}
 							Template
 						</Button>
 						<Button
@@ -138,8 +171,16 @@ function LeadsPage() {
 							onClick={() => exportMutation.mutate({})}
 							disabled={exportMutation.isPending}
 						>
-							<Download className="mr-2 h-4 w-4" />
+							{exportMutation.isPending ? (
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+							) : (
+								<Download className="mr-2 h-4 w-4" />
+							)}
 							Export
+						</Button>
+						<Button size="sm" onClick={handleAddLead}>
+							<Plus className="mr-2 h-4 w-4" />
+							Add Lead
 						</Button>
 						<Button size="sm" asChild>
 							<a href="/leads/staging">
@@ -219,6 +260,7 @@ function LeadsPage() {
 							error={error}
 							onRetry={() => refetch()}
 							onRowClick={handleRowClick}
+							onEditLead={handleEditLead}
 							onSelectionChange={setSelectedIds}
 							statusFilter={status}
 							onStatusFilterChange={handleStatusFilterChange}
@@ -237,6 +279,15 @@ function LeadsPage() {
 				selectedIds={selectedIds}
 				onClearSelection={handleClearSelection}
 				onActionComplete={() => refetch()}
+			/>
+
+			{/* Lead Form Dialog */}
+			<LeadFormDialog
+				open={dialogOpen}
+				onOpenChange={setDialogOpen}
+				mode={dialogMode}
+				lead={selectedLead}
+				onSuccess={() => refetch()}
 			/>
 		</Layout>
 	);

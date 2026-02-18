@@ -26,7 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CampaignStatusBadge } from "@/features/campaigns/components/CampaignStatusBadge";
-import { useCampaigns } from "@/features/campaigns/hooks/useCampaigns";
+import { campaignsQueryOptions, useCampaigns } from "@/features/campaigns/hooks/useCampaigns";
 import type { Campaign } from "@/features/campaigns/types";
 import { Layout } from "@/features/shared/Layout";
 
@@ -38,6 +38,9 @@ const campaignsSearchSchema = z.object({
 export const Route = createFileRoute("/_app/campaigns/")({
 	component: CampaignsPage,
 	validateSearch: campaignsSearchSchema,
+	loader: async ({ context }) => {
+		await context.queryClient.ensureQueryData(campaignsQueryOptions());
+	},
 });
 
 function CampaignsPage() {

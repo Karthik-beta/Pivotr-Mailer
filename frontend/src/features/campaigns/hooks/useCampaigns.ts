@@ -4,7 +4,7 @@
  * TanStack Query hooks for campaigns API.
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
 	AssignLeadsRequest,
 	AssignLeadsResponse,
@@ -54,11 +54,11 @@ async function fetchWithTimeout(
 }
 
 // =============================================================================
-// Campaigns Queries
+// Query Options Factories (for use in route loaders)
 // =============================================================================
 
-export function useCampaigns(params?: { limit?: number; status?: string }) {
-	return useQuery({
+export const campaignsQueryOptions = (params?: { limit?: number; status?: string }) =>
+	queryOptions({
 		queryKey: ["campaigns", params],
 		queryFn: async (): Promise<CampaignsResponse> => {
 			const searchParams = new URLSearchParams();
@@ -70,10 +70,9 @@ export function useCampaigns(params?: { limit?: number; status?: string }) {
 			return response.json();
 		},
 	});
-}
 
-export function useCampaign(id: string) {
-	return useQuery({
+export const campaignQueryOptions = (id: string) =>
+	queryOptions({
 		queryKey: ["campaigns", id],
 		queryFn: async (): Promise<CampaignResponse> => {
 			const response = await fetchWithTimeout(`${API_BASE}/campaigns/${id}`);
@@ -82,6 +81,17 @@ export function useCampaign(id: string) {
 		},
 		enabled: !!id,
 	});
+
+// =============================================================================
+// Campaigns Queries
+// =============================================================================
+
+export function useCampaigns(params?: { limit?: number; status?: string }) {
+	return useQuery(campaignsQueryOptions(params));
+}
+
+export function useCampaign(id: string) {
+	return useQuery(campaignQueryOptions(id));
 }
 
 export function useCampaignMetrics(id: string) {

@@ -4,7 +4,7 @@
  * TanStack Query hooks for leads and staging leads API.
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
 	ApproveLeadResponse,
 	BatchApproveResponse,
@@ -52,11 +52,15 @@ async function fetchWithTimeout(
 }
 
 // =============================================================================
-// Leads Queries
+// Query Options Factories (for use in route loaders)
 // =============================================================================
 
-export function useLeads(params?: { limit?: number; lastKey?: string; status?: string }) {
-	return useQuery({
+export const leadsQueryOptions = (params?: {
+	limit?: number;
+	lastKey?: string;
+	status?: string;
+}) =>
+	queryOptions({
 		queryKey: ["leads", params],
 		queryFn: async (): Promise<LeadsResponse> => {
 			const searchParams = new URLSearchParams();
@@ -69,6 +73,32 @@ export function useLeads(params?: { limit?: number; lastKey?: string; status?: s
 			return response.json();
 		},
 	});
+
+export const stagedLeadsQueryOptions = (params?: {
+	limit?: number;
+	lastKey?: string;
+	status?: string;
+}) =>
+	queryOptions({
+		queryKey: ["staged-leads", params],
+		queryFn: async (): Promise<StagedLeadsResponse> => {
+			const searchParams = new URLSearchParams();
+			if (params?.limit) searchParams.set("limit", String(params.limit));
+			if (params?.lastKey) searchParams.set("lastKey", params.lastKey);
+			if (params?.status) searchParams.set("status", params.status);
+
+			const response = await fetchWithTimeout(`${API_BASE}/leads/staging?${searchParams}`);
+			if (!response.ok) throw new Error("Failed to fetch staged leads");
+			return response.json();
+		},
+	});
+
+// =============================================================================
+// Leads Queries
+// =============================================================================
+
+export function useLeads(params?: { limit?: number; lastKey?: string; status?: string }) {
+	return useQuery(leadsQueryOptions(params));
 }
 
 export function useLead(id: string) {
@@ -88,19 +118,7 @@ export function useLead(id: string) {
 // =============================================================================
 
 export function useStagedLeads(params?: { limit?: number; lastKey?: string; status?: string }) {
-	return useQuery({
-		queryKey: ["staged-leads", params],
-		queryFn: async (): Promise<StagedLeadsResponse> => {
-			const searchParams = new URLSearchParams();
-			if (params?.limit) searchParams.set("limit", String(params.limit));
-			if (params?.lastKey) searchParams.set("lastKey", params.lastKey);
-			if (params?.status) searchParams.set("status", params.status);
-
-			const response = await fetchWithTimeout(`${API_BASE}/leads/staging?${searchParams}`);
-			if (!response.ok) throw new Error("Failed to fetch staged leads");
-			return response.json();
-		},
-	});
+	return useQuery(stagedLeadsQueryOptions(params));
 }
 
 export function useStagedLead(id: string) {

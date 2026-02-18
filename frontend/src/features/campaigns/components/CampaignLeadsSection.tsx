@@ -77,7 +77,7 @@ export function CampaignLeadsSection({ campaign, metrics }: CampaignLeadsSection
 			</Card>
 
 			{/* Assigned Leads Summary */}
-			<Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 border-emerald-200 dark:border-emerald-800">
+			<Card className="bg-linear-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 border-emerald-200 dark:border-emerald-800">
 				<CardHeader className="pb-2">
 					<CardTitle className="text-lg flex items-center gap-2">
 						<Users className="h-5 w-5" />

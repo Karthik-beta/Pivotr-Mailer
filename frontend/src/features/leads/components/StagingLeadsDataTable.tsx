@@ -182,7 +182,7 @@ export function StagingLeadsDataTable({
 						}
 						onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
 						aria-label="Select all"
-						className="translate-y-[2px]"
+						className="translate-y-0.5"
 					/>
 				),
 				cell: ({ row }) => (
@@ -190,7 +190,7 @@ export function StagingLeadsDataTable({
 						checked={row.getIsSelected()}
 						onCheckedChange={(value) => row.toggleSelected(!!value)}
 						aria-label="Select row"
-						className="translate-y-[2px]"
+						className="translate-y-0.5"
 						onClick={(e) => e.stopPropagation()}
 					/>
 				),
@@ -520,7 +520,7 @@ export function StagingLeadsDataTable({
 			<div className="space-y-4">
 				{/* Filters */}
 				<div className="flex flex-wrap items-center gap-4">
-					<div className="relative flex-1 min-w-[250px] max-w-sm">
+					<div className="relative flex-1 min-w-62.5 max-w-sm">
 						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 						<Input
 							placeholder="Search staged leads..."
@@ -536,7 +536,7 @@ export function StagingLeadsDataTable({
 							onStatusFilterChange?.(value);
 						}}
 					>
-						<SelectTrigger className="w-[180px]">
+						<SelectTrigger className="w-45">
 							<SelectValue placeholder="Filter by status" />
 						</SelectTrigger>
 						<SelectContent>
@@ -654,7 +654,7 @@ export function StagingLeadsDataTable({
 								defaultValue="10"
 								onValueChange={(value) => table.setPageSize(Number(value))}
 							>
-								<SelectTrigger className="h-8 w-[70px]">
+								<SelectTrigger className="h-8 w-17.5">
 									<SelectValue placeholder="10" />
 								</SelectTrigger>
 								<SelectContent side="top">
@@ -666,7 +666,7 @@ export function StagingLeadsDataTable({
 								</SelectContent>
 							</Select>
 						</div>
-						<div className="flex w-[100px] items-center justify-center text-sm font-medium">
+						<div className="flex w-25 items-center justify-center text-sm font-medium">
 							Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
 						</div>
 						<div className="flex items-center space-x-2">
@@ -713,7 +713,7 @@ export function StagingLeadsDataTable({
 
 			{/* Edit Dialog */}
 			<Dialog open={!!editingLead} onOpenChange={() => setEditingLead(null)}>
-				<DialogContent className="sm:max-w-[500px]">
+				<DialogContent className="sm:max-w-125">
 					<DialogHeader>
 						<DialogTitle>Edit Staged Lead</DialogTitle>
 						<DialogDescription>

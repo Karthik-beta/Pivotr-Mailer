@@ -65,6 +65,7 @@ tests/localstack/volume/state/
 *.tmp
 *.temp
 tmpclaude-*
+.dev-api.lock
 
 # Credentials
 credentials/

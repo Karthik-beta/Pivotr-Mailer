@@ -161,8 +161,7 @@ Resources:
         - nodejs20.x
       RetentionPolicy: Retain
     Metadata:
-      BuildMethod: nodejs20.x
-      BuildArchitecture: x86_64
+      BuildMethod: makefile
 
   # ===========================================================================
   # API Gateway
@@ -1360,9 +1359,9 @@ Resources:
           - "@aws-sdk/*"
           - "@aws-lambda-powertools/*"
           - "/opt/nodejs/src/*"
-        Format: esm
+        Format: cjs
         OutExtension:
-          - .js=.mjs
+          - .js=.js
 
   LeadImportLambda:
     Type: AWS::Serverless::Function

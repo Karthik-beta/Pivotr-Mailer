@@ -8,9 +8,9 @@
     "strict": true,
     "resolveJsonModule": true,
     "declaration": true,
-    "rootDir": "nodejs/src",
+    "rootDir": "src",
     "outDir": "dist"
   },
-  "include": ["nodejs/src/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", ".aws-sam"]
 }

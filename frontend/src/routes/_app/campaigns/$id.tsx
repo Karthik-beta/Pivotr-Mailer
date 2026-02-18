@@ -15,11 +15,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { CampaignDetail } from "@/features/campaigns/components/CampaignDetail";
 import { CampaignDetailSkeleton } from "@/features/campaigns/components/CampaignDetailSkeleton";
-import { useCampaign, useCampaignMetrics } from "@/features/campaigns/hooks/useCampaigns";
+import {
+	campaignQueryOptions,
+	useCampaign,
+	useCampaignMetrics,
+} from "@/features/campaigns/hooks/useCampaigns";
 import { Layout } from "@/features/shared/Layout";
 
 export const Route = createFileRoute("/_app/campaigns/$id")({
 	component: CampaignDetailPage,
+	loader: async ({ context, params }) => {
+		await context.queryClient.ensureQueryData(campaignQueryOptions(params.id));
+	},
 });
 
 function CampaignDetailPage() {

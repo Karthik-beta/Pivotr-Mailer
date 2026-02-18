@@ -10,7 +10,7 @@
  * - URL-driven state for table filtering and pagination
  */
 
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import {
 	AlertCircle,
 	AlertTriangle,
@@ -52,6 +52,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { StagingLeadsDataTable } from "@/features/leads/components/StagingLeadsDataTable";
 import {
+	stagedLeadsQueryOptions,
 	useApproveLead,
 	useBatchApproveLeads,
 	useDeleteStagedLead,
@@ -73,10 +74,13 @@ const stagingSearchSchema = z.object({
 export const Route = createFileRoute("/_app/leads/staging")({
 	component: StagingLeadsPage,
 	validateSearch: stagingSearchSchema,
+	loader: async ({ context }) => {
+		await context.queryClient.ensureQueryData(stagedLeadsQueryOptions({ limit: 100 }));
+	},
 });
 
 function StagingLeadsPage() {
-	const navigate = useNavigate();
+	const navigate = Route.useNavigate();
 	const { status, page, pageSize } = Route.useSearch();
 	const [selectedIds, setSelectedIds] = useState<string[]>([]);
 	const [activeTab, setActiveTab] = useState<"review" | "import">("review");

@@ -46,6 +46,7 @@
         "dev": "pm2 start ecosystem.config.cjs",
         "dev:stop": "pm2 stop ecosystem.config.cjs",
         "dev:restart": "pm2 delete ecosystem.config.cjs && pm2 start ecosystem.config.cjs",
+        "dev:clean": "bun run scripts/dev-clean.ts",
         "dev:logs": "pm2 logs",
         "dev:logs:api": "pm2 logs api",
         "dev:logs:frontend": "pm2 logs frontend",

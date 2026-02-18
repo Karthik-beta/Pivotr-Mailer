@@ -66,6 +66,27 @@ export function BulkActionsToolbar({
 	const exportSelectedMutation = useExportSelectedLeads();
 	const { data: campaignsData } = useCampaigns({ limit: 100 });
 
+	// Handlers that prevent closing dialog while mutation is in progress
+	const handleDeleteDialogOpenChange = (open: boolean) => {
+		// Don't close if mutation is in progress
+		if (!open && bulkDeleteMutation.isPending) return;
+		setShowDeleteDialog(open);
+	};
+
+	const handleStatusDialogOpenChange = (open: boolean) => {
+		// Don't close if mutation is in progress
+		if (!open && bulkUpdateMutation.isPending) return;
+		setShowStatusDialog(open);
+		if (!open) setSelectedStatus("");
+	};
+
+	const handleCampaignDialogOpenChange = (open: boolean) => {
+		// Don't close if mutation is in progress
+		if (!open && bulkUpdateMutation.isPending) return;
+		setShowCampaignDialog(open);
+		if (!open) setSelectedCampaignId("");
+	};
+
 	const campaigns = campaignsData?.data || [];
 	const selectedCount = selectedIds.length;
 
@@ -230,7 +251,7 @@ export function BulkActionsToolbar({
 			</div>
 
 			{/* Delete Confirmation Dialog */}
-			<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+			<Dialog open={showDeleteDialog} onOpenChange={handleDeleteDialogOpenChange}>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle className="flex items-center gap-2">
@@ -266,7 +287,7 @@ export function BulkActionsToolbar({
 			</Dialog>
 
 			{/* Change Status Dialog */}
-			<Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
+			<Dialog open={showStatusDialog} onOpenChange={handleStatusDialogOpenChange}>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Change Status</DialogTitle>
@@ -318,7 +339,7 @@ export function BulkActionsToolbar({
 			</Dialog>
 
 			{/* Assign to Campaign Dialog */}
-			<Dialog open={showCampaignDialog} onOpenChange={setShowCampaignDialog}>
+			<Dialog open={showCampaignDialog} onOpenChange={handleCampaignDialogOpenChange}>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Assign to Campaign</DialogTitle>
