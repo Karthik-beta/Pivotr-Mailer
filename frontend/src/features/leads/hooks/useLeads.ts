@@ -4,7 +4,13 @@
  * TanStack Query hooks for leads and staging leads API.
  */
 
-import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	keepPreviousData,
+	queryOptions,
+	useMutation,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import type {
 	ApproveLeadResponse,
 	BatchApproveResponse,
@@ -55,11 +61,7 @@ async function fetchWithTimeout(
 // Query Options Factories (for use in route loaders)
 // =============================================================================
 
-export const leadsQueryOptions = (params?: {
-	limit?: number;
-	lastKey?: string;
-	status?: string;
-}) =>
+export const leadsQueryOptions = (params?: { limit?: number; lastKey?: string; status?: string }) =>
 	queryOptions({
 		queryKey: ["leads", params],
 		queryFn: async (): Promise<LeadsResponse> => {
@@ -98,7 +100,12 @@ export const stagedLeadsQueryOptions = (params?: {
 // =============================================================================
 
 export function useLeads(params?: { limit?: number; lastKey?: string; status?: string }) {
-	return useQuery(leadsQueryOptions(params));
+	return useQuery({
+		...leadsQueryOptions(params),
+		// Show stale list data while a fresh fetch is in-flight (e.g. after status filter change).
+		// Prevents the table from blanking out between param changes.
+		placeholderData: keepPreviousData,
+	});
 }
 
 export function useLead(id: string) {
@@ -118,7 +125,11 @@ export function useLead(id: string) {
 // =============================================================================
 
 export function useStagedLeads(params?: { limit?: number; lastKey?: string; status?: string }) {
-	return useQuery(stagedLeadsQueryOptions(params));
+	return useQuery({
+		...stagedLeadsQueryOptions(params),
+		// Show stale list data while a fresh fetch is in-flight.
+		placeholderData: keepPreviousData,
+	});
 }
 
 export function useStagedLead(id: string) {

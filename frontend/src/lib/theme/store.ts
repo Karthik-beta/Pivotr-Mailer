@@ -1,5 +1,6 @@
 import { useStore } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import { setThemeCookie } from "@/lib/cookies";
 import type {
 	ColorTheme,
 	FontFamily,
@@ -10,71 +11,61 @@ import type {
 } from "./types";
 import { DEFAULT_THEME_CONFIG, resolveThemeTokens } from "./types";
 
-const STORAGE_KEY = "pivotr-theme-config";
+// =============================================================================
+// THEME STORE - Server-side aware initialization
+// =============================================================================
 
 /**
- * Load theme config from localStorage.
- * Only call this on the client after hydration.
+ * Global store for theme configuration.
+ *
+ * SSR Strategy:
+ * 1. Server initializes store with DEFAULT_THEME_CONFIG or value from cookie
+ * 2. Server passes initial theme to RootDocument via route context
+ * 3. RootDocument applies correct html class before rendering
+ * 4. Client hydrates with matching initial state (no mismatch)
+ * 5. ThemeProvider syncs with store and persists changes to cookies
  */
-function loadThemeConfigFromStorage(): ThemeConfig {
-	try {
-		const stored = localStorage.getItem(STORAGE_KEY);
-		if (stored) {
-			const parsed = JSON.parse(stored);
-			// Handle legacy format migration
-			if ("colorTheme" in parsed && !("preset" in parsed)) {
-				return {
-					mode: parsed.mode || "system",
-					preset: null,
-					custom: {
-						colorTheme: parsed.colorTheme || "zinc",
-						radius: parsed.radius || "0.5",
-						fontFamily: parsed.fontFamily || "inter",
-					},
-				};
-			}
-			return { ...DEFAULT_THEME_CONFIG, ...parsed };
-		}
-	} catch {
-		// Ignore parse errors
-	}
-	return DEFAULT_THEME_CONFIG;
-}
-
-function saveThemeConfig(config: ThemeConfig): void {
-	if (typeof window === "undefined") return;
-	try {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-	} catch {
-		// Ignore storage errors
-	}
-}
-
-// Initialize with DEFAULT_THEME_CONFIG for SSR hydration consistency.
-// Server and client must start with the same value to avoid hydration mismatch.
-// localStorage values are loaded after hydration via hydrateThemeFromStorage().
 export const themeStore = new Store<ThemeConfig>(DEFAULT_THEME_CONFIG);
 
-// Subscribe to changes and persist
-themeStore.subscribe(() => {
-	saveThemeConfig(themeStore.state);
-});
+// Track if we've hydrated from server-provided initial state
+let isInitialized = false;
 
 /**
- * Hydrate theme store from localStorage after client mount.
- * Call this once in a useEffect to avoid hydration mismatch.
+ * Initialize the theme store with server-provided initial state.
+ * This should be called once on the server during SSR, or on the client
+ * during hydration with the server's initial value.
+ *
+ * @param initialMode - The theme mode from the cookie (read on server)
  */
-let isHydrated = false;
-export function hydrateThemeFromStorage(): void {
-	if (typeof window === "undefined" || isHydrated) return;
-	isHydrated = true;
+export function initializeThemeStore(initialMode: ThemeMode | null): void {
+	if (isInitialized) return;
+	isInitialized = true;
 
-	const stored = loadThemeConfigFromStorage();
-	// Only update if different from default to avoid unnecessary re-renders
-	if (JSON.stringify(stored) !== JSON.stringify(DEFAULT_THEME_CONFIG)) {
-		themeStore.setState(() => stored);
+	if (initialMode !== null) {
+		themeStore.setState(() => ({
+			...DEFAULT_THEME_CONFIG,
+			mode: initialMode,
+		}));
 	}
 }
+
+// =============================================================================
+// PERSISTENCE - Cookie-based (CSP-compliant)
+// =============================================================================
+
+/**
+ * Persist theme mode to cookie.
+ * Called automatically when theme changes.
+ */
+function persistThemeMode(mode: ThemeMode): void {
+	if (typeof window === "undefined") return;
+	setThemeCookie(mode);
+}
+
+// Subscribe to mode changes and persist to cookie
+themeStore.subscribe(() => {
+	persistThemeMode(themeStore.state.mode);
+});
 
 // =============================================================================
 // HOOKS - Read state reactively
@@ -126,6 +117,7 @@ export function useFontFamily(): FontFamily {
 
 /**
  * Set the light/dark mode preference
+ * Automatically persists to cookie via store subscription
  */
 export function setThemeMode(mode: ThemeMode): void {
 	themeStore.setState((prev) => ({ ...prev, mode }));
@@ -189,3 +181,10 @@ export function resetTheme(): void {
 export const setColorTheme = setCustomColorTheme;
 export const setRadius = setCustomRadius;
 export const setFontFamily = setCustomFontFamily;
+
+// Legacy function - no longer needed with cookie-based approach
+// Kept for backwards compatibility but does nothing
+export const hydrateThemeFromStorage = (): void => {
+	// No-op: theme is now initialized via initializeThemeStore()
+	// and persisted via cookies, not localStorage
+};

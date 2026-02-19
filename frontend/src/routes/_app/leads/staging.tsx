@@ -74,8 +74,13 @@ const stagingSearchSchema = z.object({
 export const Route = createFileRoute("/_app/leads/staging")({
 	component: StagingLeadsPage,
 	validateSearch: stagingSearchSchema,
-	loader: async ({ context }) => {
-		await context.queryClient.ensureQueryData(stagedLeadsQueryOptions({ limit: 100 }));
+	loader: ({ context }) => {
+		const queryOpts = stagedLeadsQueryOptions({ limit: 100 });
+		if (context.queryClient.getQueryData(queryOpts.queryKey)) {
+			void context.queryClient.prefetchQuery(queryOpts);
+			return;
+		}
+		return context.queryClient.prefetchQuery(queryOpts);
 	},
 });
 
@@ -365,7 +370,7 @@ function StagingLeadsPage() {
 
 				{/* Stats Cards */}
 				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-					<Card className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-slate-200 dark:border-slate-700">
+					<Card className="bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-slate-200 dark:border-slate-700">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium">Total Staged</CardTitle>
 							<FileUp className="h-4 w-4 text-slate-600" />
@@ -376,7 +381,7 @@ function StagingLeadsPage() {
 						</CardContent>
 					</Card>
 
-					<Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 border-emerald-200 dark:border-emerald-800">
+					<Card className="bg-linear-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 border-emerald-200 dark:border-emerald-800">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium">Valid</CardTitle>
 							<CheckCircle2 className="h-4 w-4 text-emerald-600" />
@@ -389,7 +394,7 @@ function StagingLeadsPage() {
 						</CardContent>
 					</Card>
 
-					<Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-800">
+					<Card className="bg-linear-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-800">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium">Invalid</CardTitle>
 							<AlertCircle className="h-4 w-4 text-red-600" />
@@ -402,7 +407,7 @@ function StagingLeadsPage() {
 						</CardContent>
 					</Card>
 
-					<Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-800">
+					<Card className="bg-linear-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-800">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium">Pending Review</CardTitle>
 							<AlertTriangle className="h-4 w-4 text-amber-600" />
@@ -415,7 +420,7 @@ function StagingLeadsPage() {
 						</CardContent>
 					</Card>
 
-					<Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
+					<Card className="bg-linear-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium">Validated</CardTitle>
 							<Check className="h-4 w-4 text-blue-600" />

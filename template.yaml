@@ -38,6 +38,8 @@ Globals:
         SQS_QUEUE_SENDING: !Ref SendingQueueUrl
         SQS_QUEUE_FEEDBACK: !Ref FeedbackQueueUrl
         SQS_QUEUE_VERIFICATION: !Ref VerificationQueueUrl
+        # DynamoDB Staging Table
+        DYNAMODB_TABLE_STAGING: !Ref StagingTableName
         # General
         LOG_LEVEL: !Ref LogLevel
         ENVIRONMENT: local
@@ -129,6 +131,11 @@ Parameters:
     Type: String
     Default: "http://host.docker.internal:4566/000000000000/verification-queue"
     Description: SQS Verification Queue URL
+
+  StagingTableName:
+    Type: String
+    Default: "pivotr-staging"
+    Description: DynamoDB Staging table name
 
   LogLevel:
     Type: String
@@ -442,6 +449,179 @@ Resources:
           /leads/import:
             options:
               summary: CORS preflight for /leads/import
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          # =========================================================================
+          # LEADS STAGING ENDPOINTS - OPTIONS with Mock Integration
+          # =========================================================================
+          /leads/staging:
+            options:
+              summary: CORS preflight for /leads/staging
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /leads/staging/{id}:
+            options:
+              summary: CORS preflight for /leads/staging/{id}
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /leads/staging/validate:
+            options:
+              summary: CORS preflight for /leads/staging/validate
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /leads/staging/approve-batch:
+            options:
+              summary: CORS preflight for /leads/staging/approve-batch
+              description: Handle CORS preflight requests without Lambda invocation
+              x-amazon-apigateway-integration:
+                type: mock
+                requestTemplates:
+                  application/json: |
+                    {
+                      "statusCode": 200
+                    }
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                      method.response.header.Access-Control-Allow-Origin: !Sub "'${CorsAllowedOrigin}'"
+                      method.response.header.Access-Control-Max-Age: "'86400'"
+                    responseTemplates:
+                      application/json: |
+                        {}
+              responses:
+                "200":
+                  description: CORS preflight response
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Max-Age:
+                      type: string
+          /leads/staging/{id}/approve:
+            options:
+              summary: CORS preflight for /leads/staging/{id}/approve
               description: Handle CORS preflight requests without Lambda invocation
               x-amazon-apigateway-integration:
                 type: mock
@@ -1550,6 +1730,97 @@ Resources:
             RestApiId: !Ref PivotrMailerApi
             Path: /campaigns/{id}/verify
             Method: POST
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - src/index.ts
+        Sourcemap: true
+        Minify: false
+        Target: es2022
+        External:
+          - "@aws-sdk/*"
+          - "@aws-lambda-powertools/*"
+          - "/opt/nodejs/src/*"
+        Format: esm
+        OutExtension:
+          - .js=.mjs
+
+  # ===========================================================================
+  # API Leads Staging Lambda
+  # ===========================================================================
+  ApiLeadsStagingLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pivotr-api-leads-staging
+      Handler: index.handler
+      CodeUri: lambda/api/leads-staging/
+      Layers:
+        - !Ref SharedUtilsLayer
+      Timeout: 15
+      MemorySize: 256
+      ReservedConcurrentExecutions: 2
+      Events:
+        ListStagedLeads:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads/staging
+            Method: GET
+        StageLeads:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads/staging
+            Method: POST
+        ValidateLeads:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads/staging/validate
+            Method: POST
+        BatchApproveLeads:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads/staging/approve-batch
+            Method: POST
+        GetStagedLead:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads/staging/{id}
+            Method: GET
+            RequestParameters:
+              - method.request.path.id:
+                  Required: true
+        UpdateStagedLead:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads/staging/{id}
+            Method: PUT
+            RequestParameters:
+              - method.request.path.id:
+                  Required: true
+        ApproveStagedLead:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads/staging/{id}/approve
+            Method: POST
+            RequestParameters:
+              - method.request.path.id:
+                  Required: true
+        DeleteStagedLead:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PivotrMailerApi
+            Path: /leads/staging/{id}
+            Method: DELETE
+            RequestParameters:
+              - method.request.path.id:
+                  Required: true
     Metadata:
       BuildMethod: esbuild
       BuildProperties:

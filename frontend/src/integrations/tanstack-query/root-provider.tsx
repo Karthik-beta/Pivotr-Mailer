@@ -1,8 +1,8 @@
 import {
 	type DehydratedState,
+	hydrate,
 	QueryClient,
 	QueryClientProvider,
-	hydrate,
 } from "@tanstack/react-query";
 
 export function getContext(initialState?: DehydratedState) {
@@ -12,6 +12,9 @@ export function getContext(initialState?: DehydratedState) {
 				staleTime: 1000 * 60 * 5, // 5 minutes
 				gcTime: 1000 * 60 * 30, // 30 minutes
 				refetchOnWindowFocus: false,
+				// Retry on Lambda cold starts / transient network errors
+				retry: 2,
+				retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
 			},
 		},
 	});

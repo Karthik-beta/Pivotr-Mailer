@@ -4,7 +4,13 @@
  * TanStack Query hooks for campaigns API.
  */
 
-import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	keepPreviousData,
+	queryOptions,
+	useMutation,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import type {
 	AssignLeadsRequest,
 	AssignLeadsResponse,
@@ -87,7 +93,12 @@ export const campaignQueryOptions = (id: string) =>
 // =============================================================================
 
 export function useCampaigns(params?: { limit?: number; status?: string }) {
-	return useQuery(campaignsQueryOptions(params));
+	return useQuery({
+		...campaignsQueryOptions(params),
+		// Show stale list data while a fresh fetch is in-flight (e.g. after status filter change).
+		// Prevents the table from blanking out between param changes.
+		placeholderData: keepPreviousData,
+	});
 }
 
 export function useCampaign(id: string) {

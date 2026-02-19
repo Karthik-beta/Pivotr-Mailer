@@ -50,8 +50,13 @@ const leadsSearchSchema = z.object({
 export const Route = createFileRoute("/_app/leads/")({
 	component: LeadsPage,
 	validateSearch: leadsSearchSchema,
-	loader: async ({ context }) => {
-		await context.queryClient.ensureQueryData(leadsQueryOptions({ limit: 100 }));
+	loader: ({ context }) => {
+		const queryOpts = leadsQueryOptions({ limit: 100 });
+		if (context.queryClient.getQueryData(queryOpts.queryKey)) {
+			void context.queryClient.prefetchQuery(queryOpts);
+			return;
+		}
+		return context.queryClient.prefetchQuery(queryOpts);
 	},
 });
 

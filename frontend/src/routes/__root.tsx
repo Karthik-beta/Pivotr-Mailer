@@ -1,23 +1,62 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
-import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
-import { Outlet, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { createServerFn } from "@tanstack/react-start";
 
 import { ThemeProvider } from "../components/theme-provider";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import { Provider } from "../integrations/tanstack-query/root-provider";
+import { getThemeFromCookie, resolveEffectiveTheme } from "../lib/cookies";
 import StoreDevtools from "../lib/demo-store-devtools";
+import { initializeThemeStore } from "../lib/theme/store";
+import type { ThemeMode } from "../lib/theme/types";
 import appCss from "../styles.css?url";
 
 interface MyRouterContext {
 	queryClient: QueryClient;
+	/** Initial theme mode from cookie (set by server) */
+	initialThemeMode?: ThemeMode | null;
 }
 
 import NotFoundPage from "../components/NotFoundPage";
 import { Layout } from "../features/shared/Layout";
 
+/**
+ * Server function to get theme from cookie.
+ * Uses createServerFn to ensure it runs on the server only.
+ */
+const getThemeFromServer = createServerFn({ method: "GET" }).handler(async () => {
+	// Dynamic import to access the H3 event context
+	// This only works on the server
+	try {
+		// @ts-expect-error - vinxi/http is a server-only dependency
+		const { getEvent } = await import("vinxi/http");
+		const event = getEvent();
+		const cookieHeader = event.node.req.headers.cookie ?? undefined;
+		return getThemeFromCookie(cookieHeader);
+	} catch {
+		return null;
+	}
+});
+
 export const Route = createRootRouteWithContext<MyRouterContext>()({
+	// Load initial theme on server before rendering
+	beforeLoad: async () => {
+		// Only run on server
+		if (typeof window !== "undefined") {
+			return { initialThemeMode: null };
+		}
+
+		try {
+			const initialThemeMode = await getThemeFromServer();
+			return { initialThemeMode };
+		} catch {
+			return { initialThemeMode: null };
+		}
+	},
+
 	head: () => ({
 		meta: [
 			{
@@ -64,34 +103,52 @@ function RootComponent() {
 	);
 }
 
+/**
+ * RootDocument handles SSR theme initialization.
+ *
+ * Security: No inline scripts or dangerouslySetInnerHTML.
+ * CSP Compliance: Works with script-src 'self'.
+ *
+ * Theme Flow:
+ * 1. Server reads theme from cookie in beforeLoad
+ * 2. Server passes initialThemeMode via route context
+ * 3. Server applies correct class to <html> element
+ * 4. Client hydrates with matching state (no flash)
+ * 5. ThemeProvider syncs with store and handles client-side changes
+ */
 function RootDocument({ children }: { children: React.ReactNode }) {
-	const themeScript = `
-              (function() {
-                try {
-                  var config = JSON.parse(localStorage.getItem('pivotr-theme-config') || '{}');
-                  var mode = config.mode || 'system';
-                  var isDark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                  if (isDark) {
-                    document.documentElement.classList.add('dark');
-                  } else {
-                    document.documentElement.classList.remove('dark');
-                  }
-                } catch (e) {}
-              })();
-            `;
+	const isServer = typeof window === "undefined";
+
+	// Get initial theme from route context (set by beforeLoad)
+	let initialMode: ThemeMode | null = null;
+
+	try {
+		const context = Route.useRouteContext();
+		initialMode = context.initialThemeMode ?? null;
+	} catch {
+		// Context not available during static generation
+	}
+
+	// Resolve effective theme for SSR
+	// On server, we can't detect system preference, so default to light for "system"
+	const effectiveTheme = isServer ? resolveEffectiveTheme(initialMode ?? "system", false) : null; // Client doesn't need this, html class is already set
+
+	// Initialize the store with the server-determined mode
+	if (isServer && initialMode !== null) {
+		initializeThemeStore(initialMode);
+	}
 
 	return (
-		<html lang="en" suppressHydrationWarning>
+		<html
+			lang="en"
+			suppressHydrationWarning
+			className={effectiveTheme === "dark" ? "dark" : undefined}
+		>
 			<head>
 				<HeadContent />
-				<script
-					dangerouslySetInnerHTML={{
-						__html: themeScript,
-					}}
-				/>
 			</head>
 			<body>
-				<ThemeProvider>{children}</ThemeProvider>
+				<ThemeProvider initialMode={initialMode}>{children}</ThemeProvider>
 				<TanStackDevtools
 					config={{
 						position: "bottom-right",

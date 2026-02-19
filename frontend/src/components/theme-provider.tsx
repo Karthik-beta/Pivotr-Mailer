@@ -1,10 +1,17 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
-import { hydrateThemeFromStorage, useResolvedTokens, useThemeConfig } from "@/lib/theme";
+import { initializeThemeStore, useResolvedTokens, useThemeConfig } from "@/lib/theme";
 import { generateThemeCSS } from "@/lib/theme/colors";
+import type { ThemeMode } from "@/lib/theme/types";
 import { FONT_META } from "@/lib/theme/types";
 
 // Use useLayoutEffect on client, useEffect on server
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+interface ThemeProviderProps {
+	children: React.ReactNode;
+	/** Initial theme mode from server (read from cookie during SSR) */
+	initialMode?: ThemeMode | null;
+}
 
 function useSystemTheme(): "light" | "dark" {
 	// Always initialize with "light" for SSR hydration consistency
@@ -27,16 +34,18 @@ function useSystemTheme(): "light" | "dark" {
 	return systemTheme;
 }
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({ children, initialMode }: ThemeProviderProps) {
 	const config = useThemeConfig();
 	const tokens = useResolvedTokens();
 	const systemTheme = useSystemTheme();
 
-	// Hydrate theme store from localStorage after initial render
-	// This must happen after hydration to avoid SSR/client mismatch
+	// Initialize theme store with server-provided initial mode
+	// This ensures client hydration matches server render
 	useEffect(() => {
-		hydrateThemeFromStorage();
-	}, []);
+		if (initialMode !== null && initialMode !== undefined) {
+			initializeThemeStore(initialMode);
+		}
+	}, [initialMode]);
 
 	const resolvedMode = config.mode === "system" ? systemTheme : config.mode;
 	const isDark = resolvedMode === "dark";
@@ -55,6 +64,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 	}, [tokens.fontFamily]);
 
 	// Apply dark class to html element
+	// This maintains sync with the html class after hydration
 	useIsomorphicLayoutEffect(() => {
 		const html = document.documentElement;
 		if (isDark) {

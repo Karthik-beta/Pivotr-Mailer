@@ -27,7 +27,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { useCreateLead, useUpdateLead } from "../hooks/useLeads";
-import { leadFormSchema, type LeadFormData } from "../schemas/leadSchema";
+import { type LeadFormData, leadFormSchema } from "../schemas/leadSchema";
 import type { Lead, LeadType } from "../types";
 
 interface LeadFormDialogProps {
@@ -64,7 +64,10 @@ const leadToFormData = (lead: Lead): LeadFormData => ({
 
 // Validation helper
 const validateField = (
-	schema: typeof leadFormSchema.shape.fullName | typeof leadFormSchema.shape.email | typeof leadFormSchema.shape.companyName,
+	schema:
+		| typeof leadFormSchema.shape.fullName
+		| typeof leadFormSchema.shape.email
+		| typeof leadFormSchema.shape.companyName,
 	value: string
 ): string | undefined => {
 	const result = schema.safeParse(value);
@@ -72,13 +75,7 @@ const validateField = (
 	return result.error.issues[0]?.message;
 };
 
-export function LeadFormDialog({
-	open,
-	onOpenChange,
-	mode,
-	lead,
-	onSuccess,
-}: LeadFormDialogProps) {
+export function LeadFormDialog({ open, onOpenChange, mode, lead, onSuccess }: LeadFormDialogProps) {
 	const createMutation = useCreateLead();
 	const updateMutation = useUpdateLead();
 
@@ -199,9 +196,7 @@ export function LeadFormDialog({
 							onChange={(e) => updateField("fullName", e.target.value)}
 							className={errors.fullName ? "border-destructive" : ""}
 						/>
-						{errors.fullName && (
-							<p className="text-sm text-destructive">{errors.fullName}</p>
-						)}
+						{errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
 					</div>
 
 					{/* Email Field */}
@@ -217,9 +212,7 @@ export function LeadFormDialog({
 							onChange={(e) => updateField("email", e.target.value)}
 							className={errors.email ? "border-destructive" : ""}
 						/>
-						{errors.email && (
-							<p className="text-sm text-destructive">{errors.email}</p>
-						)}
+						{errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
 					</div>
 
 					{/* Company Name Field */}
@@ -234,9 +227,7 @@ export function LeadFormDialog({
 							onChange={(e) => updateField("companyName", e.target.value)}
 							className={errors.companyName ? "border-destructive" : ""}
 						/>
-						{errors.companyName && (
-							<p className="text-sm text-destructive">{errors.companyName}</p>
-						)}
+						{errors.companyName && <p className="text-sm text-destructive">{errors.companyName}</p>}
 					</div>
 
 					{/* Phone Number Field */}

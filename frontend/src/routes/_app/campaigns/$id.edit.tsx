@@ -21,8 +21,13 @@ import { Layout } from "@/features/shared/Layout";
 
 export const Route = createFileRoute("/_app/campaigns/$id/edit")({
 	component: EditCampaignPage,
-	loader: async ({ context, params }) => {
-		await context.queryClient.ensureQueryData(campaignQueryOptions(params.id));
+	loader: ({ context, params }) => {
+		const queryOpts = campaignQueryOptions(params.id);
+		if (context.queryClient.getQueryData(queryOpts.queryKey)) {
+			void context.queryClient.prefetchQuery(queryOpts);
+			return;
+		}
+		return context.queryClient.prefetchQuery(queryOpts);
 	},
 });
 
