@@ -4,7 +4,7 @@
  * Main campaigns management page with data table.
  */
 
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	BarChart3,
 	CheckCircle2,
@@ -27,7 +27,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CampaignStatusBadge } from "@/features/campaigns/components/CampaignStatusBadge";
 import { campaignsQueryOptions, useCampaigns } from "@/features/campaigns/hooks/useCampaigns";
-import type { Campaign } from "@/features/campaigns/types";
 import { Layout } from "@/features/shared/Layout";
 
 // Search params schema
@@ -38,15 +37,19 @@ const campaignsSearchSchema = z.object({
 export const Route = createFileRoute("/_app/campaigns/")({
 	component: CampaignsPage,
 	validateSearch: campaignsSearchSchema,
-	loader: async ({ context }) => {
-		await context.queryClient.ensureQueryData(campaignsQueryOptions());
+	loaderDeps: ({ search }) => ({ status: search.status }),
+	loader: ({ context, deps }) => {
+		const queryOpts =
+			deps.status === "all"
+				? campaignsQueryOptions()
+				: campaignsQueryOptions({ status: deps.status });
+		void context.queryClient.prefetchQuery(queryOpts);
 	},
 });
 
 function CampaignsPage() {
-	const navigate = useNavigate();
 	const { status } = Route.useSearch();
-	const { data, isLoading, error, refetch, isRefetching } = useCampaigns(
+	const { data, isPending, isFetching, error, refetch } = useCampaigns(
 		status !== "all" ? { status } : undefined
 	);
 
@@ -60,16 +63,14 @@ function CampaignsPage() {
 		draft: campaigns.filter((c) => c.status === "DRAFT").length,
 	};
 
-	const handleCampaignClick = (campaign: Campaign) => {
-		navigate({ to: "/campaigns/$id", params: { id: campaign.id } });
-	};
-
 	return (
 		<Layout
 			breadcrumbs={
 				<>
 					<BreadcrumbItem className="hidden md:block">
-						<BreadcrumbLink href="/">Pivotr Mailer</BreadcrumbLink>
+						<BreadcrumbLink asChild>
+							<Link to="/">Pivotr Mailer</Link>
+						</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator className="hidden md:block" />
 					<BreadcrumbItem>
@@ -88,12 +89,12 @@ function CampaignsPage() {
 						</p>
 					</div>
 					<div className="flex flex-wrap gap-2">
-						<Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefetching}>
-							<RefreshCw className={`mr-2 h-4 w-4 ${isRefetching ? "animate-spin" : ""}`} />
+						<Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+							<RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
 							Refresh
 						</Button>
 						<Button size="sm" asChild>
-							<Link to="/campaigns/new">
+							<Link to="/campaigns/new" preload="intent">
 								<Plus className="mr-2 h-4 w-4" />
 								New Campaign
 							</Link>
@@ -157,15 +158,23 @@ function CampaignsPage() {
 				{/* Campaigns List */}
 				<Card>
 					<CardHeader>
-						<CardTitle>All Campaigns</CardTitle>
+						<div className="flex items-center justify-between gap-4">
+							<CardTitle>All Campaigns</CardTitle>
+							{isFetching && (
+								<div className="flex items-center gap-2 text-xs text-muted-foreground">
+									<RefreshCw className="h-3.5 w-3.5 animate-spin" />
+									Refreshing
+								</div>
+							)}
+						</div>
 						<CardDescription>Click on a campaign to view details and manage it.</CardDescription>
 					</CardHeader>
 					<CardContent>
-						{isLoading ? (
+						{isPending && !data ? (
 							<div className="flex items-center justify-center py-8">
 								<RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
 							</div>
-						) : error ? (
+						) : error && !data ? (
 							<div className="flex flex-col items-center justify-center py-8 text-center">
 								<XCircle className="h-8 w-8 text-red-500 mb-2" />
 								<p className="text-muted-foreground">Failed to load campaigns</p>
@@ -181,7 +190,7 @@ function CampaignsPage() {
 									Create your first email campaign to get started.
 								</p>
 								<Button asChild>
-									<Link to="/campaigns/new">
+									<Link to="/campaigns/new" preload="intent">
 										<Plus className="mr-2 h-4 w-4" />
 										Create Campaign
 									</Link>
@@ -190,11 +199,12 @@ function CampaignsPage() {
 						) : (
 							<div className="space-y-4">
 								{campaigns.map((campaign) => (
-									<button
-										type="button"
+									<Link
 										key={campaign.id}
+										to="/campaigns/$id"
+										params={{ id: campaign.id }}
+										preload="intent"
 										className="w-full flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 cursor-pointer transition-colors text-left"
-										onClick={() => handleCampaignClick(campaign)}
 									>
 										<div className="flex items-center gap-4">
 											<div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -226,7 +236,7 @@ function CampaignsPage() {
 											)}
 											<CampaignStatusBadge status={campaign.status} />
 										</div>
-									</button>
+									</Link>
 								))}
 							</div>
 						)}

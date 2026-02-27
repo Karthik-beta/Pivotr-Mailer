@@ -1,4 +1,4 @@
-import type { ColorTheme, FontFamily, RadiusPreset } from "./types";
+import type { ColorTheme, FontFamily, RadiusValue } from "./types";
 
 // Color theme palettes using OKLCH for high-fidelity colors
 // Each theme has light and dark variants
@@ -714,7 +714,7 @@ const fontFamilies: Record<FontFamily, string> = {
 
 export function generateThemeCSS(
 	colorTheme: ColorTheme,
-	radius: RadiusPreset,
+	radius: RadiusValue,
 	fontFamily: FontFamily,
 	isDark: boolean
 ): string {

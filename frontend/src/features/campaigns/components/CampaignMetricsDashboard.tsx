@@ -26,10 +26,10 @@ interface CampaignMetricsDashboardProps {
 }
 
 export function CampaignMetricsDashboard({ campaign }: CampaignMetricsDashboardProps) {
-	const { data, isLoading, isRefetching } = useCampaignMetrics(campaign.id);
+	const { data, isPending, isFetching } = useCampaignMetrics(campaign.id);
 	const metrics = data?.data;
 
-	if (isLoading) {
+	if (isPending && !data) {
 		return (
 			<div className="flex items-center justify-center py-12">
 				<RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -52,7 +52,7 @@ export function CampaignMetricsDashboard({ campaign }: CampaignMetricsDashboardP
 					<div className="flex justify-between text-sm mb-2">
 						<span className="flex items-center gap-2">
 							Progress
-							{isRefetching && <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />}
+							{isFetching && <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />}
 						</span>
 						<span className="font-mono">
 							{metrics.sent} / {metrics.totalLeads} ({progressPercentage}%)

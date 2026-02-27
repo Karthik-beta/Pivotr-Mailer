@@ -6,7 +6,7 @@
  */
 
 import { useStore } from "@tanstack/react-store";
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -51,6 +51,7 @@ function generateGaussianBars(minMs: number, maxMs: number, barCount: number = 2
 export function StepDelay({ form }: StepProps) {
 	// Subscribe to delay config values for display and visualization
 	const delayConfig = useStore(form.store, (state) => state.values.delayConfig);
+	const gaussianEnabledId = useId();
 
 	const gaussianBars = useMemo(
 		() => generateGaussianBars(delayConfig.minDelayMs, delayConfig.maxDelayMs),
@@ -142,13 +143,13 @@ export function StepDelay({ form }: StepProps) {
 						Delay Distribution (Gaussian)
 					</Label>
 					<div className="flex items-center gap-2">
-						<Label htmlFor="gaussianEnabled" className="text-sm">
+						<Label htmlFor={gaussianEnabledId} className="text-sm">
 							Enabled
 						</Label>
 						<form.Field name="delayConfig.gaussianEnabled">
 							{(field) => (
 								<Switch
-									id="gaussianEnabled"
+									id={gaussianEnabledId}
 									checked={field.state.value}
 									onCheckedChange={field.handleChange}
 								/>

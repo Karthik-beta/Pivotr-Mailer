@@ -260,7 +260,7 @@ if (!waitForPortFree(3001)) {
 
 // Start SAM local API Gateway and keep track of the process
 console.log("Starting SAM Local API Gateway on port 3001...");
-samProcess = spawn("sam", ["local", "start-api", "--port", "3001", "--docker-network", "pivotr-localstack-network", "--env-vars", "tests/env/sam-local.json", "--parameter-overrides", "CorsAllowedOrigin=\"*\""], {
+samProcess = spawn("sam", ["local", "start-api", "--port", "3001", "--docker-network", "pivotr-localstack-network", "--env-vars", "tests/env/sam-local.json", "--parameter-overrides", "CorsAllowedOrigin=\"http://localhost:3000\""], {
     stdio: "inherit",
     shell: true
 });

@@ -14,6 +14,7 @@ import {
 import type {
 	AssignLeadsRequest,
 	AssignLeadsResponse,
+	Campaign,
 	CampaignMetricsResponse,
 	CampaignResponse,
 	CampaignsResponse,
@@ -31,6 +32,9 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 // Default timeout for API requests (10 seconds)
 const DEFAULT_TIMEOUT = 10000;
+const LIST_STALE_TIME = 30 * 1000;
+const DETAIL_STALE_TIME = 60 * 1000;
+const METRICS_STALE_TIME = 15 * 1000;
 
 /**
  * Fetch with timeout using AbortController
@@ -41,7 +45,21 @@ async function fetchWithTimeout(
 	timeout: number = DEFAULT_TIMEOUT
 ): Promise<Response> {
 	const controller = new AbortController();
-	const timeoutId = setTimeout(() => controller.abort(), timeout);
+	const externalSignal = options.signal;
+	let didTimeout = false;
+	const timeoutId = setTimeout(() => {
+		didTimeout = true;
+		controller.abort();
+	}, timeout);
+	const abortFromExternalSignal = () => controller.abort();
+
+	if (externalSignal) {
+		if (externalSignal.aborted) {
+			abortFromExternalSignal();
+		} else {
+			externalSignal.addEventListener("abort", abortFromExternalSignal, { once: true });
+		}
+	}
 
 	try {
 		const response = await fetch(url, {
@@ -50,12 +68,13 @@ async function fetchWithTimeout(
 		});
 		return response;
 	} catch (error) {
-		if (error instanceof Error && error.name === "AbortError") {
+		if (error instanceof Error && error.name === "AbortError" && didTimeout) {
 			throw new Error("Request timed out. Please check your connection and try again.");
 		}
 		throw error;
 	} finally {
 		clearTimeout(timeoutId);
+		externalSignal?.removeEventListener("abort", abortFromExternalSignal);
 	}
 }
 
@@ -66,26 +85,28 @@ async function fetchWithTimeout(
 export const campaignsQueryOptions = (params?: { limit?: number; status?: string }) =>
 	queryOptions({
 		queryKey: ["campaigns", params],
-		queryFn: async (): Promise<CampaignsResponse> => {
+		queryFn: async ({ signal }): Promise<CampaignsResponse> => {
 			const searchParams = new URLSearchParams();
 			if (params?.limit) searchParams.set("limit", String(params.limit));
 			if (params?.status) searchParams.set("status", params.status);
 
-			const response = await fetchWithTimeout(`${API_BASE}/campaigns?${searchParams}`);
+			const response = await fetchWithTimeout(`${API_BASE}/campaigns?${searchParams}`, { signal });
 			if (!response.ok) throw new Error("Failed to fetch campaigns");
 			return response.json();
 		},
+		staleTime: LIST_STALE_TIME,
 	});
 
 export const campaignQueryOptions = (id: string) =>
 	queryOptions({
 		queryKey: ["campaigns", id],
-		queryFn: async (): Promise<CampaignResponse> => {
-			const response = await fetchWithTimeout(`${API_BASE}/campaigns/${id}`);
+		queryFn: async ({ signal }): Promise<CampaignResponse> => {
+			const response = await fetchWithTimeout(`${API_BASE}/campaigns/${id}`, { signal });
 			if (!response.ok) throw new Error("Failed to fetch campaign");
 			return response.json();
 		},
 		enabled: !!id,
+		staleTime: DETAIL_STALE_TIME,
 	});
 
 // =============================================================================
@@ -108,12 +129,13 @@ export function useCampaign(id: string) {
 export function useCampaignMetrics(id: string) {
 	return useQuery({
 		queryKey: ["campaigns", id, "metrics"],
-		queryFn: async (): Promise<CampaignMetricsResponse> => {
-			const response = await fetchWithTimeout(`${API_BASE}/campaigns/${id}/metrics`);
+		queryFn: async ({ signal }): Promise<CampaignMetricsResponse> => {
+			const response = await fetchWithTimeout(`${API_BASE}/campaigns/${id}/metrics`, { signal });
 			if (!response.ok) throw new Error("Failed to fetch campaign metrics");
 			return response.json();
 		},
 		enabled: !!id,
+		staleTime: METRICS_STALE_TIME,
 		refetchInterval: 30000, // Refetch every 30 seconds for running campaigns
 	});
 }
@@ -178,9 +200,6 @@ export function useDeleteCampaign() {
 
 	return useMutation({
 		mutationFn: async (id: string): Promise<{ success: boolean }> => {
-			// Cancel in-flight campaign queries to avoid SAM CLI concurrency issues
-			await queryClient.cancelQueries({ queryKey: ["campaigns", id] });
-
 			const response = await fetchWithTimeout(`${API_BASE}/campaigns/${id}`, {
 				method: "DELETE",
 			});
@@ -192,8 +211,41 @@ export function useDeleteCampaign() {
 		},
 		retry: 2,
 		retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
-		onSuccess: () => {
+		onMutate: async (id) => {
+			await queryClient.cancelQueries({ queryKey: ["campaigns"] });
+
+			const previousCampaignQueries = queryClient.getQueriesData<CampaignsResponse>({
+				queryKey: ["campaigns"],
+			});
+			const previousCampaign = queryClient.getQueryData<CampaignResponse>(["campaigns", id]);
+
+			queryClient.setQueriesData<CampaignsResponse>({ queryKey: ["campaigns"] }, (old) => {
+				if (!old) return old;
+
+				return {
+					...old,
+					data: old.data.filter((campaign) => campaign.id !== id),
+				};
+			});
+
+			queryClient.removeQueries({ queryKey: ["campaigns", id], exact: true });
+
+			return { id, previousCampaignQueries, previousCampaign };
+		},
+		onError: (_error, _id, context) => {
+			if (!context) return;
+
+			for (const [queryKey, previousData] of context.previousCampaignQueries) {
+				queryClient.setQueryData(queryKey, previousData);
+			}
+
+			if (context.previousCampaign) {
+				queryClient.setQueryData(["campaigns", context.id], context.previousCampaign);
+			}
+		},
+		onSettled: (_result, _error, id) => {
 			queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+			queryClient.invalidateQueries({ queryKey: ["campaigns", id] });
 		},
 	});
 }
@@ -209,9 +261,6 @@ export function useChangeCampaignStatus() {
 			id: string;
 			status: StatusChangeRequest["status"];
 		}): Promise<CampaignResponse> => {
-			// Cancel in-flight campaign queries to avoid SAM CLI concurrency issues
-			await queryClient.cancelQueries({ queryKey: ["campaigns", id] });
-
 			const response = await fetchWithTimeout(`${API_BASE}/campaigns/${id}/status`, {
 				method: "PUT",
 				headers: { "Content-Type": "application/json" },
@@ -225,7 +274,58 @@ export function useChangeCampaignStatus() {
 		},
 		retry: 2,
 		retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
-		onSuccess: (_, { id }) => {
+		onMutate: async ({ id, status }) => {
+			await queryClient.cancelQueries({ queryKey: ["campaigns"] });
+
+			const previousCampaignQueries = queryClient.getQueriesData<CampaignsResponse>({
+				queryKey: ["campaigns"],
+			});
+			const previousCampaign = queryClient.getQueryData<CampaignResponse>(["campaigns", id]);
+
+			queryClient.setQueriesData<CampaignsResponse>({ queryKey: ["campaigns"] }, (old) => {
+				if (!old) return old;
+
+				return {
+					...old,
+					data: old.data.map((campaign: Campaign) =>
+						campaign.id === id
+							? {
+									...campaign,
+									status,
+									updatedAt: new Date().toISOString(),
+								}
+							: campaign
+					),
+				};
+			});
+
+			queryClient.setQueryData<CampaignResponse>(["campaigns", id], (old) => {
+				if (!old) return old;
+
+				return {
+					...old,
+					data: {
+						...old.data,
+						status,
+						updatedAt: new Date().toISOString(),
+					},
+				};
+			});
+
+			return { id, previousCampaignQueries, previousCampaign };
+		},
+		onError: (_error, _variables, context) => {
+			if (!context) return;
+
+			for (const [queryKey, previousData] of context.previousCampaignQueries) {
+				queryClient.setQueryData(queryKey, previousData);
+			}
+
+			if (context.previousCampaign) {
+				queryClient.setQueryData(["campaigns", context.id], context.previousCampaign);
+			}
+		},
+		onSettled: (_result, _error, { id }) => {
 			queryClient.invalidateQueries({ queryKey: ["campaigns"] });
 			queryClient.invalidateQueries({ queryKey: ["campaigns", id] });
 		},

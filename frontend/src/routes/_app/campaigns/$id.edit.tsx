@@ -23,32 +23,34 @@ export const Route = createFileRoute("/_app/campaigns/$id/edit")({
 	component: EditCampaignPage,
 	loader: ({ context, params }) => {
 		const queryOpts = campaignQueryOptions(params.id);
-		if (context.queryClient.getQueryData(queryOpts.queryKey)) {
-			void context.queryClient.prefetchQuery(queryOpts);
-			return;
-		}
-		return context.queryClient.prefetchQuery(queryOpts);
+		void context.queryClient.prefetchQuery(queryOpts);
 	},
 });
 
 function EditCampaignPage() {
 	const { id } = Route.useParams();
-	const { data: campaignData, isLoading, error, refetch } = useCampaign(id);
+	const { data: campaignData, isPending, error, refetch } = useCampaign(id);
 
 	const campaign = campaignData?.data;
 
 	// Loading state
-	if (isLoading) {
+	if (isPending && !campaignData) {
 		return (
 			<Layout
 				breadcrumbs={
 					<>
 						<BreadcrumbItem className="hidden md:block">
-							<BreadcrumbLink href="/">Pivotr Mailer</BreadcrumbLink>
+							<BreadcrumbLink asChild>
+								<Link to="/">Pivotr Mailer</Link>
+							</BreadcrumbLink>
 						</BreadcrumbItem>
 						<BreadcrumbSeparator className="hidden md:block" />
 						<BreadcrumbItem>
-							<BreadcrumbLink href="/campaigns">Campaigns</BreadcrumbLink>
+							<BreadcrumbLink asChild>
+								<Link to="/campaigns" search={{ status: "all" }} preload="intent">
+									Campaigns
+								</Link>
+							</BreadcrumbLink>
 						</BreadcrumbItem>
 						<BreadcrumbSeparator className="hidden md:block" />
 						<BreadcrumbItem>
@@ -63,17 +65,23 @@ function EditCampaignPage() {
 	}
 
 	// Error state
-	if (error) {
+	if (error && !campaignData) {
 		return (
 			<Layout
 				breadcrumbs={
 					<>
 						<BreadcrumbItem className="hidden md:block">
-							<BreadcrumbLink href="/">Pivotr Mailer</BreadcrumbLink>
+							<BreadcrumbLink asChild>
+								<Link to="/">Pivotr Mailer</Link>
+							</BreadcrumbLink>
 						</BreadcrumbItem>
 						<BreadcrumbSeparator className="hidden md:block" />
 						<BreadcrumbItem>
-							<BreadcrumbLink href="/campaigns">Campaigns</BreadcrumbLink>
+							<BreadcrumbLink asChild>
+								<Link to="/campaigns" search={{ status: "all" }} preload="intent">
+									Campaigns
+								</Link>
+							</BreadcrumbLink>
 						</BreadcrumbItem>
 						<BreadcrumbSeparator className="hidden md:block" />
 						<BreadcrumbItem>
@@ -111,11 +119,17 @@ function EditCampaignPage() {
 				breadcrumbs={
 					<>
 						<BreadcrumbItem className="hidden md:block">
-							<BreadcrumbLink href="/">Pivotr Mailer</BreadcrumbLink>
+							<BreadcrumbLink asChild>
+								<Link to="/">Pivotr Mailer</Link>
+							</BreadcrumbLink>
 						</BreadcrumbItem>
 						<BreadcrumbSeparator className="hidden md:block" />
 						<BreadcrumbItem>
-							<BreadcrumbLink href="/campaigns">Campaigns</BreadcrumbLink>
+							<BreadcrumbLink asChild>
+								<Link to="/campaigns" search={{ status: "all" }} preload="intent">
+									Campaigns
+								</Link>
+							</BreadcrumbLink>
 						</BreadcrumbItem>
 						<BreadcrumbSeparator className="hidden md:block" />
 						<BreadcrumbItem>
@@ -147,15 +161,25 @@ function EditCampaignPage() {
 				breadcrumbs={
 					<>
 						<BreadcrumbItem className="hidden md:block">
-							<BreadcrumbLink href="/">Pivotr Mailer</BreadcrumbLink>
+							<BreadcrumbLink asChild>
+								<Link to="/">Pivotr Mailer</Link>
+							</BreadcrumbLink>
 						</BreadcrumbItem>
 						<BreadcrumbSeparator className="hidden md:block" />
 						<BreadcrumbItem>
-							<BreadcrumbLink href="/campaigns">Campaigns</BreadcrumbLink>
+							<BreadcrumbLink asChild>
+								<Link to="/campaigns" search={{ status: "all" }} preload="intent">
+									Campaigns
+								</Link>
+							</BreadcrumbLink>
 						</BreadcrumbItem>
 						<BreadcrumbSeparator className="hidden md:block" />
 						<BreadcrumbItem>
-							<BreadcrumbLink href={`/campaigns/${id}`}>{campaign.name}</BreadcrumbLink>
+							<BreadcrumbLink asChild>
+								<Link to="/campaigns/$id" params={{ id }} preload="intent">
+									{campaign.name}
+								</Link>
+							</BreadcrumbLink>
 						</BreadcrumbItem>
 						<BreadcrumbSeparator className="hidden md:block" />
 						<BreadcrumbItem>
@@ -188,15 +212,25 @@ function EditCampaignPage() {
 			breadcrumbs={
 				<>
 					<BreadcrumbItem className="hidden md:block">
-						<BreadcrumbLink href="/">Pivotr Mailer</BreadcrumbLink>
+						<BreadcrumbLink asChild>
+							<Link to="/">Pivotr Mailer</Link>
+						</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator className="hidden md:block" />
 					<BreadcrumbItem>
-						<BreadcrumbLink href="/campaigns">Campaigns</BreadcrumbLink>
+						<BreadcrumbLink asChild>
+							<Link to="/campaigns" search={{ status: "all" }} preload="intent">
+								Campaigns
+							</Link>
+						</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator className="hidden md:block" />
 					<BreadcrumbItem>
-						<BreadcrumbLink href={`/campaigns/${id}`}>{campaign.name}</BreadcrumbLink>
+						<BreadcrumbLink asChild>
+							<Link to="/campaigns/$id" params={{ id }} preload="intent">
+								{campaign.name}
+							</Link>
+						</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator className="hidden md:block" />
 					<BreadcrumbItem>

@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
 	Breadcrumb,
@@ -33,7 +34,9 @@ export function Layout({ children, breadcrumbs }: LayoutProps) {
 								) : (
 									// Default breadcrumbs if none provided
 									<BreadcrumbItem className="hidden md:block">
-										<BreadcrumbLink href="/">Pivotr Mailer</BreadcrumbLink>
+										<BreadcrumbLink asChild>
+											<Link to="/">Pivotr Mailer</Link>
+										</BreadcrumbLink>
 									</BreadcrumbItem>
 								)}
 							</BreadcrumbList>

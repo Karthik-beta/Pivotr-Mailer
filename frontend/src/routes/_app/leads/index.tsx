@@ -5,7 +5,7 @@
  * Uses URL-driven state for table filtering and pagination.
  */
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	AlertTriangle,
 	CheckCircle2,
@@ -52,11 +52,7 @@ export const Route = createFileRoute("/_app/leads/")({
 	validateSearch: leadsSearchSchema,
 	loader: ({ context }) => {
 		const queryOpts = leadsQueryOptions({ limit: 100 });
-		if (context.queryClient.getQueryData(queryOpts.queryKey)) {
-			void context.queryClient.prefetchQuery(queryOpts);
-			return;
-		}
-		return context.queryClient.prefetchQuery(queryOpts);
+		void context.queryClient.prefetchQuery(queryOpts);
 	},
 });
 
@@ -65,7 +61,7 @@ function LeadsPage() {
 	const { status, page, pageSize } = Route.useSearch();
 	const [selectedIds, setSelectedIds] = useState<string[]>([]);
 	const clearSelectionRef = useRef<(() => void) | null>(null);
-	const { data, isLoading, isPending, error, refetch, isRefetching } = useLeads({ limit: 100 });
+	const { data, isPending, isFetching, error, refetch } = useLeads({ limit: 100 });
 	const exportMutation = useExportLeads();
 	const templateMutation = useDownloadTemplate();
 
@@ -136,7 +132,9 @@ function LeadsPage() {
 			breadcrumbs={
 				<>
 					<BreadcrumbItem className="hidden md:block">
-						<BreadcrumbLink href="/">Pivotr Mailer</BreadcrumbLink>
+						<BreadcrumbLink asChild>
+							<Link to="/">Pivotr Mailer</Link>
+						</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator className="hidden md:block" />
 					<BreadcrumbItem>
@@ -153,8 +151,8 @@ function LeadsPage() {
 						<p className="text-muted-foreground">Manage your leads and track email campaigns.</p>
 					</div>
 					<div className="flex flex-wrap gap-2">
-						<Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefetching}>
-							<RefreshCw className={`mr-2 h-4 w-4 ${isRefetching ? "animate-spin" : ""}`} />
+						<Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+							<RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
 							Refresh
 						</Button>
 						<Button
@@ -188,10 +186,14 @@ function LeadsPage() {
 							Add Lead
 						</Button>
 						<Button size="sm" asChild>
-							<a href="/leads/staging">
+							<Link
+								to="/leads/staging"
+								search={{ status: "all", page: 0, pageSize: 10 }}
+								preload="intent"
+							>
 								<Upload className="mr-2 h-4 w-4" />
 								Import Leads
-							</a>
+							</Link>
 						</Button>
 					</div>
 				</div>
@@ -260,7 +262,8 @@ function LeadsPage() {
 					<CardContent>
 						<LeadsDataTable
 							data={leads}
-							isLoading={isLoading}
+							isLoading={isPending && !data}
+							isFetching={isFetching}
 							isPending={isPending}
 							error={error}
 							onRetry={() => refetch()}
@@ -280,11 +283,7 @@ function LeadsPage() {
 			</div>
 
 			{/* Bulk Actions Toolbar */}
-			<BulkActionsToolbar
-				selectedIds={selectedIds}
-				onClearSelection={handleClearSelection}
-				onActionComplete={() => refetch()}
-			/>
+			<BulkActionsToolbar selectedIds={selectedIds} onClearSelection={handleClearSelection} />
 
 			{/* Lead Form Dialog */}
 			<LeadFormDialog
@@ -292,7 +291,6 @@ function LeadsPage() {
 				onOpenChange={setDialogOpen}
 				mode={dialogMode}
 				lead={selectedLead}
-				onSuccess={() => refetch()}
 			/>
 		</Layout>
 	);

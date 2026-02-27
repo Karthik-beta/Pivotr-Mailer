@@ -26,34 +26,36 @@ export const Route = createFileRoute("/_app/campaigns/$id")({
 	component: CampaignDetailPage,
 	loader: ({ context, params }) => {
 		const queryOpts = campaignQueryOptions(params.id);
-		if (context.queryClient.getQueryData(queryOpts.queryKey)) {
-			void context.queryClient.prefetchQuery(queryOpts);
-			return;
-		}
-		return context.queryClient.prefetchQuery(queryOpts);
+		void context.queryClient.prefetchQuery(queryOpts);
 	},
 });
 
 function CampaignDetailPage() {
 	const { id } = Route.useParams();
-	const { data: campaignData, isLoading, error, refetch } = useCampaign(id);
+	const { data: campaignData, isPending, isFetching, error, refetch } = useCampaign(id);
 	const { data: metricsData } = useCampaignMetrics(id);
 
 	const campaign = campaignData?.data;
 	const metrics = metricsData?.data;
 
 	// Loading state
-	if (isLoading) {
+	if (isPending && !campaignData) {
 		return (
 			<Layout
 				breadcrumbs={
 					<>
 						<BreadcrumbItem className="hidden md:block">
-							<BreadcrumbLink href="/">Pivotr Mailer</BreadcrumbLink>
+							<BreadcrumbLink asChild>
+								<Link to="/">Pivotr Mailer</Link>
+							</BreadcrumbLink>
 						</BreadcrumbItem>
 						<BreadcrumbSeparator className="hidden md:block" />
 						<BreadcrumbItem>
-							<BreadcrumbLink href="/campaigns">Campaigns</BreadcrumbLink>
+							<BreadcrumbLink asChild>
+								<Link to="/campaigns" search={{ status: "all" }} preload="intent">
+									Campaigns
+								</Link>
+							</BreadcrumbLink>
 						</BreadcrumbItem>
 						<BreadcrumbSeparator className="hidden md:block" />
 						<BreadcrumbItem>
@@ -68,17 +70,23 @@ function CampaignDetailPage() {
 	}
 
 	// Error state
-	if (error) {
+	if (error && !campaignData) {
 		return (
 			<Layout
 				breadcrumbs={
 					<>
 						<BreadcrumbItem className="hidden md:block">
-							<BreadcrumbLink href="/">Pivotr Mailer</BreadcrumbLink>
+							<BreadcrumbLink asChild>
+								<Link to="/">Pivotr Mailer</Link>
+							</BreadcrumbLink>
 						</BreadcrumbItem>
 						<BreadcrumbSeparator className="hidden md:block" />
 						<BreadcrumbItem>
-							<BreadcrumbLink href="/campaigns">Campaigns</BreadcrumbLink>
+							<BreadcrumbLink asChild>
+								<Link to="/campaigns" search={{ status: "all" }} preload="intent">
+									Campaigns
+								</Link>
+							</BreadcrumbLink>
 						</BreadcrumbItem>
 						<BreadcrumbSeparator className="hidden md:block" />
 						<BreadcrumbItem>
@@ -116,11 +124,17 @@ function CampaignDetailPage() {
 				breadcrumbs={
 					<>
 						<BreadcrumbItem className="hidden md:block">
-							<BreadcrumbLink href="/">Pivotr Mailer</BreadcrumbLink>
+							<BreadcrumbLink asChild>
+								<Link to="/">Pivotr Mailer</Link>
+							</BreadcrumbLink>
 						</BreadcrumbItem>
 						<BreadcrumbSeparator className="hidden md:block" />
 						<BreadcrumbItem>
-							<BreadcrumbLink href="/campaigns">Campaigns</BreadcrumbLink>
+							<BreadcrumbLink asChild>
+								<Link to="/campaigns" search={{ status: "all" }} preload="intent">
+									Campaigns
+								</Link>
+							</BreadcrumbLink>
 						</BreadcrumbItem>
 						<BreadcrumbSeparator className="hidden md:block" />
 						<BreadcrumbItem>
@@ -150,11 +164,17 @@ function CampaignDetailPage() {
 			breadcrumbs={
 				<>
 					<BreadcrumbItem className="hidden md:block">
-						<BreadcrumbLink href="/">Pivotr Mailer</BreadcrumbLink>
+						<BreadcrumbLink asChild>
+							<Link to="/">Pivotr Mailer</Link>
+						</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator className="hidden md:block" />
 					<BreadcrumbItem>
-						<BreadcrumbLink href="/campaigns">Campaigns</BreadcrumbLink>
+						<BreadcrumbLink asChild>
+							<Link to="/campaigns" search={{ status: "all" }} preload="intent">
+								Campaigns
+							</Link>
+						</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator className="hidden md:block" />
 					<BreadcrumbItem>
@@ -163,7 +183,15 @@ function CampaignDetailPage() {
 				</>
 			}
 		>
-			<CampaignDetail campaign={campaign} metrics={metrics} />
+			<div className="space-y-4">
+				{isFetching && (
+					<div className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+						<RefreshCw className="h-3.5 w-3.5 animate-spin" />
+						Refreshing campaign data...
+					</div>
+				)}
+				<CampaignDetail campaign={campaign} metrics={metrics} />
+			</div>
 		</Layout>
 	);
 }

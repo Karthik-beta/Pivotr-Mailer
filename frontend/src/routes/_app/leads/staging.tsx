@@ -10,7 +10,7 @@
  * - URL-driven state for table filtering and pagination
  */
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	AlertCircle,
 	AlertTriangle,
@@ -26,7 +26,7 @@ import {
 	Upload,
 	X,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useId, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -76,11 +76,7 @@ export const Route = createFileRoute("/_app/leads/staging")({
 	validateSearch: stagingSearchSchema,
 	loader: ({ context }) => {
 		const queryOpts = stagedLeadsQueryOptions({ limit: 100 });
-		if (context.queryClient.getQueryData(queryOpts.queryKey)) {
-			void context.queryClient.prefetchQuery(queryOpts);
-			return;
-		}
-		return context.queryClient.prefetchQuery(queryOpts);
+		void context.queryClient.prefetchQuery(queryOpts);
 	},
 });
 
@@ -93,8 +89,10 @@ function StagingLeadsPage() {
 	const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 	const [confirmApproveAll, setConfirmApproveAll] = useState(false);
 	const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+	const fileInputId = useId();
+	const pasteInputId = useId();
 
-	const { data, isLoading, error, refetch, isRefetching } = useStagedLeads({ limit: 100 });
+	const { data, isPending, isFetching, error, refetch } = useStagedLeads({ limit: 100 });
 	const stageLeadsMutation = useStageLeads();
 	const approveMutation = useApproveLead();
 	const batchApproveMutation = useBatchApproveLeads();
@@ -297,11 +295,17 @@ function StagingLeadsPage() {
 			breadcrumbs={
 				<>
 					<BreadcrumbItem className="hidden md:block">
-						<BreadcrumbLink href="/">Pivotr Mailer</BreadcrumbLink>
+						<BreadcrumbLink asChild>
+							<Link to="/">Pivotr Mailer</Link>
+						</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator className="hidden md:block" />
 					<BreadcrumbItem>
-						<BreadcrumbLink href="/leads">Leads</BreadcrumbLink>
+						<BreadcrumbLink asChild>
+							<Link to="/leads" search={{ status: "all", page: 0, pageSize: 10 }} preload="intent">
+								Leads
+							</Link>
+						</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator className="hidden md:block" />
 					<BreadcrumbItem>
@@ -316,9 +320,13 @@ function StagingLeadsPage() {
 					<div>
 						<div className="flex items-center gap-2">
 							<Button variant="ghost" size="sm" asChild className="-ml-2">
-								<a href="/leads">
+								<Link
+									to="/leads"
+									search={{ status: "all", page: 0, pageSize: 10 }}
+									preload="intent"
+								>
 									<ArrowLeft className="h-4 w-4" />
-								</a>
+								</Link>
 							</Button>
 							<h1 className="text-3xl font-bold tracking-tight">Staging Area</h1>
 						</div>
@@ -327,8 +335,8 @@ function StagingLeadsPage() {
 						</p>
 					</div>
 					<div className="flex flex-wrap gap-2">
-						<Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefetching}>
-							<RefreshCw className={`mr-2 h-4 w-4 ${isRefetching ? "animate-spin" : ""}`} />
+						<Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+							<RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
 							Refresh
 						</Button>
 						<Button
@@ -464,7 +472,8 @@ function StagingLeadsPage() {
 								)}
 								<StagingLeadsDataTable
 									data={stagedLeads}
-									isLoading={isLoading}
+									isLoading={isPending && !data}
+									isFetching={isFetching}
 									error={error}
 									onRetry={() => refetch()}
 									onApprove={handleApprove}
@@ -501,10 +510,10 @@ function StagingLeadsPage() {
 								<CardContent className="space-y-4">
 									<div className="grid gap-4">
 										<div className="grid gap-2">
-											<Label htmlFor="file">CSV File</Label>
+											<Label htmlFor={fileInputId}>CSV File</Label>
 											<div className="flex gap-2">
 												<Input
-													id="file"
+													id={fileInputId}
 													type="file"
 													accept=".csv"
 													onChange={handleFileUpload}
@@ -554,9 +563,9 @@ function StagingLeadsPage() {
 								<CardContent className="space-y-4">
 									<div className="grid gap-4">
 										<div className="grid gap-2">
-											<Label htmlFor="paste">CSV Data</Label>
+											<Label htmlFor={pasteInputId}>CSV Data</Label>
 											<Textarea
-												id="paste"
+												id={pasteInputId}
 												placeholder={`fullName,email,companyName,phoneNumber\nRajesh Kumar,rajesh@example.com,Tech Corp,9876543210`}
 												value={pasteData}
 												onChange={(e) => setPasteData(e.target.value)}

@@ -6,7 +6,7 @@
  */
 
 import { Loader2, UserPlus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,6 +44,9 @@ const LEAD_TYPES: { value: LeadType; label: string }[] = [
 	{ value: "BOTH", label: "Both" },
 ];
 
+const isLeadType = (value: string): value is LeadType =>
+	LEAD_TYPES.some((leadType) => leadType.value === value);
+
 // Default form values
 const getDefaultFormValues = (): LeadFormData => ({
 	fullName: "",
@@ -62,6 +65,14 @@ const leadToFormData = (lead: Lead): LeadFormData => ({
 	leadType: lead.leadType || undefined,
 });
 
+const toLeadPayload = (formData: LeadFormData) => ({
+	fullName: formData.fullName,
+	email: formData.email,
+	companyName: formData.companyName,
+	phoneNumber: formData.phoneNumber || undefined,
+	leadType: formData.leadType || undefined,
+});
+
 // Validation helper
 const validateField = (
 	schema:
@@ -78,6 +89,12 @@ const validateField = (
 export function LeadFormDialog({ open, onOpenChange, mode, lead, onSuccess }: LeadFormDialogProps) {
 	const createMutation = useCreateLead();
 	const updateMutation = useUpdateLead();
+	const formIdPrefix = useId();
+	const fullNameId = `${formIdPrefix}-full-name`;
+	const emailId = `${formIdPrefix}-email`;
+	const companyNameId = `${formIdPrefix}-company-name`;
+	const phoneNumberId = `${formIdPrefix}-phone-number`;
+	const leadTypeId = `${formIdPrefix}-lead-type`;
 
 	const isEditing = mode === "edit" && lead;
 	const isPending = createMutation.isPending || updateMutation.isPending;
@@ -129,36 +146,26 @@ export function LeadFormDialog({ open, onOpenChange, mode, lead, onSuccess }: Le
 	};
 
 	// Form submission
+	const submitLead = async (): Promise<"updated" | "added"> => {
+		const payload = toLeadPayload(formData);
+
+		if (isEditing && lead) {
+			await updateMutation.mutateAsync({ id: lead.id, data: payload });
+			return "updated";
+		}
+
+		await createMutation.mutateAsync(payload);
+		return "added";
+	};
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
 		if (!validateForm()) return;
 
 		try {
-			if (isEditing && lead) {
-				// Update existing lead
-				await updateMutation.mutateAsync({
-					id: lead.id,
-					data: {
-						fullName: formData.fullName,
-						email: formData.email,
-						companyName: formData.companyName,
-						phoneNumber: formData.phoneNumber || undefined,
-						leadType: formData.leadType || undefined,
-					},
-				});
-				toast.success("Lead updated successfully");
-			} else {
-				// Create new lead
-				await createMutation.mutateAsync({
-					fullName: formData.fullName,
-					email: formData.email,
-					companyName: formData.companyName,
-					phoneNumber: formData.phoneNumber || undefined,
-					leadType: formData.leadType || undefined,
-				});
-				toast.success("Lead added successfully");
-			}
+			const action = await submitLead();
+			toast.success(action === "updated" ? "Lead updated successfully" : "Lead added successfully");
 			onOpenChange(false);
 			onSuccess?.();
 		} catch (error) {
@@ -186,11 +193,11 @@ export function LeadFormDialog({ open, onOpenChange, mode, lead, onSuccess }: Le
 				<form onSubmit={handleSubmit} className="space-y-4">
 					{/* Full Name Field */}
 					<div className="space-y-2">
-						<Label htmlFor="fullName">
+						<Label htmlFor={fullNameId}>
 							Full Name <span className="text-destructive">*</span>
 						</Label>
 						<Input
-							id="fullName"
+							id={fullNameId}
 							placeholder="Rahul Sharma"
 							value={formData.fullName}
 							onChange={(e) => updateField("fullName", e.target.value)}
@@ -201,11 +208,11 @@ export function LeadFormDialog({ open, onOpenChange, mode, lead, onSuccess }: Le
 
 					{/* Email Field */}
 					<div className="space-y-2">
-						<Label htmlFor="email">
+						<Label htmlFor={emailId}>
 							Email <span className="text-destructive">*</span>
 						</Label>
 						<Input
-							id="email"
+							id={emailId}
 							type="email"
 							placeholder="rahul.sharma@example.in"
 							value={formData.email}
@@ -217,11 +224,11 @@ export function LeadFormDialog({ open, onOpenChange, mode, lead, onSuccess }: Le
 
 					{/* Company Name Field */}
 					<div className="space-y-2">
-						<Label htmlFor="companyName">
+						<Label htmlFor={companyNameId}>
 							Company Name <span className="text-destructive">*</span>
 						</Label>
 						<Input
-							id="companyName"
+							id={companyNameId}
 							placeholder="Tech India Pvt Ltd"
 							value={formData.companyName}
 							onChange={(e) => updateField("companyName", e.target.value)}
@@ -232,9 +239,9 @@ export function LeadFormDialog({ open, onOpenChange, mode, lead, onSuccess }: Le
 
 					{/* Phone Number Field */}
 					<div className="space-y-2">
-						<Label htmlFor="phoneNumber">Phone Number</Label>
+						<Label htmlFor={phoneNumberId}>Phone Number</Label>
 						<Input
-							id="phoneNumber"
+							id={phoneNumberId}
 							type="tel"
 							placeholder="+91 98765 43210"
 							value={formData.phoneNumber || ""}
@@ -244,12 +251,16 @@ export function LeadFormDialog({ open, onOpenChange, mode, lead, onSuccess }: Le
 
 					{/* Lead Type Field */}
 					<div className="space-y-2">
-						<Label htmlFor="leadType">Lead Type</Label>
+						<Label htmlFor={leadTypeId}>Lead Type</Label>
 						<Select
 							value={formData.leadType || ""}
-							onValueChange={(value) => updateField("leadType", value as LeadType)}
+							onValueChange={(value) => {
+								if (isLeadType(value)) {
+									updateField("leadType", value);
+								}
+							}}
 						>
-							<SelectTrigger id="leadType">
+							<SelectTrigger id={leadTypeId}>
 								<SelectValue placeholder="Select type..." />
 							</SelectTrigger>
 							<SelectContent>

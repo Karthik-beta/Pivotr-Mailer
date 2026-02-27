@@ -5,7 +5,7 @@
  */
 
 import { RefreshCw, UserPlus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -45,6 +45,7 @@ export function AssignLeadsDialog({ open, onOpenChange, campaignId }: AssignLead
 	const [leadTypes, setLeadTypes] = useState<LeadType[]>([]);
 	const [leadStatuses, setLeadStatuses] = useState<string[]>([]);
 	const [maxLeads, setMaxLeads] = useState<number>(1000);
+	const maxLeadsInputId = useId();
 
 	const previewMutation = usePreviewLeads();
 	const assignMutation = useAssignLeads();
@@ -156,13 +157,13 @@ export function AssignLeadsDialog({ open, onOpenChange, campaignId }: AssignLead
 					{/* Max Leads */}
 					<div className="space-y-2">
 						<Label
-							htmlFor="maxLeads"
+							htmlFor={maxLeadsInputId}
 							className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
 						>
 							Max Leads to Assign
 						</Label>
 						<Input
-							id="maxLeads"
+							id={maxLeadsInputId}
 							type="number"
 							value={maxLeads}
 							onChange={(e) => setMaxLeads(parseInt(e.target.value, 10) || 1000)}

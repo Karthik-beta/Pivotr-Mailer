@@ -42,24 +42,29 @@ export function StepLeadSelection({ form }: StepProps) {
 	};
 
 	const toggleStatus = (status: string, checked: boolean) => {
-		const currentStatuses = leadSelection.statuses;
+		const currentStatuses = leadSelection.leadStatuses;
 		const newStatuses = checked
 			? [...currentStatuses, status]
 			: currentStatuses.filter((s) => s !== status);
 
-		form.setFieldValue("leadSelection.statuses", newStatuses);
+		form.setFieldValue("leadSelection.leadStatuses", newStatuses);
 	};
 
 	// Fetch preview count when selection changes
 	const refreshPreview = useCallback(() => {
-		if (leadSelection.leadTypes.length > 0 && leadSelection.statuses.length > 0) {
+		if (leadSelection.leadTypes.length > 0 && leadSelection.leadStatuses.length > 0) {
 			previewMutation.mutate({
 				leadTypes: leadSelection.leadTypes,
-				statuses: leadSelection.statuses,
+				leadStatuses: leadSelection.leadStatuses,
 				maxLeads: leadSelection.maxLeads,
 			});
 		}
-	}, [leadSelection.leadTypes, leadSelection.statuses, leadSelection.maxLeads, previewMutation]);
+	}, [
+		leadSelection.leadTypes,
+		leadSelection.leadStatuses,
+		leadSelection.maxLeads,
+		previewMutation,
+	]);
 
 	// Auto-refresh on selection change (debounced)
 	useEffect(() => {
@@ -117,7 +122,7 @@ export function StepLeadSelection({ form }: StepProps) {
 						<div key={value} className="flex items-center gap-2">
 							<Checkbox
 								id={`status-${value}`}
-								checked={leadSelection.statuses.includes(value)}
+								checked={leadSelection.leadStatuses.includes(value)}
 								onCheckedChange={(checked) => toggleStatus(value, checked as boolean)}
 							/>
 							<Label htmlFor={`status-${value}`} className="cursor-pointer">
@@ -126,7 +131,7 @@ export function StepLeadSelection({ form }: StepProps) {
 						</div>
 					))}
 				</div>
-				<form.Field name="leadSelection.statuses">
+				<form.Field name="leadSelection.leadStatuses">
 					{(field) =>
 						field.state.meta.errors.length > 0 && (
 							<p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
@@ -149,7 +154,7 @@ export function StepLeadSelection({ form }: StepProps) {
 							<RefreshCw className="h-4 w-4 animate-spin" />
 							<span className="text-sm text-muted-foreground">Counting leads...</span>
 						</div>
-					) : leadSelection.leadTypes.length === 0 || leadSelection.statuses.length === 0 ? (
+					) : leadSelection.leadTypes.length === 0 || leadSelection.leadStatuses.length === 0 ? (
 						<p className="text-sm text-muted-foreground">
 							Select at least one lead type and status to see matching leads
 						</p>
@@ -169,7 +174,7 @@ export function StepLeadSelection({ form }: StepProps) {
 						disabled={
 							isLoading ||
 							leadSelection.leadTypes.length === 0 ||
-							leadSelection.statuses.length === 0
+							leadSelection.leadStatuses.length === 0
 						}
 					>
 						<RefreshCw className={`h-3 w-3 mr-1 ${isLoading ? "animate-spin" : ""}`} />

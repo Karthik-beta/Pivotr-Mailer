@@ -17,19 +17,36 @@ const loggedServerFunction = createServerFn({ method: "GET" }).middleware([
 
 const TODOS_FILE = "todos.json";
 
-async function readTodos() {
-	return JSON.parse(
-		await fs.promises.readFile(TODOS_FILE, "utf-8").catch(() =>
-			JSON.stringify(
-				[
-					{ id: 1, name: "Get groceries" },
-					{ id: 2, name: "Buy a new phone" },
-				],
-				null,
-				2
-			)
+interface Todo {
+	id: number;
+	name: string;
+}
+
+const DEFAULT_TODOS: Todo[] = [
+	{ id: 1, name: "Get groceries" },
+	{ id: 2, name: "Buy a new phone" },
+];
+
+async function readTodos(): Promise<Todo[]> {
+	const raw = await fs.promises
+		.readFile(TODOS_FILE, "utf-8")
+		.catch(() => JSON.stringify(DEFAULT_TODOS, null, 2));
+	const parsed: unknown = JSON.parse(raw);
+	if (!Array.isArray(parsed)) {
+		return DEFAULT_TODOS;
+	}
+
+	return parsed
+		.filter(
+			(item): item is Todo =>
+				typeof item === "object" &&
+				item !== null &&
+				"id" in item &&
+				"name" in item &&
+				typeof item.id === "number" &&
+				typeof item.name === "string"
 		)
-	);
+		.map((item) => ({ id: item.id, name: item.name }));
 }
 
 const getTodos = createServerFn({

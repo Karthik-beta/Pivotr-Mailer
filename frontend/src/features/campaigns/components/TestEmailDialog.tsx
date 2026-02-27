@@ -5,7 +5,7 @@
  */
 
 import { RefreshCw, Send } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +28,7 @@ interface TestEmailDialogProps {
 
 export function TestEmailDialog({ open, onOpenChange, campaignId }: TestEmailDialogProps) {
 	const [testEmail, setTestEmail] = useState("");
+	const testEmailInputId = useId();
 	const sendTestMutation = useSendTestEmail();
 
 	const handleSendTest = async () => {
@@ -64,13 +65,13 @@ export function TestEmailDialog({ open, onOpenChange, campaignId }: TestEmailDia
 				<div className="space-y-4 py-4">
 					<div className="space-y-2">
 						<Label
-							htmlFor="testEmail"
+							htmlFor={testEmailInputId}
 							className="font-mono text-xs uppercase tracking-wide text-muted-foreground"
 						>
 							Recipient Email
 						</Label>
 						<Input
-							id="testEmail"
+							id={testEmailInputId}
 							type="email"
 							value={testEmail}
 							onChange={(e) => setTestEmail(e.target.value)}

@@ -67,7 +67,7 @@ export function NavMain({
 											return (
 												<SidebarMenuSubItem key={subItem.title}>
 													<SidebarMenuSubButton asChild isActive={isSubActive}>
-														<Link to={subItem.url}>
+														<Link to={subItem.url} preload="intent">
 															<span>{subItem.title}</span>
 														</Link>
 													</SidebarMenuSubButton>

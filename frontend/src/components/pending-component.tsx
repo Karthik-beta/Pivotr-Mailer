@@ -37,7 +37,6 @@ export function PendingComponent() {
 				{/* Stats cards skeleton */}
 				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
 					{Array.from({ length: 4 }).map((_, i) => (
-						// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton
 						<div key={i} className="rounded-xl border bg-card p-6 space-y-3">
 							<div className="flex items-center justify-between">
 								<Skeleton className="h-4 w-28" />
@@ -58,16 +57,13 @@ export function PendingComponent() {
 					{/* Table header */}
 					<div className="flex gap-4 pb-2 border-b">
 						{Array.from({ length: 5 }).map((_, i) => (
-							// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton
 							<Skeleton key={i} className="h-4 flex-1" />
 						))}
 					</div>
 					{/* Table rows */}
 					{Array.from({ length: 8 }).map((_, i) => (
-						// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton
 						<div key={i} className="flex gap-4 py-2">
 							{Array.from({ length: 5 }).map((_, j) => (
-								// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton
 								<Skeleton key={j} className="h-4 flex-1" />
 							))}
 						</div>

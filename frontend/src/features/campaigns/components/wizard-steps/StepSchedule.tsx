@@ -6,6 +6,7 @@
  */
 
 import { useStore } from "@tanstack/react-store";
+import { useId } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -60,6 +61,11 @@ const parseTimeString = (time: string): { hour: number; minute: number } => {
 export function StepSchedule({ form }: StepProps) {
 	// Subscribe to schedule values for display
 	const scheduleValues = useStore(form.store, (state) => state.values.schedule);
+	const scheduleIdPrefix = useId();
+	const workingStartId = `${scheduleIdPrefix}-working-start`;
+	const workingEndId = `${scheduleIdPrefix}-working-end`;
+	const peakStartId = `${scheduleIdPrefix}-peak-start`;
+	const peakEndId = `${scheduleIdPrefix}-peak-end`;
 
 	return (
 		<div className="space-y-6">
@@ -70,7 +76,7 @@ export function StepSchedule({ form }: StepProps) {
 				</Label>
 				<div className="grid grid-cols-2 gap-4">
 					<div className="space-y-2">
-						<Label htmlFor="workingStart" className="text-sm">
+						<Label htmlFor={workingStartId} className="text-sm">
 							Start Time
 						</Label>
 						<Select
@@ -84,7 +90,7 @@ export function StepSchedule({ form }: StepProps) {
 								form.setFieldValue("schedule.workingHours.startMinute", minute);
 							}}
 						>
-							<SelectTrigger id="workingStart">
+							<SelectTrigger id={workingStartId}>
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
@@ -97,7 +103,7 @@ export function StepSchedule({ form }: StepProps) {
 						</Select>
 					</div>
 					<div className="space-y-2">
-						<Label htmlFor="workingEnd" className="text-sm">
+						<Label htmlFor={workingEndId} className="text-sm">
 							End Time
 						</Label>
 						<Select
@@ -111,7 +117,7 @@ export function StepSchedule({ form }: StepProps) {
 								form.setFieldValue("schedule.workingHours.endMinute", minute);
 							}}
 						>
-							<SelectTrigger id="workingEnd">
+							<SelectTrigger id={workingEndId}>
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
@@ -136,7 +142,7 @@ export function StepSchedule({ form }: StepProps) {
 				</Label>
 				<div className="grid grid-cols-2 gap-4">
 					<div className="space-y-2">
-						<Label htmlFor="peakStart" className="text-sm">
+						<Label htmlFor={peakStartId} className="text-sm">
 							Start Hour
 						</Label>
 						<form.Field name="schedule.peakHours.startHour">
@@ -145,7 +151,7 @@ export function StepSchedule({ form }: StepProps) {
 									value={field.state.value.toString()}
 									onValueChange={(value) => field.handleChange(parseInt(value, 10))}
 								>
-									<SelectTrigger id="peakStart">
+									<SelectTrigger id={peakStartId}>
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
@@ -160,7 +166,7 @@ export function StepSchedule({ form }: StepProps) {
 						</form.Field>
 					</div>
 					<div className="space-y-2">
-						<Label htmlFor="peakEnd" className="text-sm">
+						<Label htmlFor={peakEndId} className="text-sm">
 							End Hour
 						</Label>
 						<form.Field name="schedule.peakHours.endHour">
@@ -169,7 +175,7 @@ export function StepSchedule({ form }: StepProps) {
 									value={field.state.value.toString()}
 									onValueChange={(value) => field.handleChange(parseInt(value, 10))}
 								>
-									<SelectTrigger id="peakEnd">
+									<SelectTrigger id={peakEndId}>
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>

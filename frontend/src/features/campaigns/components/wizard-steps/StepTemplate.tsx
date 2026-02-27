@@ -30,8 +30,8 @@ import {
 	Trash2,
 	Twitter,
 } from "lucide-react";
-import { marked } from "marked";
 import { useMemo, useState } from "react";
+import { MarkdownPreview } from "@/components/markdown-preview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -48,7 +48,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { sanitizeHtml } from "@/lib/sanitize";
 import type { StepProps } from "../../types/formTypes";
 
 // Platform icons
@@ -92,22 +91,6 @@ function replaceVariables(text: string): string {
 		.replace(/\{\{Email\}\}/gi, SAMPLE_LEAD.email);
 }
 
-/**
- * Parse markdown to HTML with full syntax support and sanitization
- */
-function parseMarkdown(text: string): string {
-	if (!text) return "";
-
-	// Configure marked for full markdown support
-	marked.setOptions({
-		breaks: true, // Convert \n to <br>
-		gfm: true, // GitHub Flavored Markdown
-	});
-
-	const html = marked.parse(text, { async: false }) as string;
-	return sanitizeHtml(html);
-}
-
 export function StepTemplate({ form }: StepProps) {
 	const [refreshKey, setRefreshKey] = useState(0);
 	const [signOffExpanded, setSignOffExpanded] = useState(false);
@@ -122,17 +105,13 @@ export function StepTemplate({ form }: StepProps) {
 	}, [templateValues.subject, refreshKey]);
 
 	const resolvedBody = useMemo(() => {
-		const resolved = replaceVariables(resolveSpintax(templateValues.body, refreshKey > 0));
-		return parseMarkdown(resolved);
+		return replaceVariables(resolveSpintax(templateValues.body, refreshKey > 0));
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [templateValues.body, refreshKey]);
 
 	const resolvedSignOff = useMemo(() => {
 		if (!templateValues.signOff?.enabled || !templateValues.signOff?.content) return "";
-		const resolved = replaceVariables(
-			resolveSpintax(templateValues.signOff.content, refreshKey > 0)
-		);
-		return parseMarkdown(resolved);
+		return replaceVariables(resolveSpintax(templateValues.signOff.content, refreshKey > 0));
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [templateValues.signOff?.content, templateValues.signOff?.enabled, refreshKey]);
 
@@ -908,10 +887,7 @@ Senior Sales Executive | Acme Corp
 					<CardContent className="pt-4 space-y-4">
 						{/* Email Body */}
 						{templateValues.body ? (
-							<div
-								className="prose prose-sm max-w-none dark:prose-invert"
-								dangerouslySetInnerHTML={{ __html: resolvedBody }}
-							/>
+							<MarkdownPreview content={resolvedBody} />
 						) : (
 							<p className="text-muted-foreground italic">Email body preview will appear here...</p>
 						)}
@@ -920,12 +896,7 @@ Senior Sales Executive | Acme Corp
 						{templateValues.signOff?.enabled && (
 							<div className="border-t pt-4 space-y-3">
 								{/* Markdown Content */}
-								{resolvedSignOff && (
-									<div
-										className="prose prose-sm max-w-none dark:prose-invert"
-										dangerouslySetInnerHTML={{ __html: resolvedSignOff }}
-									/>
-								)}
+								{resolvedSignOff && <MarkdownPreview content={resolvedSignOff} />}
 
 								{/* Media Preview */}
 								{templateValues.signOff.media && templateValues.signOff.media.length > 0 && (

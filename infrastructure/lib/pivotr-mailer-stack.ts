@@ -490,8 +490,11 @@ export class PivotrMailerStack extends cdk.Stack {
         // =====================================================
         // 4. API GATEWAY
         // =====================================================
-        // Context or Default CORS
-        const corsAllowedOrigins = this.node.tryGetContext('corsAllowedOrigins') || ['http://localhost:5173', 'http://localhost:3000'];
+        // Context or default CORS for local development
+        const corsAllowedOrigins = this.node.tryGetContext('corsAllowedOrigins') || ['http://localhost:3000'];
+        const corsAllowOriginHeader = "'http://localhost:3000'";
+        const corsAllowMethodsHeader = "'GET,POST,PUT,DELETE,OPTIONS'";
+        const corsAllowHeadersHeader = "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'";
 
         const api = new apigateway.RestApi(this, 'PivotrMailerApi', {
             restApiName: 'Pivotr Mailer API',
@@ -499,6 +502,52 @@ export class PivotrMailerStack extends cdk.Stack {
             defaultCorsPreflightOptions: {
                 allowOrigins: corsAllowedOrigins,
                 allowMethods: apigateway.Cors.ALL_METHODS,
+                allowHeaders: ['Content-Type', 'Authorization', 'X-Amz-Date', 'X-Api-Key', 'X-Amz-Security-Token'],
+            },
+        });
+
+        api.addGatewayResponse('Default4xxCors', {
+            type: apigateway.ResponseType.DEFAULT_4XX,
+            responseHeaders: {
+                'Access-Control-Allow-Origin': corsAllowOriginHeader,
+                'Access-Control-Allow-Methods': corsAllowMethodsHeader,
+                'Access-Control-Allow-Headers': corsAllowHeadersHeader,
+            },
+        });
+
+        api.addGatewayResponse('Default5xxCors', {
+            type: apigateway.ResponseType.DEFAULT_5XX,
+            responseHeaders: {
+                'Access-Control-Allow-Origin': corsAllowOriginHeader,
+                'Access-Control-Allow-Methods': corsAllowMethodsHeader,
+                'Access-Control-Allow-Headers': corsAllowHeadersHeader,
+            },
+        });
+
+        api.addGatewayResponse('IntegrationFailureCors', {
+            type: apigateway.ResponseType.INTEGRATION_FAILURE,
+            responseHeaders: {
+                'Access-Control-Allow-Origin': corsAllowOriginHeader,
+                'Access-Control-Allow-Methods': corsAllowMethodsHeader,
+                'Access-Control-Allow-Headers': corsAllowHeadersHeader,
+            },
+        });
+
+        api.addGatewayResponse('IntegrationTimeoutCors', {
+            type: apigateway.ResponseType.INTEGRATION_TIMEOUT,
+            responseHeaders: {
+                'Access-Control-Allow-Origin': corsAllowOriginHeader,
+                'Access-Control-Allow-Methods': corsAllowMethodsHeader,
+                'Access-Control-Allow-Headers': corsAllowHeadersHeader,
+            },
+        });
+
+        api.addGatewayResponse('ApiConfigurationErrorCors', {
+            type: apigateway.ResponseType.API_CONFIGURATION_ERROR,
+            responseHeaders: {
+                'Access-Control-Allow-Origin': corsAllowOriginHeader,
+                'Access-Control-Allow-Methods': corsAllowMethodsHeader,
+                'Access-Control-Allow-Headers': corsAllowHeadersHeader,
             },
         });
 

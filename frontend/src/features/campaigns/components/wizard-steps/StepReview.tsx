@@ -195,7 +195,8 @@ export function StepReview({ form, matchingLeadsCount }: StepReviewProps) {
 							{matchingLeadsCount.toLocaleString()}
 						</div>
 						<p className="text-xs text-muted-foreground mt-1">
-							{data.leadSelection.leadTypes.join(", ")} | {data.leadSelection.statuses.join(", ")}
+							{data.leadSelection.leadTypes.join(", ")} |{" "}
+							{data.leadSelection.leadStatuses.join(", ")}
 						</p>
 					</CardContent>
 				</Card>

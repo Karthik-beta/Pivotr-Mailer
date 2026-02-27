@@ -4,7 +4,7 @@
  * Route for creating a new campaign using the wizard.
  */
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	BreadcrumbItem,
 	BreadcrumbLink,
@@ -24,11 +24,17 @@ function NewCampaignPage() {
 			breadcrumbs={
 				<>
 					<BreadcrumbItem className="hidden md:block">
-						<BreadcrumbLink href="/">Pivotr Mailer</BreadcrumbLink>
+						<BreadcrumbLink asChild>
+							<Link to="/">Pivotr Mailer</Link>
+						</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator className="hidden md:block" />
 					<BreadcrumbItem>
-						<BreadcrumbLink href="/campaigns">Campaigns</BreadcrumbLink>
+						<BreadcrumbLink asChild>
+							<Link to="/campaigns" search={{ status: "all" }} preload="intent">
+								Campaigns
+							</Link>
+						</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator className="hidden md:block" />
 					<BreadcrumbItem>

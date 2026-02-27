@@ -45,7 +45,7 @@
         "dev:reset": "bun run localstack:down && bun run dev:infra",
         "dev": "pm2 start ecosystem.config.cjs",
         "dev:stop": "pm2 stop ecosystem.config.cjs",
-        "dev:restart": "pm2 delete ecosystem.config.cjs && pm2 start ecosystem.config.cjs",
+        "dev:restart": "pm2 restart ecosystem.config.cjs --update-env",
         "dev:clean": "bun run scripts/dev-clean.ts",
         "dev:logs": "pm2 logs",
         "dev:logs:api": "pm2 logs api",
@@ -55,7 +55,10 @@
         "dev:ses-watch": "pm2 start ecosystem.optional.config.cjs --only ses-watch",
         "dev:status": "pm2 status",
         "dev:kill": "pm2 kill",
-        "dev:delete": "pm2 delete ecosystem.config.cjs"
+        "dev:delete": "pm2 delete ecosystem.config.cjs",
+        "dev:save": "pm2 save",
+        "dev:resurrect": "pm2 resurrect",
+        "dev:startup": "pm2 startup"
     },
     "devDependencies": {
         "@aws-sdk/client-cloudwatch": "latest",

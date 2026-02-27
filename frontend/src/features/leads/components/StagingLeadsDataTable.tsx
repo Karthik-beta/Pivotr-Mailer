@@ -42,7 +42,7 @@ import {
 	Trash2,
 	User,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useId, useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -85,6 +85,7 @@ const fuzzyFilter: FilterFn<StagedLead> = (row, columnId, value, addMeta) => {
 interface StagingLeadsDataTableProps {
 	data: StagedLead[];
 	isLoading?: boolean;
+	isFetching?: boolean;
 	error?: Error | null;
 	onRetry?: () => void;
 	onApprove?: (id: string) => void;
@@ -105,6 +106,7 @@ interface StagingLeadsDataTableProps {
 export function StagingLeadsDataTable({
 	data,
 	isLoading,
+	isFetching = false,
 	error,
 	onRetry,
 	onApprove,
@@ -126,6 +128,10 @@ export function StagingLeadsDataTable({
 	const [expanded, setExpanded] = useState<ExpandedState>({});
 	const [globalFilter, setGlobalFilter] = useState("");
 	const [editingLead, setEditingLead] = useState<StagedLead | null>(null);
+	const fullNameInputId = useId();
+	const emailInputId = useId();
+	const companyNameInputId = useId();
+	const phoneNumberInputId = useId();
 
 	// Sync status filter from URL to table column filter
 	const effectiveColumnFilters = useMemo(() => {
@@ -519,7 +525,7 @@ export function StagingLeadsDataTable({
 		<>
 			<div className="space-y-4">
 				{/* Filters */}
-				<div className="flex flex-wrap items-center gap-4">
+				<div className="flex flex-wrap items-center justify-between gap-4">
 					<div className="relative flex-1 min-w-62.5 max-w-sm">
 						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 						<Input
@@ -548,6 +554,12 @@ export function StagingLeadsDataTable({
 							))}
 						</SelectContent>
 					</Select>
+					{isFetching && !isLoading && (
+						<div className="flex items-center gap-2 text-xs text-muted-foreground">
+							<RefreshCw className="h-3.5 w-3.5 animate-spin" />
+							Updating staged leads...
+						</div>
+					)}
 				</div>
 
 				{/* Table */}
@@ -722,9 +734,9 @@ export function StagingLeadsDataTable({
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						<div className="grid gap-2">
-							<Label htmlFor="fullName">Full Name</Label>
+							<Label htmlFor={fullNameInputId}>Full Name</Label>
 							<Input
-								id="fullName"
+								id={fullNameInputId}
 								value={editFormData.fullName}
 								onChange={(e) => setEditFormData((prev) => ({ ...prev, fullName: e.target.value }))}
 								className={cn(
@@ -739,9 +751,9 @@ export function StagingLeadsDataTable({
 							))}
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="email">Email</Label>
+							<Label htmlFor={emailInputId}>Email</Label>
 							<Input
-								id="email"
+								id={emailInputId}
 								type="email"
 								value={editFormData.email}
 								onChange={(e) => setEditFormData((prev) => ({ ...prev, email: e.target.value }))}
@@ -757,9 +769,9 @@ export function StagingLeadsDataTable({
 							))}
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="companyName">Company Name</Label>
+							<Label htmlFor={companyNameInputId}>Company Name</Label>
 							<Input
-								id="companyName"
+								id={companyNameInputId}
 								value={editFormData.companyName}
 								onChange={(e) =>
 									setEditFormData((prev) => ({ ...prev, companyName: e.target.value }))
@@ -776,9 +788,9 @@ export function StagingLeadsDataTable({
 							))}
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="phoneNumber">Phone Number</Label>
+							<Label htmlFor={phoneNumberInputId}>Phone Number</Label>
 							<Input
-								id="phoneNumber"
+								id={phoneNumberInputId}
 								value={editFormData.phoneNumber}
 								onChange={(e) =>
 									setEditFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))

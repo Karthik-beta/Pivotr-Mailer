@@ -6,7 +6,7 @@
  * Uses TanStack Store for wizard step navigation.
  */
 
-import { useForm } from "@tanstack/react-form";
+import { type DeepKeys, useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
 import { ChevronLeft, ChevronRight, RefreshCw, Save } from "lucide-react";
@@ -127,6 +127,29 @@ const STEP_VALIDATORS = [
 	null, // Review step has no validation
 ] as const;
 
+const STEP_VALUE_GETTERS: ReadonlyArray<(values: CampaignFormData) => unknown> = [
+	(values) => ({ name: values.name, description: values.description }),
+	(values) => values.template,
+	(values) => values.schedule,
+	(values) => values.delayConfig,
+	(values) => values.leadSelection,
+	() => null,
+];
+
+const STEP_FIELD_PREFIXES = [
+	"",
+	"template",
+	"schedule",
+	"delayConfig",
+	"leadSelection",
+	"",
+] as const;
+
+const buildFieldName = (prefix: string, path: string): string => {
+	if (!prefix) return path;
+	return path ? `${prefix}.${path}` : prefix;
+};
+
 interface CampaignWizardProps {
 	campaign?: Campaign;
 	mode: "create" | "edit";
@@ -173,62 +196,22 @@ export function CampaignWizard({ campaign, mode }: CampaignWizardProps) {
 		const schema = STEP_VALIDATORS[currentStep];
 		if (!schema) return true; // Review step, no validation
 
-		const formValues = form.state.values;
-
-		// Get the relevant portion of form data for this step
-		let dataToValidate: unknown;
-		switch (currentStep) {
-			case 0:
-				dataToValidate = { name: formValues.name, description: formValues.description };
-				break;
-			case 1:
-				dataToValidate = formValues.template;
-				break;
-			case 2:
-				dataToValidate = formValues.schedule;
-				break;
-			case 3:
-				dataToValidate = formValues.delayConfig;
-				break;
-			case 4:
-				dataToValidate = formValues.leadSelection;
-				break;
-			default:
-				return true;
-		}
+		const dataToValidate = STEP_VALUE_GETTERS[currentStep]?.(form.state.values);
+		if (dataToValidate === undefined || dataToValidate === null) return true;
 
 		const result = schema.safeParse(dataToValidate);
 		if (!result.success) {
-			// Set field errors on the form
+			const prefix = STEP_FIELD_PREFIXES[currentStep] ?? "";
+
+			// Set field errors on the form.
 			for (const issue of result.error.issues) {
-				const path = issue.path.join(".");
-				let fieldName: string;
+				const fieldPath = issue.path.join(".");
+				const fieldName = buildFieldName(prefix, fieldPath);
+				if (!fieldName) continue;
 
-				// Map the path to the full field name
-				switch (currentStep) {
-					case 0:
-						fieldName = path;
-						break;
-					case 1:
-						fieldName = path ? `template.${path}` : "template";
-						break;
-					case 2:
-						fieldName = path ? `schedule.${path}` : "schedule";
-						break;
-					case 3:
-						fieldName = path ? `delayConfig.${path}` : "delayConfig";
-						break;
-					case 4:
-						fieldName = path ? `leadSelection.${path}` : "leadSelection";
-						break;
-					default:
-						fieldName = path;
-				}
-
-				form.setFieldMeta(fieldName as keyof CampaignFormData, (prev) => ({
+				form.setFieldMeta(fieldName as DeepKeys<CampaignFormData>, (prev) => ({
 					...prev,
-					errors: [...(prev.errors || []), issue.message],
-					errorMap: { ...prev.errorMap, onChange: issue.message },
+					errorMap: { ...prev.errorMap, onSubmit: issue.message },
 				}));
 			}
 			return false;

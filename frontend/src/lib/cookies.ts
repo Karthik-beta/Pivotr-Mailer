@@ -1,5 +1,41 @@
 import type { ThemeMode } from "@/lib/theme/types";
 
+interface CookieStoreLike {
+	set(options: {
+		name: string;
+		value: string;
+		expires?: number | Date;
+		path?: string;
+		sameSite?: "strict" | "lax" | "none";
+		secure?: boolean;
+	}): Promise<void>;
+	delete(options: { name: string; path?: string }): Promise<void>;
+}
+
+const toCookieStoreSameSite = (sameSite: CookieOptions["sameSite"]): "strict" | "lax" | "none" => {
+	switch (sameSite) {
+		case "Strict":
+			return "strict";
+		case "None":
+			return "none";
+		default:
+			return "lax";
+	}
+};
+
+const isCookieStoreLike = (value: unknown): value is CookieStoreLike =>
+	typeof value === "object" &&
+	value !== null &&
+	"set" in value &&
+	typeof value.set === "function" &&
+	"delete" in value &&
+	typeof value.delete === "function";
+
+const getCookieStore = (): CookieStoreLike | null => {
+	const candidate = Reflect.get(globalThis, "cookieStore");
+	return isCookieStoreLike(candidate) ? candidate : null;
+};
+
 /**
  * Cookie options for document.cookie API
  */
@@ -11,30 +47,23 @@ interface CookieOptions {
 }
 
 /**
- * Set a cookie using document.cookie API
+ * Set a cookie using the Cookie Store API
  * Works on client-side only
  */
 export function setCookie(name: string, value: string, options: CookieOptions = {}): void {
-	if (typeof document === "undefined") return;
+	const cookieStore = getCookieStore();
+	if (!cookieStore) return;
 
 	const { days = 365, path = "/", sameSite = "Lax", secure = true } = options;
-
-	let cookieString = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`;
-
-	if (days > 0) {
-		const date = new Date();
-		date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
-		cookieString += `; expires=${date.toUTCString()}`;
-	}
-
-	cookieString += `; path=${path}`;
-	cookieString += `; SameSite=${sameSite}`;
-
-	if (secure) {
-		cookieString += "; Secure";
-	}
-
-	document.cookie = cookieString;
+	const expires = days > 0 ? Date.now() + days * 24 * 60 * 60 * 1000 : undefined;
+	void cookieStore.set({
+		name: encodeURIComponent(name),
+		value: encodeURIComponent(value),
+		expires,
+		path,
+		sameSite: toCookieStoreSameSite(sameSite),
+		secure,
+	});
 }
 
 /**
@@ -90,9 +119,9 @@ function parseCookieHeader(cookieHeader: string): Map<string, string> {
  * Delete a cookie by name
  */
 export function deleteCookie(name: string, path = "/"): void {
-	if (typeof document === "undefined") return;
-
-	document.cookie = `${encodeURIComponent(name)}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path}`;
+	const cookieStore = getCookieStore();
+	if (!cookieStore) return;
+	void cookieStore.delete({ name: encodeURIComponent(name), path });
 }
 
 // =============================================================================

@@ -21,6 +21,7 @@ import {
 	getSortedRowModel,
 	type RowSelectionState,
 	type SortingState,
+	type Table as TanStackTable,
 	useReactTable,
 } from "@tanstack/react-table";
 import {
@@ -39,7 +40,7 @@ import {
 	Search,
 	User,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -75,9 +76,114 @@ const fuzzyFilter: FilterFn<Lead> = (row, columnId, value, addMeta) => {
 	return itemRank.passed;
 };
 
+const STATUS_OPTIONS: LeadStatus[] = [
+	"PENDING_IMPORT",
+	"VERIFIED",
+	"QUEUED",
+	"SENT",
+	"DELIVERED",
+	"BOUNCED",
+	"COMPLAINED",
+	"FAILED",
+	"SKIPPED_DAILY_CAP",
+	"UNSUBSCRIBED",
+];
+
+interface LeadsTableBodyProps {
+	table: TanStackTable<Lead>;
+	columnsLength: number;
+	isLoading?: boolean;
+	error?: Error | null;
+	onRetry?: () => void;
+	onRowClick?: (lead: Lead) => void;
+}
+
+function LeadsTableBody({
+	table,
+	columnsLength,
+	isLoading,
+	error,
+	onRetry,
+	onRowClick,
+}: LeadsTableBodyProps) {
+	if (isLoading) {
+		return (
+			<TableBody>
+				<TableRow>
+					<TableCell colSpan={columnsLength} className="h-24 text-center">
+						<div className="flex items-center justify-center gap-2">
+							<div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+							Loading leads...
+						</div>
+					</TableCell>
+				</TableRow>
+			</TableBody>
+		);
+	}
+
+	if (error) {
+		return (
+			<TableBody>
+				<TableRow>
+					<TableCell colSpan={columnsLength} className="h-32 text-center">
+						<div className="flex flex-col items-center justify-center gap-3">
+							<AlertCircle className="h-8 w-8 text-destructive" />
+							<div className="space-y-1">
+								<p className="font-medium text-destructive">Failed to load leads</p>
+								<p className="text-sm text-muted-foreground">
+									{error.message || "An unexpected error occurred"}
+								</p>
+							</div>
+							{onRetry && (
+								<Button variant="outline" size="sm" onClick={onRetry}>
+									<RefreshCw className="mr-2 h-4 w-4" />
+									Try Again
+								</Button>
+							)}
+						</div>
+					</TableCell>
+				</TableRow>
+			</TableBody>
+		);
+	}
+
+	const rows = table.getRowModel().rows;
+	if (!rows?.length) {
+		return (
+			<TableBody>
+				<TableRow>
+					<TableCell colSpan={columnsLength} className="h-24 text-center">
+						<div className="text-muted-foreground">No leads found.</div>
+					</TableCell>
+				</TableRow>
+			</TableBody>
+		);
+	}
+
+	return (
+		<TableBody>
+			{rows.map((row) => (
+				<TableRow
+					key={row.id}
+					data-state={row.getIsSelected() && "selected"}
+					onClick={() => onRowClick?.(row.original)}
+					className={cn("cursor-pointer transition-colors", row.getIsSelected() && "bg-muted/50")}
+				>
+					{row.getVisibleCells().map((cell) => (
+						<TableCell key={cell.id}>
+							{flexRender(cell.column.columnDef.cell, cell.getContext())}
+						</TableCell>
+					))}
+				</TableRow>
+			))}
+		</TableBody>
+	);
+}
+
 interface LeadsDataTableProps {
 	data: Lead[];
 	isLoading?: boolean;
+	isFetching?: boolean;
 	isPending?: boolean;
 	error?: Error | null;
 	onRetry?: () => void;
@@ -98,6 +204,7 @@ interface LeadsDataTableProps {
 export function LeadsDataTable({
 	data,
 	isLoading,
+	isFetching = false,
 	isPending = false,
 	error,
 	onRetry,
@@ -118,9 +225,13 @@ export function LeadsDataTable({
 	const [globalFilter, setGlobalFilter] = useState("");
 
 	// Expose clear selection function via ref
-	if (clearSelectionRef) {
+	useEffect(() => {
+		if (!clearSelectionRef) return;
 		clearSelectionRef.current = () => setRowSelection({});
-	}
+		return () => {
+			clearSelectionRef.current = null;
+		};
+	}, [clearSelectionRef]);
 
 	// Sync status filter from URL to table column filter
 	const effectiveColumnFilters = useMemo(() => {
@@ -367,23 +478,10 @@ export function LeadsDataTable({
 		},
 	});
 
-	const statusOptions: LeadStatus[] = [
-		"PENDING_IMPORT",
-		"VERIFIED",
-		"QUEUED",
-		"SENT",
-		"DELIVERED",
-		"BOUNCED",
-		"COMPLAINED",
-		"FAILED",
-		"SKIPPED_DAILY_CAP",
-		"UNSUBSCRIBED",
-	];
-
 	return (
 		<div className="space-y-4">
 			{/* Filters */}
-			<div className="flex flex-wrap items-center gap-4">
+			<div className="flex flex-wrap items-center justify-between gap-4">
 				<div className="relative flex-1 min-w-62.5 max-w-sm">
 					<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 					<Input
@@ -405,13 +503,19 @@ export function LeadsDataTable({
 					</SelectTrigger>
 					<SelectContent>
 						<SelectItem value="all">All Statuses</SelectItem>
-						{statusOptions.map((status) => (
+						{STATUS_OPTIONS.map((status) => (
 							<SelectItem key={status} value={status}>
 								{status.replace(/_/g, " ")}
 							</SelectItem>
 						))}
 					</SelectContent>
 				</Select>
+				{isFetching && !isLoading && (
+					<div className="flex items-center gap-2 text-xs text-muted-foreground">
+						<RefreshCw className="h-3.5 w-3.5 animate-spin" />
+						Updating leads...
+					</div>
+				)}
 			</div>
 
 			{/* Table */}
@@ -434,62 +538,14 @@ export function LeadsDataTable({
 							</TableRow>
 						))}
 					</TableHeader>
-					<TableBody>
-						{isLoading ? (
-							<TableRow>
-								<TableCell colSpan={columns.length} className="h-24 text-center">
-									<div className="flex items-center justify-center gap-2">
-										<div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-										Loading leads...
-									</div>
-								</TableCell>
-							</TableRow>
-						) : error ? (
-							<TableRow>
-								<TableCell colSpan={columns.length} className="h-32 text-center">
-									<div className="flex flex-col items-center justify-center gap-3">
-										<AlertCircle className="h-8 w-8 text-destructive" />
-										<div className="space-y-1">
-											<p className="font-medium text-destructive">Failed to load leads</p>
-											<p className="text-sm text-muted-foreground">
-												{error.message || "An unexpected error occurred"}
-											</p>
-										</div>
-										{onRetry && (
-											<Button variant="outline" size="sm" onClick={onRetry}>
-												<RefreshCw className="mr-2 h-4 w-4" />
-												Try Again
-											</Button>
-										)}
-									</div>
-								</TableCell>
-							</TableRow>
-						) : table.getRowModel().rows?.length ? (
-							table.getRowModel().rows.map((row) => (
-								<TableRow
-									key={row.id}
-									data-state={row.getIsSelected() && "selected"}
-									onClick={() => onRowClick?.(row.original)}
-									className={cn(
-										"cursor-pointer transition-colors",
-										row.getIsSelected() && "bg-muted/50"
-									)}
-								>
-									{row.getVisibleCells().map((cell) => (
-										<TableCell key={cell.id}>
-											{flexRender(cell.column.columnDef.cell, cell.getContext())}
-										</TableCell>
-									))}
-								</TableRow>
-							))
-						) : (
-							<TableRow>
-								<TableCell colSpan={columns.length} className="h-24 text-center">
-									<div className="text-muted-foreground">No leads found.</div>
-								</TableCell>
-							</TableRow>
-						)}
-					</TableBody>
+					<LeadsTableBody
+						table={table}
+						columnsLength={columns.length}
+						isLoading={isLoading}
+						error={error}
+						onRetry={onRetry}
+						onRowClick={onRowClick}
+					/>
 				</Table>
 			</div>
 
@@ -527,7 +583,7 @@ export function LeadsDataTable({
 							variant="outline"
 							className="hidden h-8 w-8 p-0 lg:flex"
 							onClick={() => table.setPageIndex(0)}
-							disabled={isPending || !table.getCanPreviousPage()}
+							disabled={isLoading || isPending || !table.getCanPreviousPage()}
 						>
 							<span className="sr-only">Go to first page</span>
 							<ChevronsLeft className="h-4 w-4" />
@@ -536,7 +592,7 @@ export function LeadsDataTable({
 							variant="outline"
 							className="h-8 w-8 p-0"
 							onClick={() => table.previousPage()}
-							disabled={isPending || !table.getCanPreviousPage()}
+							disabled={isLoading || isPending || !table.getCanPreviousPage()}
 						>
 							<span className="sr-only">Go to previous page</span>
 							<ChevronLeft className="h-4 w-4" />
@@ -545,7 +601,7 @@ export function LeadsDataTable({
 							variant="outline"
 							className="h-8 w-8 p-0"
 							onClick={() => table.nextPage()}
-							disabled={isPending || !table.getCanNextPage()}
+							disabled={isLoading || isPending || !table.getCanNextPage()}
 						>
 							<span className="sr-only">Go to next page</span>
 							<ChevronRight className="h-4 w-4" />
@@ -554,7 +610,7 @@ export function LeadsDataTable({
 							variant="outline"
 							className="hidden h-8 w-8 p-0 lg:flex"
 							onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-							disabled={isPending || !table.getCanNextPage()}
+							disabled={isLoading || isPending || !table.getCanNextPage()}
 						>
 							<span className="sr-only">Go to last page</span>
 							<ChevronsRight className="h-4 w-4" />

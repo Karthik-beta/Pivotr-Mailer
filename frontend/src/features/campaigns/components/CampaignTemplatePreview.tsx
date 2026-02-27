@@ -5,10 +5,9 @@
  */
 
 import { Globe, Image as ImageIcon, Linkedin, Mail, Phone, Twitter } from "lucide-react";
-import { marked } from "marked";
+import { MarkdownPreview } from "@/components/markdown-preview";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { sanitizeHtml } from "@/lib/sanitize";
 import type { EmailTemplate } from "../types";
 
 interface CampaignTemplatePreviewProps {
@@ -23,22 +22,6 @@ const PLATFORM_ICONS = {
 	email: Mail,
 	phone: Phone,
 };
-
-/**
- * Parse markdown to HTML with full syntax support and sanitization
- */
-function parseMarkdown(text: string): string {
-	if (!text) return "";
-
-	// Configure marked for full markdown support
-	marked.setOptions({
-		breaks: true, // Convert \n to <br>
-		gfm: true, // GitHub Flavored Markdown
-	});
-
-	const html = marked.parse(text, { async: false }) as string;
-	return sanitizeHtml(html);
-}
 
 export function CampaignTemplatePreview({ template }: CampaignTemplatePreviewProps) {
 	return (
@@ -77,21 +60,13 @@ export function CampaignTemplatePreview({ template }: CampaignTemplatePreviewPro
 				</CardHeader>
 				<CardContent className="pt-4 space-y-4">
 					{/* Email Body */}
-					<div
-						className="prose prose-sm max-w-none dark:prose-invert"
-						dangerouslySetInnerHTML={{ __html: parseMarkdown(template.body) }}
-					/>
+					<MarkdownPreview content={template.body} />
 
 					{/* Sign-off Section */}
 					{template.signOff?.enabled && (
 						<div className="border-t pt-4 space-y-3">
 							{/* Markdown Content */}
-							{template.signOff.content && (
-								<div
-									className="prose prose-sm max-w-none dark:prose-invert"
-									dangerouslySetInnerHTML={{ __html: parseMarkdown(template.signOff.content) }}
-								/>
-							)}
+							{template.signOff.content && <MarkdownPreview content={template.signOff.content} />}
 
 							{/* Media */}
 							{template.signOff.media && template.signOff.media.length > 0 && (

@@ -28,13 +28,10 @@ import { Layout } from "../features/shared/Layout";
  * Uses createServerFn to ensure it runs on the server only.
  */
 const getThemeFromServer = createServerFn({ method: "GET" }).handler(async () => {
-	// Dynamic import to access the H3 event context
-	// This only works on the server
 	try {
-		// @ts-expect-error - vinxi/http is a server-only dependency
-		const { getEvent } = await import("vinxi/http");
-		const event = getEvent();
-		const cookieHeader = event.node.req.headers.cookie ?? undefined;
+		const { getStartContext } = await import("@tanstack/start-storage-context");
+		const startContext = getStartContext({ throwIfNotFound: false });
+		const cookieHeader = startContext?.request.headers.get("cookie") ?? undefined;
 		return getThemeFromCookie(cookieHeader);
 	} catch {
 		return null;
@@ -118,16 +115,8 @@ function RootComponent() {
  */
 function RootDocument({ children }: { children: React.ReactNode }) {
 	const isServer = typeof window === "undefined";
-
-	// Get initial theme from route context (set by beforeLoad)
-	let initialMode: ThemeMode | null = null;
-
-	try {
-		const context = Route.useRouteContext();
-		initialMode = context.initialThemeMode ?? null;
-	} catch {
-		// Context not available during static generation
-	}
+	const context = Route.useRouteContext();
+	const initialMode: ThemeMode | null = context.initialThemeMode ?? null;
 
 	// Resolve effective theme for SSR
 	// On server, we can't detect system preference, so default to light for "system"
